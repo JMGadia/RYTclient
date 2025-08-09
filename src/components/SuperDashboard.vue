@@ -1,11 +1,26 @@
 <template>
   <div class="d-flex" id="wrapper">
-    <!-- Sidebar -->
     <div class="bg-dark border-right" id="sidebar-wrapper">
       <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">
         RYT-Tyre Super Admin
       </div>
       <div class="list-group list-group-flush">
+
+        <a
+          href="#"
+          class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
+          id="sidebar-notifications"
+        >
+          <i class="fas fa-bell me-2"></i>Notifications
+        </a>
+        <a
+          href="#"
+          class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
+          id="sidebar-profile"
+        >
+          <i class="fas fa-user-circle me-2"></i>Super Admin
+        </a>
+
         <a
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
@@ -46,12 +61,12 @@
         >
           <i class="fas fa-users me-2"></i>User Management
         </a>
-      </div>
-    </div>
 
+      </div>
+  </div>
+  
     <div v-if="sidebarToggled && isMobile" class="sidebar-overlay" @click="toggleSidebar"></div>
 
-    <!-- Page Content -->
     <div id="page-content-wrapper">
       <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
         <button class="btn btn-primary ms-3" id="menu-toggle" @click="toggleSidebar">
@@ -60,10 +75,14 @@
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
-            <li class="nav-item active">
-              <a class="nav-link" href="#"><i class="fas fa-bell me-1"></i> Notifications</a>
+            <li class="nav-item active d-lg-block d-none d-sm-block" id="notifications-top-nav">
+              <a class="nav-link" href="#">
+                <i class="fas fa-bell me-1"></i>
+                <span class="d-sm-inline">Notifications</span>
+              </a>
             </li>
-            <li class="nav-item dropdown">
+
+            <li class="nav-item dropdown d-lg-block d-none d-sm-block" id="super-admin-top-nav">
               <a
                 class="nav-link dropdown-toggle"
                 href="#"
@@ -72,7 +91,7 @@
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                Super Admin
+                <span class="d-sm-inline">Super Admin</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                 <li><a class="dropdown-item" href="#">Profile</a></li>
@@ -97,18 +116,110 @@
             <p>This section will display charts and data related to sales performance.</p>
           </div>
           <div v-else-if="activeFeature === 'stock-monitoring'">
-            <h2 class="h4">Stock Monitoring</h2>
-            <p>Here you can view and manage current stock levels, low stock alerts, etc.</p>
+            <h2 class="h4">Tire Stock Monitoring</h2>
+            <p>Here you can view and manage current stock levels, low stock alerts, and details for different tire types. 📊</p>
+
+            <div class="card mt-4">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Current Tire Stock</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>Tire Type</th>
+                        <th>Size</th>
+                        <th>Brand</th>
+                        <th>Current Stock</th>
+                        <th>Min. Stock Level</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="tire in tires" :key="tire.id">
+                        <td>{{ tire.type }}</td>
+                        <td>{{ tire.size }}</td>
+                        <td>{{ tire.brand }}</td>
+                        <td>{{ tire.stock }}</td>
+                        <td>{{ tire.minStock }}</td>
+                        <td>
+                          <span :class="['badge', tire.stock <= tire.minStock ? 'bg-danger' : 'bg-success']">
+                            {{ tire.stock <= tire.minStock ? 'Low Stock' : 'In Stock' }}
+                          </span>
+                        </td>
+                        <td>
+                          <button class="btn btn-sm btn-info me-2 text-white">
+                            <i class="fas fa-plus"></i> Add
+                          </button>
+                          <button class="btn btn-sm btn-warning text-white">
+                            <i class="fas fa-minus"></i> Remove
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
           <div v-else-if="activeFeature === 'orders'">
             <h2 class="h4">Order Management</h2>
             <p>Manage customer orders, track their status, and process shipments.</p>
           </div>
+
           <div v-else-if="activeFeature === 'users'">
             <h2 class="h4">User Management</h2>
             <p>View, add, edit, and delete user accounts (admins, customers, etc.).</p>
-          </div>
-          <div v-else-if="activeFeature === 'settings'">
+
+            <div class="card mt-4">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">User Accounts</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="user in users" :key="user.id">
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                          <span :class="['badge', user.role === 'Admin' ? 'bg-danger' : 'bg-success']">
+                            {{ user.role }}
+                          </span>
+                        </td>
+                        <td>
+                          <span :class="['badge', user.status === 'Active' ? 'bg-success' : 'bg-secondary']">
+                            {{ user.status }}
+                          </span>
+                        </td>
+                        <td>
+                          <button class="btn btn-sm btn-info me-2 text-white">
+                            <i class="fas fa-edit"></i> Edit
+                          </button>
+                          <button class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash-alt"></i> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div> <div v-else-if="activeFeature === 'settings'">
             <h2 class="h4">System Settings</h2>
             <p>Configure application settings, permissions, and other administrative options.</p>
           </div>
@@ -125,10 +236,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 999; /* Lower than sidebar but higher than main content */
+  z-index: 999;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  background-color: rgba(0, 0, 0, 0.5);
   transition: opacity 0.3s ease-in-out;
   opacity: 1;
 }
@@ -136,9 +247,35 @@
 /* Hide overlay by default on larger screens */
 @media (min-width: 768px) {
     .sidebar-overlay {
-        display: none;
+      display: none;
     }
 }
+
+/* **NEW STYLES to manage visibility based on screen size** */
+@media (max-width: 429.98px) {
+  /* Hide the top navbar links */
+  #notifications-top-nav, #super-admin-top-nav {
+    display: none !important;
+  }
+
+  /* Show the sidebar links */
+  #sidebar-notifications, #sidebar-profile {
+    display: block !important;
+  }
+}
+
+@media (min-width: 430px) {
+  /* Show the top navbar links */
+  #notifications-top-nav, #super-admin-top-nav {
+    display: block !important;
+  }
+
+  /* Hide the sidebar links */
+  #sidebar-notifications, #sidebar-profile {
+    display: none !important;
+  }
+}
+/* **END NEW STYLES** */
 
 
 /* Icon Rotation for Car Wheel Effect - TARGETING THE IMG TAG NOW */
@@ -173,7 +310,6 @@
     transform: rotate(-360deg);
 }
 
-
 /* Original CSS provided by you - no changes here unless specified */
 #wrapper {
   overflow-x: hidden;
@@ -187,8 +323,8 @@
   transition: margin 0.35s ease-in-out;
   width: 15rem;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000; /* Ensure sidebar is above the overlay */
-  position: fixed; /* Added to make it slide from off-screen */
+  z-index: 1000;
+  position: fixed;
 }
 
 #sidebar-wrapper .sidebar-heading {
@@ -209,31 +345,29 @@
 }
 
 /* Mobile-specific adjustments for sidebar */
-@media (max-width: 767.98px) { /* Use Bootstrap's sm breakpoint or adjust as needed */
+@media (max-width: 767.98px) {
     #sidebar-wrapper {
-        margin-left: -15rem; /* Hidden by default on mobile */
-        transform: translateX(0); /* Reset transform for mobile transition */
+      margin-left: -15rem;
+      transform: translateX(0);
     }
 
     #wrapper.toggled #sidebar-wrapper {
-        margin-left: 0; /* Show sidebar on mobile when toggled */
+      margin-left: 0;
     }
 
     #page-content-wrapper {
-        margin-left: 0; /* Content always starts at 0 on mobile */
+      margin-left: 0;
     }
 
-    /* Important: When sidebar is open on mobile, ensure content doesn't shift */
     #wrapper.toggled #page-content-wrapper {
-        margin-left: 0;
+      margin-left: 0;
     }
 }
 
-
-@media (min-width: 768px) { /* Desktop behavior */
+@media (min-width: 768px) {
   #sidebar-wrapper {
-    margin-left: 0; /* Visible by default on desktop */
-    position: sticky; /* Keep it sticky on desktop */
+    margin-left: 0;
+    position: sticky;
   }
 
   #page-content-wrapper {
@@ -242,11 +376,11 @@
   }
 
   #wrapper.toggled #sidebar-wrapper {
-    margin-left: -15rem; /* Hide sidebar on desktop when toggled */
+    margin-left: -15rem;
   }
 
   #wrapper.toggled #page-content-wrapper {
-    margin-left: 0; /* Content takes full width when sidebar hidden on desktop */
+    margin-left: 0;
   }
 }
 
@@ -294,7 +428,6 @@
   transition: width 0.3s ease-out;
 }
 
-
 .navbar {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
@@ -331,6 +464,21 @@ const emit = defineEmits(['logout']);
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
+
+const users = ref([
+  { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', status: 'Active' },
+  { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'User', status: 'Active' },
+  { id: 3, name: 'Bob Johnson', email: 'bob.j@example.com', role: 'User', status: 'Inactive' },
+]);
+
+// New data for tires stock monitoring
+const tires = ref([
+  { id: 1, type: 'All-Season', size: '205/55R16', brand: 'Michelin', stock: 150, minStock: 50 },
+  { id: 2, type: 'Performance', size: '225/45R17', brand: 'Goodyear', stock: 30, minStock: 40 },
+  { id: 3, type: 'Off-Road', size: '265/70R17', brand: 'BFGoodrich', stock: 80, minStock: 20 },
+  { id: 4, type: 'Winter', size: '195/65R15', brand: 'Bridgestone', stock: 10, minStock: 20 },
+  { id: 5, type: 'Touring', size: '215/60R16', brand: 'Pirelli', stock: 120, minStock: 30 },
+]);
 
 const pageTitle = computed(() => {
   switch (activeFeature.value) {
