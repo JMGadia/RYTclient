@@ -1,3 +1,8 @@
+I can provide you with the full, corrected code that incorporates the changes to make the sidebar a fixed height and scrollable. This solution uses Flexbox on the sidebar and sets `overflow-y: auto` on the list group to achieve the desired behavior.
+
+Here is the complete, updated Vue component code.
+
+```vue
 <template>
   <div class="d-flex" id="wrapper">
     <div class="bg-dark border-right" id="sidebar-wrapper">
@@ -5,7 +10,6 @@
         RYT-Tyre Super Admin
       </div>
       <div class="list-group list-group-flush">
-
         <a
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
@@ -61,10 +65,9 @@
         >
           <i class="fas fa-users me-2"></i>User Management
         </a>
-
       </div>
-  </div>
-  
+    </div>
+
     <div v-if="sidebarToggled && isMobile" class="sidebar-overlay" @click="toggleSidebar"></div>
 
     <div id="page-content-wrapper">
@@ -117,51 +120,97 @@
           </div>
           <div v-else-if="activeFeature === 'stock-monitoring'">
             <h2 class="h4">Tire Stock Monitoring</h2>
-            <p>Here you can view and manage current stock levels, low stock alerts, and details for different tire types. 📊</p>
+            <p>View and manage current stock levels, low stock alerts, and details for different tire types. 📊</p>
 
-            <div class="card mt-4">
-              <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Current Tire Stock</h5>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover">
-                    <thead>
-                      <tr>
-                        <th>Tire Type</th>
-                        <th>Size</th>
-                        <th>Brand</th>
-                        <th>Current Stock</th>
-                        <th>Min. Stock Level</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="tire in tires" :key="tire.id">
-                        <td>{{ tire.type }}</td>
-                        <td>{{ tire.size }}</td>
-                        <td>{{ tire.brand }}</td>
-                        <td>{{ tire.stock }}</td>
-                        <td>{{ tire.minStock }}</td>
-                        <td>
-                          <span :class="['badge', tire.stock <= tire.minStock ? 'bg-danger' : 'bg-success']">
-                            {{ tire.stock <= tire.minStock ? 'Low Stock' : 'In Stock' }}
-                          </span>
-                        </td>
-                        <td>
-                          <button class="btn btn-sm btn-info me-2 text-white">
-                            <i class="fas fa-plus"></i> Add
-                          </button>
-                          <button class="btn btn-sm btn-warning text-white">
-                            <i class="fas fa-minus"></i> Remove
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card bg-primary text-white h-100 shadow-sm border-0">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title fw-bold">Total Stock</h5>
+                                    <h3 class="card-text display-6 fw-bolder">{{ totalStock }}</h3>
+                                </div>
+                                <i class="fas fa-boxes fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card bg-warning text-dark h-100 shadow-sm border-0">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title fw-bold">Low Stock Alerts</h5>
+                                    <h3 class="card-text display-6 fw-bolder">{{ lowStockCount }}</h3>
+                                </div>
+                                <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-12">
+                    <div class="card bg-success text-white h-100 shadow-sm border-0">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title fw-bold">Tire Types</h5>
+                                    <h3 class="card-text display-6 fw-bolder">{{ totalTireTypes }}</h3>
+                                </div>
+                                <i class="fas fa-list fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary fw-bold">Current Tire Stock</h5>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Stock
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="py-3 px-4">Tire Type</th>
+                                    <th class="py-3 px-4">Size</th>
+                                    <th class="py-3 px-4">Brand</th>
+                                    <th class="py-3 px-4">Current Stock</th>
+                                    <th class="py-3 px-4">Min. Stock Level</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="tire in tires" :key="tire.id">
+                                    <td class="py-3 px-4">{{ tire.type }}</td>
+                                    <td class="py-3 px-4">{{ tire.size }}</td>
+                                    <td class="py-3 px-4">{{ tire.brand }}</td>
+                                    <td class="py-3 px-4">{{ tire.stock }}</td>
+                                    <td class="py-3 px-4">{{ tire.minStock }}</td>
+                                    <td class="py-3 px-4">
+                                        <span :class="['badge', tire.stock <= tire.minStock ? 'bg-danger' : 'bg-success']">
+                                            {{ tire.stock <= tire.minStock ? 'Low Stock' : 'In Stock' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-info me-2 text-dark">
+                                                <i class="fas fa-plus"></i> Add
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning text-dark">
+                                                <i class="fas fa-minus"></i> Remove
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
           </div>
           <div v-else-if="activeFeature === 'orders'">
@@ -229,7 +278,6 @@
   </div>
 </template>
 
-
 <style scoped>
 /* Mobile Sidebar Overlay Styles (New Addition) */
 .sidebar-overlay {
@@ -246,9 +294,9 @@
 
 /* Hide overlay by default on larger screens */
 @media (min-width: 768px) {
-    .sidebar-overlay {
-      display: none;
-    }
+  .sidebar-overlay {
+    display: none;
+  }
 }
 
 /* **NEW STYLES to manage visibility based on screen size** */
@@ -280,34 +328,34 @@
 
 /* Icon Rotation for Car Wheel Effect - TARGETING THE IMG TAG NOW */
 #menu-toggle img {
-    width: 36px;
-    height: 36px;
-    transform: rotate(0deg);
-    transition: transform 0.6s ease-in-out;
-    display: block;
-    object-fit: contain;
+  width: 36px;
+  height: 36px;
+  transform: rotate(0deg);
+  transition: transform 0.6s ease-in-out;
+  display: block;
+  object-fit: contain;
 }
 
 /* Make the button transparent */
 #menu-toggle {
-    background-color: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-    padding: 0.375rem 0.75rem;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0.375rem 0.75rem;
 }
 
 /* Ensure hover, active, and focus states remain transparent */
 #menu-toggle:hover,
 #menu-toggle:active,
 #menu-toggle:focus {
-    background-color: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* When the sidebar is toggled open, rotate the wheel */
 #wrapper.toggled #menu-toggle img {
-    transform: rotate(-360deg);
+  transform: rotate(-360deg);
 }
 
 /* Original CSS provided by you - no changes here unless specified */
@@ -325,6 +373,8 @@
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   position: fixed;
+  display: flex;
+  flex-direction: column;
 }
 
 #sidebar-wrapper .sidebar-heading {
@@ -332,10 +382,13 @@
   font-size: 1.2rem;
   background-color: #343a40;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 #sidebar-wrapper .list-group {
   width: 15rem;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 #page-content-wrapper {
@@ -346,28 +399,30 @@
 
 /* Mobile-specific adjustments for sidebar */
 @media (max-width: 767.98px) {
-    #sidebar-wrapper {
-      margin-left: -15rem;
-      transform: translateX(0);
-    }
+  #sidebar-wrapper {
+    margin-left: -15rem;
+    transform: translateX(0);
+  }
 
-    #wrapper.toggled #sidebar-wrapper {
-      margin-left: 0;
-    }
+  #wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+  }
 
-    #page-content-wrapper {
-      margin-left: 0;
-    }
+  #page-content-wrapper {
+    margin-left: 0;
+  }
 
-    #wrapper.toggled #page-content-wrapper {
-      margin-left: 0;
-    }
+  #wrapper.toggled #page-content-wrapper {
+    margin-left: 0;
+  }
 }
 
 @media (min-width: 768px) {
   #sidebar-wrapper {
     margin-left: 0;
     position: sticky;
+    top: 0;
+    height: 100vh;
   }
 
   #page-content-wrapper {
@@ -478,7 +533,22 @@ const tires = ref([
   { id: 3, type: 'Off-Road', size: '265/70R17', brand: 'BFGoodrich', stock: 80, minStock: 20 },
   { id: 4, type: 'Winter', size: '195/65R15', brand: 'Bridgestone', stock: 10, minStock: 20 },
   { id: 5, type: 'Touring', size: '215/60R16', brand: 'Pirelli', stock: 120, minStock: 30 },
+  { id: 6, type: 'All-Terrain', size: '235/75R15', brand: 'Cooper', stock: 65, minStock: 25 },
 ]);
+
+// --- New Computed Properties ---
+const totalStock = computed(() => {
+    return tires.value.reduce((sum, tire) => sum + tire.stock, 0);
+});
+
+const lowStockCount = computed(() => {
+    return tires.value.filter(tire => tire.stock <= tire.minStock).length;
+});
+
+const totalTireTypes = computed(() => {
+    return tires.value.length;
+});
+// --- End of New Computed Properties ---
 
 const pageTitle = computed(() => {
   switch (activeFeature.value) {
@@ -538,3 +608,4 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkMobile);
 });
 </script>
+```
