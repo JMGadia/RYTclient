@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import AccountSelection from './components/AccountSelection.vue'
 import SuperAdmin from './components/SuperlogIn.vue'
 import Admin from './components/AdminlogIn.vue'
-import SuperDash_main from './components/SuperDashboard.vue' // Import the new component
-import AdminDashboard from './components/AdminDashboard.vue'
+import SuperDash_main from './components/SuperAdmin.vue' // Import the new component
+import AdminDashboard from './components/Admin.vue'
 
 const currentPage = ref('account-selection')
 
