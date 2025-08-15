@@ -1,6 +1,5 @@
 <template>
   <div id="admin-dashboard" class="d-flex flex-column min-vh-100 bg-light">
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div class="container-fluid">
         <button class="btn btn-primary" @click="toggleSidebar">
@@ -8,7 +7,6 @@
         </button>
         <a class="navbar-brand fw-bold ms-3" href="#">Administrator</a>
 
-        <!-- Desktop Notifications & Admin User -->
         <div v-if="!isMobile" class="collapse navbar-collapse justify-content-end">
           <ul class="navbar-nav">
             <li class="nav-item">
@@ -35,9 +33,7 @@
       </div>
     </nav>
 
-    <!-- Main Layout -->
     <div class="d-flex flex-grow-1">
-      <!-- Sidebar -->
       <div
         :class="[
           'sidebar bg-dark text-white shadow',
@@ -48,7 +44,6 @@
         <nav class="h-100 p-3">
           <h5 class="text-center mb-4 text-uppercase" v-if="!isCollapsed || isMobile">RYT-Tyre</h5>
           <ul class="nav flex-column">
-            <!-- Mobile-only: Admin User Accordion at Top -->
             <li class="nav-item mt-2" v-if="isMobile">
               <div
                 class="nav-link text-white py-2 px-3 d-flex align-items-center justify-content-between"
@@ -68,7 +63,6 @@
               </ul>
             </li>
 
-            <!-- Mobile-only: Notifications -->
             <li class="nav-item mt-2" v-if="isMobile">
               <a class="nav-link text-white py-2 px-3 d-flex align-items-center" href="#">
                 <i class="fas fa-bell me-2"></i>
@@ -76,7 +70,6 @@
               </a>
             </li>
 
-            <!-- Sidebar Menu Items -->
             <li
               class="nav-item mt-3 mb-2"
               v-for="item in menuItems"
@@ -96,17 +89,184 @@
         </nav>
       </div>
 
-      <!-- Overlay for mobile -->
       <div
         v-if="isMobile && isSidebarVisible"
         class="sidebar-overlay"
         @click="closeSidebar"
       ></div>
 
-      <!-- Main Content Area -->
       <main class="flex-grow-1 p-4">
         <h2 class="text-primary mb-4">{{ currentView }}</h2>
-        <p>This is {{ currentView }} content section.</p>
+
+        <div v-if="currentView === 'Dashboard'">
+          <div class="row">
+            <div class="col-md-4 mb-4">
+              <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-body text-center">
+                  <i class="fas fa-cubes fa-3x text-info mb-3"></i>
+                  <h5 class="card-title">Total Products</h5>
+                  <p class="card-text fs-4 fw-bold">1200</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-4">
+              <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-body text-center">
+                  <i class="fas fa-arrow-alt-circle-down fa-3x text-success mb-3"></i>
+                  <h5 class="card-title">Stock In Today</h5>
+                  <p class="card-text fs-4 fw-bold">50</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-4">
+              <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-body text-center">
+                  <i class="fas fa-arrow-alt-circle-up fa-3x text-danger mb-3"></i>
+                  <h5 class="card-title">Stock Out Today</h5>
+                  <p class="card-text fs-4 fw-bold">30</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0 rounded-lg mt-4">
+            <div class="card-header bg-white text-dark fw-bold">Recent Activities</div>
+            <div class="card-body">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">逃 Product A received (Qty: 10) - 2 mins ago</li>
+                <li class="list-group-item">囹 Product B shipped (Qty: 5) - 1 hour ago</li>
+                <li class="list-group-item">逃 Product C received (Qty: 15) - 3 hours ago</li>
+                <li class="list-group-item">囹 Product D shipped (Qty: 8) - yesterday</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'Stock In'">
+          <div class="card shadow-sm border-0 rounded-lg mb-4">
+            <div class="card-header bg-white text-dark fw-bold">Record New Stock In</div>
+            <div class="card-body">
+              <form @submit.prevent="addStockIn">
+                <div class="mb-3">
+                  <label for="productNameIn" class="form-label">Product Name</label>
+                  <input type="text" class="form-control" id="productNameIn" v-model="stockIn.productName" required>
+                </div>
+                <div class="mb-3">
+                  <label for="quantityIn" class="form-label">Quantity</label>
+                  <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="supplierIn" class="form-label">Supplier</label>
+                  <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
+                </div>
+                <div class="mb-3">
+                  <label for="dateIn" class="form-label">Date</label>
+                  <input type="date" class="form-control" id="dateIn" v-model="stockIn.date" required>
+                </div>
+                <button type="submit" class="btn btn-success rounded-pill px-4">Record Stock In</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0 rounded-lg">
+            <div class="card-header bg-white text-dark fw-bold">Stock In History</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>Quantity</th>
+                      <th>Supplier</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in stockInHistory" :key="index">
+                      <td>{{ item.productName }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>{{ item.supplier }}</td>
+                      <td>{{ item.date }}</td>
+                    </tr>
+                    <tr v-if="stockInHistory.length === 0">
+                      <td colspan="4" class="text-center text-muted">No stock in records yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'Stock Out'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0 text-dark">Pending Orders</h4>
+            <button class="btn btn-primary rounded-pill" @click="showAddOrderForm = !showAddOrderForm">
+              <i class="fas fa-plus me-2"></i> Add New Order
+            </button>
+          </div>
+
+          <div class="card shadow-sm border-0 rounded-lg mb-4" v-if="showAddOrderForm">
+            <div class="card-header bg-white text-dark fw-bold">Record New Stock Out Order</div>
+            <div class="card-body">
+              <form @submit.prevent="addStockOut">
+                <div class="mb-3">
+                  <label for="productNameOut" class="form-label">Product Name</label>
+                  <input type="text" class="form-control" id="productNameOut" v-model="stockOut.productName" required>
+                </div>
+                <div class="mb-3">
+                  <label for="quantityOut" class="form-label">Quantity</label>
+                  <input type="number" class="form-control" id="quantityOut" v-model="stockOut.quantity" min="1" required>
+                </div>
+                <div class="mb-3">
+                  <label for="customerOut" class="form-label">Customer Name</label>
+                  <input type="text" class="form-control" id="customerOut" v-model="stockOut.customer" required>
+                </div>
+                <div class="mb-3">
+                  <label for="dateOut" class="form-label">Order Date</label>
+                  <input type="date" class="form-control" id="dateOut" v-model="stockOut.date" required>
+                </div>
+                <button type="submit" class="btn btn-danger rounded-pill px-4">Create Order</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div class="col" v-for="(order, index) in pendingOrders" :key="index">
+              <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title fw-bold text-primary">{{ order.customer }}</h5>
+                  <h6 class="card-subtitle mb-2 text-muted">Order ID: #{{ 1000 + index }}</h6>
+                  <ul class="list-group list-group-flush flex-grow-1 mb-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                      <span>Product:</span>
+                      <span class="fw-bold">{{ order.productName }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                      <span>Quantity:</span>
+                      <span class="fw-bold">{{ order.quantity }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                      <span>Order Date:</span>
+                      <span class="fw-bold">{{ order.date }}</span>
+                    </li>
+                  </ul>
+                  <button class="btn btn-success rounded-pill mt-auto" @click="takeOrder(index)">
+                    <i class="fas fa-check-circle me-2"></i> Take Order
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col" v-if="pendingOrders.length === 0">
+              <div class="card h-100 shadow-sm border-0 rounded-lg">
+                <div class="card-body text-center text-muted">
+                  No pending orders at the moment.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -123,11 +283,33 @@ export default {
       adminMenuOpen: false,
       desktopAdminDropdownOpen: false,
       currentView: 'Dashboard', // Default view
+      showAddOrderForm: false, // Control visibility of the 'add new order' form
       menuItems: [
         { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { icon: 'fas fa-boxes', label: 'Stock In' },
         { icon: 'fas fa-truck-loading', label: 'Stock Out' }
-      ]
+      ],
+      stockIn: {
+        productName: '',
+        quantity: 1,
+        supplier: '',
+        date: new Date().toISOString().slice(0, 10) // Default to today's date
+      },
+      stockInHistory: [
+        { productName: 'Tire Model A', quantity: 100, supplier: 'Supplier X', date: '2023-01-10' },
+        { productName: 'Rim Type B', quantity: 50, supplier: 'Supplier Y', date: '2023-01-15' },
+      ],
+      stockOut: {
+        productName: '',
+        quantity: 1,
+        customer: '',
+        date: new Date().toISOString().slice(0, 10) // Default to today's date
+      },
+      pendingOrders: [
+        { productName: 'Tire Model A', quantity: 5, customer: 'Customer Z', date: '2023-01-12' },
+        { productName: 'Rim Type B', quantity: 2, customer: 'Customer W', date: '2023-01-18' },
+      ],
+      stockOutHistory: [], // Renamed from stockOutHistory to be populated upon taking an order
     };
   },
   methods: {
@@ -145,6 +327,7 @@ export default {
       this.isMobile = window.innerWidth < 992;
       if (!this.isMobile) {
         this.isSidebarVisible = false;
+        this.adminMenuOpen = false; // Close mobile admin menu when not in mobile view
         this.desktopAdminDropdownOpen = false;
       }
     },
@@ -161,7 +344,8 @@ export default {
     },
     closeDesktopDropdownOnClickOutside(event) {
       const toggleEl = this.$refs.adminDropdownToggle;
-      if (toggleEl && !toggleEl.contains(event.target)) {
+      const dropdownMenu = toggleEl.nextElementSibling;
+      if (toggleEl && !toggleEl.contains(event.target) && (!dropdownMenu || !dropdownMenu.contains(event.target))) {
         this.desktopAdminDropdownOpen = false;
         document.removeEventListener('click', this.closeDesktopDropdownOnClickOutside);
       }
@@ -169,6 +353,38 @@ export default {
     selectView(label) {
       this.currentView = label;
       if (this.isMobile) this.closeSidebar();
+    },
+    addStockIn() {
+      // Add validation if needed before pushing
+      this.stockInHistory.unshift({ ...this.stockIn });
+      // Reset form
+      this.stockIn = {
+        productName: '',
+        quantity: 1,
+        supplier: '',
+        date: new Date().toISOString().slice(0, 10)
+      };
+      // You could add a success message here
+      alert('Stock In recorded successfully!');
+    },
+    addStockOut() {
+      // Add validation if needed
+      this.pendingOrders.unshift({ ...this.stockOut });
+      // Reset form
+      this.stockOut = {
+        productName: '',
+        quantity: 1,
+        customer: '',
+        date: new Date().toISOString().slice(0, 10)
+      };
+      this.showAddOrderForm = false; // Hide the form after submission
+      alert('New order created successfully!');
+    },
+    takeOrder(index) {
+      // Logic to move order from pending to history
+      const order = this.pendingOrders.splice(index, 1)[0];
+      this.stockOutHistory.unshift(order);
+      alert(`Order for ${order.customer} has been taken.`);
     }
   },
   mounted() {
@@ -183,6 +399,10 @@ export default {
 </script>
 
 <style scoped>
+/* Ensure Bootstrap is linked in your main HTML for these styles to work */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
 .sidebar {
   width: 250px;
   transition: all 0.3s ease-in-out;
@@ -191,6 +411,7 @@ export default {
   position: sticky;
   top: 0;
   z-index: 1050;
+  flex-shrink: 0; /* Prevent sidebar from shrinking on larger screens */
 }
 
 .sidebar.collapsed {
@@ -216,7 +437,7 @@ export default {
 }
 
 .nav-item.active > .nav-link {
-  background-color: #0d6efd;
+  background-color: #0d6efd; /* Bootstrap primary color */
   font-weight: bold;
 }
 
@@ -228,6 +449,7 @@ export default {
     top: 0;
     transform: translateX(-100%);
     z-index: 1050;
+    height: 100%; /* Ensure full height on mobile */
   }
 
   .sidebar.sidebar-visible {
@@ -235,7 +457,15 @@ export default {
   }
 
   .sidebar.collapsed {
-    width: 250px;
+    width: 250px; /* On mobile, even if 'collapsed' is true, it should show full width */
+  }
+
+  .sidebar.collapsed .nav-link span {
+    display: inline; /* Ensure text is visible on mobile when sidebar is open */
+  }
+
+  .sidebar.collapsed .nav-link {
+    justify-content: flex-start; /* Align back to start for mobile */
   }
 }
 
@@ -251,5 +481,42 @@ ul.ps-4 li a {
   top: 100%;
   left: auto;
   right: 0;
+  min-width: 10rem; /* Give dropdown a reasonable width */
+}
+
+.card {
+  border-radius: 0.75rem; /* More rounded corners for cards */
+  overflow: hidden; /* Ensures content respects rounded corners */
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0,0,0,.125);
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+.btn-success, .btn-danger {
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+}
+
+.form-control {
+  border-radius: 0.5rem;
+}
+
+.table thead th {
+  background-color: #f8f9fa; /* Light background for table headers */
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f2f2f2;
+}
+
+.list-group-item {
+  border: none; /* Remove individual borders for flush list group */
+  padding-left: 0;
+  padding-right: 0;
 }
 </style>

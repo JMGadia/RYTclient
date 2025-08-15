@@ -16,10 +16,34 @@
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
           id="sidebar-profile"
+          data-bs-toggle="collapse"
+          data-bs-target="#sidebarProfileCollapse"
+          aria-expanded="false"
+          aria-controls="sidebarProfileCollapse"
         >
           <i class="fas fa-user-circle me-2"></i>Super Admin
         </a>
-
+        <div class="collapse" id="sidebarProfileCollapse">
+          <a
+            href="#"
+            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
+          >
+            Profile
+          </a>
+          <a
+            href="#"
+            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
+          >
+            Settings
+          </a>
+          <a
+            href="#"
+            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
+            data-bs-toggle="modal"
+            data-bs-target="#logoutConfirmationModal"
+            >Logout</a
+          >
+        </div>
         <a
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
@@ -81,23 +105,23 @@
             </li>
 
             <li class="nav-item dropdown d-lg-block d-none d-sm-block" id="super-admin-top-nav">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <span class="d-sm-inline">Super Admin</span>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="#">Profile</a></li>
-                <li><a class="dropdown-item" href="#">Settings</a></li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="handleLogout">Logout</a></li>
-              </ul>
-            </li>
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="navbarDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <span class="d-sm-inline">Super Admin</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="#">Profile</a></li>
+                  <li><a class="dropdown-item" href="#">Settings</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmationModal">Logout</a></li>
+                </ul>
+              </li>
           </ul>
         </div>
       </nav>
@@ -551,6 +575,29 @@
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="logoutConfirmationModal" tabindex="-1" aria-labelledby="logoutConfirmationModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            <div class="p-3">
+              <i class="fas fa-sign-out-alt fa-3x text-primary mb-3"></i>
+              <p class="fs-5">Are you sure you want to log out of your account?</p>
+              <p class="text-muted">You will be redirected to the account selection page.</p>
+            </div>
+          </div>
+          <div class="modal-footer justify-content-center border-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" @click="confirmLogout" data-bs-dismiss="modal">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -604,6 +651,11 @@
   }
 }
 /* **END NEW STYLES** */
+
+.list-group-item-action.ps-5 {
+  padding-left: 2.5rem !important; /* Adjust as needed */
+  font-size: 0.9rem;
+}
 
 /* Icon Rotation for Car Wheel Effect - TARGETING THE IMG TAG NOW */
 #menu-toggle img {
@@ -713,8 +765,8 @@
   }
 
   #page-content-wrapper {
-    min-width: 0;
-    width: 100%;
+  min-width: 0;
+  width: 100%;
   }
 
   #wrapper.toggled #sidebar-wrapper {
@@ -828,13 +880,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import Chart from 'chart.js/auto'; // Import the Chart.js library
+import Chart from 'chart.js/auto';
 
 const emit = defineEmits(['logout']);
 
-const activeFeature = ref('dashboard'); // Set 'dashboard' as the default view
+const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
+let logoutModal = null; // A reference to the Bootstrap Modal instance
+
+// [ ... All your other refs and computed properties remain the same ... ]
 
 const users = ref([
   { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', status: 'Active' },
@@ -899,7 +954,6 @@ const orders = ref([
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
-// --- New Computed Properties ---
 const totalSalesLast30Days = computed(() => {
   // A simple mockup calculation for the dashboard card
   return salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) * 4;
@@ -909,7 +963,6 @@ const newUsersCount = computed(() => {
   // A simple mockup calculation for the dashboard card
   return users.value.length;
 });
-// --- End of New Computed Properties ---
 
 const totalStock = computed(() => {
   return tires.value.reduce((sum, tire) => sum + tire.stock, 0);
@@ -1042,7 +1095,15 @@ const checkMobile = () => {
 };
 
 const handleLogout = () => {
-  console.log('Super Admin Logout');
+  if (logoutModal) {
+    logoutModal.show();
+  }
+};
+
+const confirmLogout = () => {
+  if (logoutModal) {
+    logoutModal.hide();
+  }
   emit('logout');
 };
 
@@ -1076,12 +1137,16 @@ const filterOrders = (status) => {
   selectedStatus.value = status;
 };
 
-// Lifecycle Hooks
 onMounted(() => {
   checkMobile();
   window.addEventListener('resize', checkMobile);
 
   nextTick(() => {
+    // This is the correct way to access the Bootstrap Modal class since it's globally available
+    const modalElement = document.getElementById('logoutConfirmationModal');
+    if (modalElement && window.bootstrap && window.bootstrap.Modal) {
+      logoutModal = new window.bootstrap.Modal(modalElement);
+    }
     if (activeFeature.value === 'sales-report') {
       createCharts();
     }
@@ -1094,7 +1159,6 @@ onUnmounted(() => {
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
 });
 
-// Watcher to re-create charts when the active feature changes to sales-report
 watch(activeFeature, (newFeature) => {
   if (newFeature === 'sales-report') {
     nextTick(() => {
