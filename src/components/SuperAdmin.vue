@@ -592,7 +592,7 @@
           </div>
           <div class="modal-footer justify-content-center border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="confirmLogout" data-bs-dismiss="modal">Logout</button>
+            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button>
           </div>
         </div>
       </div>
@@ -1071,7 +1071,6 @@ const pageTitle = computed(() => {
 
 const setActiveFeature = (feature) => {
   activeFeature.value = feature;
-  // Added this line to automatically close the sidebar.
   toggleSidebar();
 };
 
@@ -1101,6 +1100,12 @@ const handleLogout = () => {
 const confirmLogout = () => {
   if (logoutModal) {
     logoutModal.hide();
+  }
+  document.body.style.overflow = '';
+  // Find and remove the modal backdrop element
+  const backdrop = document.querySelector('.modal-backdrop');
+  if (backdrop) {
+    backdrop.remove();
   }
   emit('logout');
 };
