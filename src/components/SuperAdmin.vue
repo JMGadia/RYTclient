@@ -602,6 +602,7 @@
 </template>
 
 <style scoped>
+
 /* Mobile Sidebar Overlay Styles (New Addition) */
 .sidebar-overlay {
   position: fixed;
@@ -889,8 +890,6 @@ const sidebarToggled = ref(false);
 const isMobile = ref(false);
 let logoutModal = null; // A reference to the Bootstrap Modal instance
 
-// [ ... All your other refs and computed properties remain the same ... ]
-
 const users = ref([
   { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', status: 'Active' },
   { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'User', status: 'Active' },
@@ -1072,9 +1071,8 @@ const pageTitle = computed(() => {
 
 const setActiveFeature = (feature) => {
   activeFeature.value = feature;
-  if (isMobile.value) {
-    toggleSidebar();
-  }
+  // Added this line to automatically close the sidebar.
+  toggleSidebar();
 };
 
 const toggleSidebar = () => {

@@ -25,7 +25,7 @@
                 <li><a class="dropdown-item" href="#">Profile</a></li>
                 <li><a class="dropdown-item" href="#">Settings</a></li>
                 <li><hr class="dropdown-divider" /></li>
-                <li><a class="dropdown-item" href="#">Logout</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
               </ul>
             </li>
           </ul>
@@ -59,7 +59,7 @@
               <ul v-if="adminMenuOpen" class="ps-4 mt-2">
                 <li><a class="text-white d-block py-1" href="#">Profile</a></li>
                 <li><a class="text-white d-block py-1" href="#">Settings</a></li>
-                <li><a class="text-white d-block py-1" href="#">Logout</a></li>
+                <li><a class="text-white d-block py-1" href="#" @click.prevent="logout">Logout</a></li>
               </ul>
             </li>
 
@@ -266,8 +266,22 @@
             </div>
           </div>
         </div>
-
       </main>
+    </div>
+
+    <div v-if="showLogoutModal" class="logout-modal-overlay">
+      <div class="logout-modal-card card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+          <h5 class="mb-0"><i class="fas fa-sign-out-alt me-2"></i> Confirm Logout</h5>
+        </div>
+        <div class="card-body text-center">
+          <p class="lead">Are you sure you want to log out?</p>
+          <div class="d-flex justify-content-center gap-3 mt-4">
+            <button class="btn btn-secondary" @click="cancelLogout">Cancel</button>
+            <button class="btn btn-primary" @click="confirmLogout">Logout</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -282,8 +296,9 @@ export default {
       isMobile: false,
       adminMenuOpen: false,
       desktopAdminDropdownOpen: false,
+      showLogoutModal: false, // New data property for the modal
       currentView: 'Dashboard', // Default view
-      showAddOrderForm: false, // Control visibility of the 'add new order' form
+      showAddOrderForm: false,
       menuItems: [
         { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { icon: 'fas fa-boxes', label: 'Stock In' },
@@ -293,7 +308,7 @@ export default {
         productName: '',
         quantity: 1,
         supplier: '',
-        date: new Date().toISOString().slice(0, 10) // Default to today's date
+        date: new Date().toISOString().slice(0, 10)
       },
       stockInHistory: [
         { productName: 'Tire Model A', quantity: 100, supplier: 'Supplier X', date: '2023-01-10' },
@@ -303,13 +318,13 @@ export default {
         productName: '',
         quantity: 1,
         customer: '',
-        date: new Date().toISOString().slice(0, 10) // Default to today's date
+        date: new Date().toISOString().slice(0, 10)
       },
       pendingOrders: [
         { productName: 'Tire Model A', quantity: 5, customer: 'Customer Z', date: '2023-01-12' },
         { productName: 'Rim Type B', quantity: 2, customer: 'Customer W', date: '2023-01-18' },
       ],
-      stockOutHistory: [], // Renamed from stockOutHistory to be populated upon taking an order
+      stockOutHistory: [],
     };
   },
   methods: {
@@ -327,7 +342,7 @@ export default {
       this.isMobile = window.innerWidth < 992;
       if (!this.isMobile) {
         this.isSidebarVisible = false;
-        this.adminMenuOpen = false; // Close mobile admin menu when not in mobile view
+        this.adminMenuOpen = false;
         this.desktopAdminDropdownOpen = false;
       }
     },
@@ -355,36 +370,45 @@ export default {
       if (this.isMobile) this.closeSidebar();
     },
     addStockIn() {
-      // Add validation if needed before pushing
       this.stockInHistory.unshift({ ...this.stockIn });
-      // Reset form
       this.stockIn = {
         productName: '',
         quantity: 1,
         supplier: '',
         date: new Date().toISOString().slice(0, 10)
       };
-      // You could add a success message here
       alert('Stock In recorded successfully!');
     },
     addStockOut() {
-      // Add validation if needed
       this.pendingOrders.unshift({ ...this.stockOut });
-      // Reset form
       this.stockOut = {
         productName: '',
         quantity: 1,
         customer: '',
         date: new Date().toISOString().slice(0, 10)
       };
-      this.showAddOrderForm = false; // Hide the form after submission
+      this.showAddOrderForm = false;
       alert('New order created successfully!');
     },
     takeOrder(index) {
-      // Logic to move order from pending to history
       const order = this.pendingOrders.splice(index, 1)[0];
       this.stockOutHistory.unshift(order);
       alert(`Order for ${order.customer} has been taken.`);
+    },
+    // This method now only shows the modal
+    logout() {
+      this.showLogoutModal = true;
+    },
+    // New method to confirm and perform the logout
+    confirmLogout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      this.showLogoutModal = false; // Hide the modal after a successful logout
+      window.location.href = '/login'; // Redirect to login page
+    },
+    // New method to cancel the logout
+    cancelLogout() {
+      this.showLogoutModal = false;
     }
   },
   mounted() {
@@ -399,10 +423,55 @@ export default {
 </script>
 
 <style scoped>
-/* Ensure Bootstrap is linked in your main HTML for these styles to work */
+/* Ensure Bootstrap and Font Awesome are linked in your main HTML for these styles to work */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
+/* Custom Logout Modal Styles */
+.logout-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Higher than other elements to be on top */
+  transition: opacity 0.3s ease;
+}
+
+.logout-modal-card {
+  max-width: 400px;
+  width: 90%;
+  border-radius: 1rem;
+  overflow: hidden;
+  animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.logout-modal-card .card-header {
+  border-bottom: none;
+  font-weight: bold;
+  padding: 1.5rem;
+}
+
+.logout-modal-card .card-body {
+  padding: 2rem;
+}
+
+/* Existing styles for the rest of the dashboard components */
 .sidebar {
   width: 250px;
   transition: all 0.3s ease-in-out;
@@ -411,7 +480,7 @@ export default {
   position: sticky;
   top: 0;
   z-index: 1050;
-  flex-shrink: 0; /* Prevent sidebar from shrinking on larger screens */
+  flex-shrink: 0;
 }
 
 .sidebar.collapsed {
@@ -437,11 +506,10 @@ export default {
 }
 
 .nav-item.active > .nav-link {
-  background-color: #0d6efd; /* Bootstrap primary color */
+  background-color: #0d6efd;
   font-weight: bold;
 }
 
-/* Mobile Sidebar Behavior */
 @media (max-width: 991.98px) {
   .sidebar {
     position: fixed;
@@ -449,7 +517,7 @@ export default {
     top: 0;
     transform: translateX(-100%);
     z-index: 1050;
-    height: 100%; /* Ensure full height on mobile */
+    height: 100%;
   }
 
   .sidebar.sidebar-visible {
@@ -457,15 +525,15 @@ export default {
   }
 
   .sidebar.collapsed {
-    width: 250px; /* On mobile, even if 'collapsed' is true, it should show full width */
+    width: 250px;
   }
 
   .sidebar.collapsed .nav-link span {
-    display: inline; /* Ensure text is visible on mobile when sidebar is open */
+    display: inline;
   }
 
   .sidebar.collapsed .nav-link {
-    justify-content: flex-start; /* Align back to start for mobile */
+    justify-content: flex-start;
   }
 }
 
@@ -481,12 +549,12 @@ ul.ps-4 li a {
   top: 100%;
   left: auto;
   right: 0;
-  min-width: 10rem; /* Give dropdown a reasonable width */
+  min-width: 10rem;
 }
 
 .card {
-  border-radius: 0.75rem; /* More rounded corners for cards */
-  overflow: hidden; /* Ensures content respects rounded corners */
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
 .card-header {
@@ -505,7 +573,7 @@ ul.ps-4 li a {
 }
 
 .table thead th {
-  background-color: #f8f9fa; /* Light background for table headers */
+  background-color: #f8f9fa;
   color: #495057;
   border-bottom: 2px solid #dee2e6;
 }
@@ -515,7 +583,7 @@ ul.ps-4 li a {
 }
 
 .list-group-item {
-  border: none; /* Remove individual borders for flush list group */
+  border: none;
   padding-left: 0;
   padding-right: 0;
 }
