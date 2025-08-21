@@ -43,46 +43,43 @@ const handleStockOutGoBack = () => {
 const handleSuperAdminLogout = () => {
   currentPage.value = 'account-selection'; // Go back to account selection on logout
 }
+
+// Inside your App.vue script setup
+const handleAdminLogout = () => {
+  currentPage.value = 'account-selection';
+}
 </script>
 
 <template>
-  <!-- Account Selection Page -->
-  <AccountSelection 
+  <AccountSelection
     v-if="currentPage === 'account-selection'"
     @navigate-to-super-admin="handleNavigateToSuperAdmin"
     @navigate-to-admin="handleNavigateToAdmin"
   />
   
-  <!-- Super Admin Login Page -->
-  <SuperAdmin 
+  <SuperAdmin
     v-else-if="currentPage === 'super-admin'"
     @go-back="handleGoBack"
     @login-success="handleLoginSuccess"
   />
 
-  <!-- Admin Login Page -->
-  <Admin 
+  <Admin
     v-else-if="currentPage === 'admin'"
     @go-back="handleGoBack"
     @login-success="handleLoginSuccess"
   />
 
-  <!-- Admin Dashboard (Stock In) Page -->
-  <!-- Renders when currentPage is 'admin-stock-in' -->
   <AdminDashboard
     v-else-if="currentPage === 'admin-dashboard'"
     @navigate-to="handleAdminDashboardNavigation"
-  />
+    @logout="handleAdminLogout" />
 
-  <!-- Admin Dashboard (Stock Out/Purchase Orders) Page -->
-  <!-- Renders when currentPage is 'admin-stock-out' -->
   <AdminDash_StockOut
     v-else-if="currentPage === 'admin-stock-out'"
     @navigate-to="handleAdminDashboardNavigation"
     @go-back="handleStockOutGoBack"
   />
 
-  <!-- Super Admin Dashboard Page -->
   <SuperDash_main
     v-else-if="currentPage === 'super-dashboard'"
     @logout="handleSuperAdminLogout"

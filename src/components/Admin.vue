@@ -289,6 +289,8 @@
 <script>
 export default {
   name: 'AdminDashboard',
+  emits: ['logout'],
+
   data() {
     return {
       isCollapsed: false,
@@ -401,16 +403,16 @@ export default {
     },
     // New method to confirm and perform the logout
     confirmLogout() {
-      // Clear user authentication data from local storage
+     // Clear user data (optional, but good practice)
       localStorage.removeItem('authToken');
       localStorage.removeItem('userData');
-
-      // Hide the modal after the action is complete
+      this.showLogoutModal = false;
+      
+      // Hide the modal
       this.showLogoutModal = false;
 
-      // Redirect to the AccountSelection.vue file
-      // This assumes AccountSelection.vue is in the same directory as Admin.vue
-      window.location.href = 'AccountSelection.vue';
+      // Emit the logout event to the parent component
+      this.$emit('logout');
     },
     // New method to cancel the logout
     cancelLogout() {
