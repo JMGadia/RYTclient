@@ -401,10 +401,16 @@ export default {
     },
     // New method to confirm and perform the logout
     confirmLogout() {
+      // Clear user authentication data from local storage
       localStorage.removeItem('authToken');
       localStorage.removeItem('userData');
-      this.showLogoutModal = false; // Hide the modal after a successful logout
-      window.location.href = '/login'; // Redirect to login page
+
+      // Hide the modal after the action is complete
+      this.showLogoutModal = false;
+
+      // Redirect to the AccountSelection.vue file
+      // This assumes AccountSelection.vue is in the same directory as Admin.vue
+      window.location.href = 'AccountSelection.vue';
     },
     // New method to cancel the logout
     cancelLogout() {
