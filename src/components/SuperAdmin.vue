@@ -140,7 +140,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                       <div>
                         <h5 class="card-title fw-bold">Total Sales (Last 30 Days)</h5>
-                        <h3 class="card-text display-6 fw-bolder">${{ totalSalesLast30Days.toLocaleString() }}</h3>
+                        <h3 class="card-text display-6 fw-bolder">₱{{ totalSalesLast30Days.toLocaleString() }}</h3>
                       </div>
                       <i class="fas fa-chart-bar fa-3x opacity-50"></i>
                     </div>
@@ -234,10 +234,10 @@
                       <div>
                         <h5 class="card-title fw-bold">Total Sales (Today)</h5>
                         <h3 class="card-text display-6 fw-bolder">
-                          ${{ totalSalesToday.toLocaleString() }}
+                          ₱{{ totalSalesToday.toLocaleString() }}
                         </h3>
                       </div>
-                      <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+                      <i class="fas fa-peso-sign fa-3x opacity-50"></i>
                     </div>
                   </div>
                 </div>
@@ -488,8 +488,8 @@
                           <span class="fw-bold">Date:</span> {{ order.date }}
                         </p>
                         <p class="card-text">
-                          <i class="fas fa-dollar-sign text-muted me-2"></i>
-                          <span class="fw-bold">Total:</span> ${{ order.amount.toLocaleString() }}
+                          <i class="fas fa-peso-sign text-muted me-2"></i>
+                          <span class="fw-bold">Total:</span> ₱{{ order.amount.toLocaleString() }}
                         </p>
                       </div>
                       <div class="card-footer bg-light border-top-0 d-flex justify-content-end">
@@ -624,7 +624,7 @@
 }
 
 /* **NEW STYLES to manage visibility based on screen size** */
-@media (max-width: 429.98px) {
+@media (max-width: 920.98px) {
   /* Hide the top navbar links */
   #notifications-top-nav,
   #super-admin-top-nav {
@@ -638,7 +638,7 @@
   }
 }
 
-@media (min-width: 430px) {
+@media (min-width: 913px) {
   /* Show the top navbar links */
   #notifications-top-nav,
   #super-admin-top-nav {
@@ -703,7 +703,8 @@
   position: fixed;
   top: 0;
   bottom: 0; /* Ensures it fills the height of the viewport */
-  height: 100%; /* Fallback */
+  height: 100vh; /* Fallback */
+  overflow-y:auto; /* Add vertical scrolling */
   margin-left: -15rem;
   transition: margin 0.35s ease-in-out;
   width: 15rem;
@@ -725,7 +726,7 @@
   width: 15rem;
   flex-grow: 1;
   /* Make this specific part scrollable */
-  overflow-y: auto;
+  overflow-y: visible;
 }
 
 #page-content-wrapper {
@@ -912,7 +913,7 @@ const salesData = ref({
     labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
     datasets: [
       {
-        label: 'Total Sales ($)',
+        label: 'Total Sales (₱)',
         data: [1200, 1900, 1500, 2200, 2800, 2500, 3100],
         backgroundColor: '#0d6efd',
         borderColor: '#0d6efd',

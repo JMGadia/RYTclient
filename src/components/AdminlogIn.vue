@@ -30,10 +30,6 @@
           <!-- Right side -->
           <div class="col-lg-6 d-flex flex-column justify-content-center">
             <div class="login-form-container mx-auto">
-              <div class="text-center mb-4 d-lg-none">
-                <h2 class="h3 text-primary fw-bold">RYT-Tyre Admin</h2>
-              </div>
-
               <!-- Login Form -->
               <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
