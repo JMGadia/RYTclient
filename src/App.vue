@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/vue"
 import AccountSelection from './components/AccountSelection.vue'
 import SuperAdmin from './components/SuperlogIn.vue'
 import Admin from './components/AdminlogIn.vue'
