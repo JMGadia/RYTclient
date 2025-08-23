@@ -1,10 +1,12 @@
 <script setup>
 import { ref } from 'vue'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import AccountSelection from './components/AccountSelection.vue'
 import SuperAdmin from './components/SuperlogIn.vue'
 import Admin from './components/AdminlogIn.vue'
 import SuperDash_main from './components/SuperAdmin.vue'
 import AdminDashboard from './components/Admin.vue'
+
 
 const currentPage = ref('account-selection')
 
@@ -51,6 +53,7 @@ const handleAdminLogout = () => {
 </script>
 
 <template>
+  <speed-insights/>
   <AccountSelection
     v-if="currentPage === 'account-selection'"
     @navigate-to-super-admin="handleNavigateToSuperAdmin"
