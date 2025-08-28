@@ -581,7 +581,7 @@
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="logoutButton"></button>
           </div>
           <div class="modal-body text-center">
             <div class="p-3">
@@ -886,6 +886,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
+import { supabase } from '../supabase';
+import router from '../router';
 
 const emit = defineEmits(['logout']);
 
@@ -1095,13 +1097,15 @@ const checkMobile = () => {
   }
 };
 
+// ... existing script setup ...
+
 const handleLogout = () => {
   if (logoutModal) {
     logoutModal.show();
   }
 };
 
-const confirmLogout = () => {
+const confirmLogout = async () => {
   if (logoutModal) {
     logoutModal.hide();
   }
@@ -1112,7 +1116,14 @@ const confirmLogout = () => {
     backdrop.remove();
   }
   emit('logout');
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Logout failed:", error.message);
+    alert("An error occurred during logout. Please try again.");
+  }
+  router.push("/");
 };
+
 
 const getStatusBadge = (status) => {
   switch (status) {

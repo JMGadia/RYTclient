@@ -37,16 +37,15 @@
                   <p class="text-muted mb-0">Create a Super Admin account</p>
                 </div>
 
-                <form @submit.prevent="handleSignUp" novalidate>
+                <form @submit.prevent="handleSignUp" >
                   <div class="mb-3">
                     <label for="signup-username" class="form-label fw-semibold">
                       <i class="fas fa-user me-2 text-muted"></i>Create Username
                     </label>
                     <input 
-                      type="text" 
                       class="form-control form-control-lg rounded-3" 
-                      id="signup-username" 
-                      v-model="signUpForm.username"
+                      type="username" 
+                      v-model="username"
                       placeholder="Create username"
                       required
                       :class="{ 'is-invalid': errors.username }"
@@ -64,7 +63,7 @@
                       type="email" 
                       class="form-control form-control-lg rounded-3" 
                       id="signup-email" 
-                      v-model="signUpForm.email"
+                      v-model="email"
                       placeholder="Enter email"
                       required
                       :class="{ 'is-invalid': errors.email }"
@@ -82,7 +81,7 @@
                       type="password" 
                       class="form-control form-control-lg rounded-3" 
                       id="signup-password" 
-                      v-model="signUpForm.password"
+                      v-model="password"
                       placeholder="Create password"
                       required
                       :class="{ 'is-invalid': errors.password }"
@@ -97,7 +96,7 @@
                       type="submit" 
                       class="btn btn-primary btn-lg rounded-3 fw-semibold"
                       :disabled="isLoading"
-                    >
+                    > 
                       <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
                       <i v-else class="fas fa-user-check me-2"></i>
                       {{ isLoading ? 'Creating account...' : 'Sign Up' }}
@@ -131,49 +130,43 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive } from 'vue';
+import { supabase } from '../supabase';
+import router from '../router/index';
 
-const emit = defineEmits(['back-to-login'])
-const isLoading = ref(false)
-const errors = reactive({ username: '', email: '', password: '' })
+const emit = defineEmits(['back-to-login']);
+const isLoading = ref(false);
+const errors = reactive({ email: '', password: '' }); // Removed 'username'
 
-const signUpForm = reactive({
-  username: '',
-  email: '',
-  password: ''
-})
+const email = ref("");
+const password = ref("");
 
 const handleSignUp = async () => {
-  errors.username = ''
-  errors.email = ''
-  errors.password = ''
+  isLoading.value = true;
+  errors.email = '';
+  errors.password = '';
 
-  if (!signUpForm.username.trim()) {
-    errors.username = 'Username is required'
-    return
-  }
-
-  if (!signUpForm.email.trim() || !signUpForm.email.includes('@')) {
-    errors.email = 'Valid email is required'
-    return
-  }
-
-  if (!signUpForm.password.trim() || signUpForm.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters'
-    return
-  }
-
-  isLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    alert('Account created successfully!')
-    emit('back-to-login')
-  } catch (err) {
-    console.error(err)
+    const { error } = await supabase.auth.signUp({
+      email: email.value,
+      password: password.value,
+      options: {
+        emailRedirectTo: "http://localhost:5173/"
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    router.push("/super-login");
+
+  } catch (error) {
+    alert(error.error_description || error.message);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

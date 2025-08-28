@@ -42,15 +42,15 @@
 
                   <form @submit.prevent="handleLogin" novalidate>
                     <div class="mb-3">
-                      <label for="username" class="form-label fw-semibold">
-                        <i class="fas fa-user me-2 text-muted"></i>Username
+                      <label for="email" class="form-label fw-semibold">
+                        <i class="fas fa-user me-2 text-muted"></i>Email
                       </label>
                       <input
-                        type="text"
+                        type="email"
                         class="form-control form-control-lg rounded-3"
-                        id="username"
-                        v-model="loginForm.username"
-                        placeholder="Enter your username"
+                        id="email"
+                        v-model="email"
+                        placeholder="Enter your email"
                         required
                         :class="{ 'is-invalid': errors.username }"
                       />
@@ -67,7 +67,7 @@
                         type="password"
                         class="form-control form-control-lg rounded-3"
                         id="password"
-                        v-model="loginForm.password"
+                        v-model="password"
                         placeholder="Enter your password"
                         required
                         :class="{ 'is-invalid': errors.password }"
@@ -125,46 +125,34 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { supabase } from '../supabase'
+import router from '../router'
 
-const router = useRouter()
 const emit = defineEmits(['login-success'])
+
+const email = ref("")
+const password = ref("")
 const isLoading = ref(false)
-const loginForm = reactive({ username: '', password: '' })
-const errors = reactive({ username: '', password: '' })
+const errors = reactive({ email: '', password: '' })
 
 const handleLogin = async () => {
-  errors.username = ''
-  errors.password = ''
-  if (!loginForm.username.trim()) {
-    errors.username = 'Username is required'
-    return
-  }
-  if (!loginForm.password.trim()) {
-    errors.password = 'Password is required'
-    return
-  }
-  if (loginForm.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters'
-    return
-  }
-  isLoading.value = true
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    // Simulate successful login for super admin
-    if (loginForm.username === 'superadmin' && loginForm.password === 'superpassword') {
-      // Emit login-success event with role 'super-admin'
-      emit('login-success', { role: 'super-admin', username: loginForm.username });
-      router.push('/super-admin') // Redirect on successful login
-    } else {
-      errors.username = 'Invalid username or password';
-    }
-  } finally {
-    isLoading.value = false
-  }
-}
+    isLoading.value = true
+    errors.email = ''
+    errors.password = ''
 
-// Since we're using RouterLink, the goToSignUp method is no longer needed.
+    try {
+        const { error } = await supabase.auth.signInWithPassword({
+            email: email.value,
+            password: password.value,
+        });
+      if (error) throw error;
+      router.push("/super-admin");
+    } catch (err) {
+       alert(err.error_description || err.message);
+    } finally {
+        isLoading.value = false
+    }
+}
 </script>
 
 <style scoped>
