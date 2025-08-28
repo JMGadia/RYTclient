@@ -13,7 +13,7 @@ const router = createRouter({
         {
             path: "/super-login",
             name: "super login",
-            component: () => import('../views/Superlogin.vue')
+            component: () => import('../views/SuperLogin.vue')
         },
 
         {
