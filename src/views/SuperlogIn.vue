@@ -6,7 +6,6 @@
 
       <div class="container-fluid h-100">
         <div class="row h-100">
-          <!-- Left side -->
           <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative">
             <div class="text-center z-index-2">
               <div class="mb-4">
@@ -27,10 +26,8 @@
             </div>
           </div>
 
-          <!-- Right side -->
           <div class="col-lg-6 d-flex flex-column justify-content-center">
             <div class="login-form-container mx-auto">
-              <!-- Login Form -->
               <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
                   <div class="text-center mb-4">
@@ -100,20 +97,14 @@
 
                   <div class="text-center">
                     <p class="text-muted mb-3">Don't have an account?</p>
-                    <button
-                      type="button"
-                      class="btn btn-outline-primary rounded-3 me-2"
-                      @click="goToSignUp"
-                    >
-                      <i class="fas fa-user-plus me-2"></i>Sign Up
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary rounded-3"
-                      @click="goBack"
-                    >
-                      <i class="fas fa-arrow-left me-2"></i>Back to Account
-                    </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                      <RouterLink to="/super-signup" class="btn btn-outline-primary rounded-3">
+                        <i class="fas fa-user-plus me-2"></i>Sign Up
+                      </RouterLink>
+                      <RouterLink to="/" class="btn btn-outline-secondary rounded-3">
+                        <i class="fas fa-user-circle me-2"></i>Return to Selection
+                      </RouterLink>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -134,20 +125,13 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import SuperSignUp from './SuperSignUp.vue'
-const emit = defineEmits(['go-back', 'login-success']) // Added 'login-success' event
-const showSignUp = ref(false)
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const emit = defineEmits(['login-success'])
 const isLoading = ref(false)
 const loginForm = reactive({ username: '', password: '' })
 const errors = reactive({ username: '', password: '' })
-
-const goToSignUp = () => {
-  showSignUp.value = true
-}
-
-const goBack = () => {
-  emit('go-back')
-}
 
 const handleLogin = async () => {
   errors.username = ''
@@ -171,13 +155,16 @@ const handleLogin = async () => {
     if (loginForm.username === 'superadmin' && loginForm.password === 'superpassword') {
       // Emit login-success event with role 'super-admin'
       emit('login-success', { role: 'super-admin', username: loginForm.username });
+      router.push('/super-admin') // Redirect on successful login
     } else {
-      errors.username = 'Invalid username or password'; // Generic error for security
+      errors.username = 'Invalid username or password';
     }
   } finally {
     isLoading.value = false
   }
 }
+
+// Since we're using RouterLink, the goToSignUp method is no longer needed.
 </script>
 
 <style scoped>

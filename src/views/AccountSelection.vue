@@ -1,3 +1,4 @@
+<!--Back-bone Section-->
 <template>
   <div class="account-selection-page min-vh-100">
     <div class="background-overlay"></div>
@@ -179,7 +180,9 @@
     </div>
   </div>
 </template>
+<!--End of Back-bone-->
 
+<!--Design Section-->
 <style scoped>
 .account-selection-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -590,7 +593,9 @@
   }
 }
 </style>
+<!--End of Design-->
 
+<!--Logic Section-->
 <script setup>
 import { ref } from 'vue'
 
@@ -612,7 +617,7 @@ const navigateToSuperAdmin = async () => {
   
   // Add a small delay for better UX
   setTimeout(() => {
-    console.log('Navigating to Super Admin login...')
+    console.log('Navigating to Super Admin signup...')
     emit('navigate-to-super-admin')
     isNavigating.value = false
   }, 1000)
@@ -634,3 +639,4 @@ const playHoverSound = () => {
   console.log('Card hovered')
 }
 </script>
+<!--End of Logic-->

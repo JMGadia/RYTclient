@@ -1,3 +1,4 @@
+<!--Back-bone Section-->
 <template>
   <div id="admin-dashboard" class="d-flex flex-column min-vh-100 bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
@@ -285,7 +286,9 @@
     </div>
   </div>
 </template>
+<!--End of Back-bone-->
 
+<!--Logic Section-->
 <script>
 export default {
   name: 'AdminDashboard',
@@ -429,7 +432,9 @@ export default {
   }
 };
 </script>
+<!--End of Logic-->
 
+<!--Design Section-->
 <style scoped>
 /* Ensure Bootstrap and Font Awesome are linked in your main HTML for these styles to work */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css');
@@ -596,3 +601,4 @@ ul.ps-4 li a {
   padding-right: 0;
 }
 </style>
+<!--End of Design-->

@@ -709,7 +709,7 @@
   transition: margin 0.35s ease-in-out;
   width: 15rem;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1030;
   display: flex;
   flex-direction: column;
 }

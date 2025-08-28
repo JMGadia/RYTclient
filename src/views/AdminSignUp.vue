@@ -1,16 +1,18 @@
 <template>
   <div class="signup-page min-vh-100">
+    <!-- Background with overlay -->
     <div class="background-overlay"></div>
 
     <div class="container-fluid h-100">
       <div class="row h-100">
+        <!-- Left side -->
         <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative">
           <div class="text-center z-index-2">
             <div class="mb-4">
               <i class="fas fa-user-shield fa-5x mb-3 text-white-50"></i>
             </div>
             <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-            <h2 class="h3 fw-light mb-4">Super Admin Portal</h2>
+            <h2 class="h3 fw-light mb-4">Admin Portal</h2>
             <p class="lead mb-0">
               Secure access to administrative controls and system management
             </p>
@@ -24,17 +26,20 @@
           </div>
         </div>
 
+        <!-- Right side -->
         <div class="col-lg-6 d-flex flex-column justify-content-center">
           <div class="login-form-container mx-auto">
-
+            <!-- Sign Up Form -->
             <div class="card shadow-lg border-0 rounded-4">
               <div class="card-body p-5">
                 <div class="text-center mb-4">
-                  <div class="d-inline-flex align-items-center justify-content-center avatar-lg bg-primary-subtle rounded-circle mb-3">
-                    <i class="fas fa-user-plus fa-2x text-primary"></i>
+                  <div class="avatar-wrapper mx-auto mb-3">
+                    <div class="avatar bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="fas fa-user-plus fa-2x text-primary"></i>
+                    </div>
                   </div>
                   <h3 class="card-title fw-bold text-dark mb-2">Sign Up</h3>
-                  <p class="text-muted mb-0">Create a Super Admin account</p>
+                  <p class="text-muted mb-0">Create a Admin account</p>
                 </div>
 
                 <form @submit.prevent="handleSignUp" novalidate>
@@ -106,17 +111,19 @@
 
                   <div class="text-center">
                     <p class="text-muted mb-3">Already have an account?</p>
-                    <button 
-                    type="button" 
-                    class="btn btn-outline-secondary rounded-3"
-                    @click="$emit('back-to-login')"
-                    >
-                    <i class="fas fa-sign-in-alt me-2"></i>Back to Login
-                    </button>
+                    <div class="d-flex justify-content-center gap-2">
+                        <RouterLink to="/admin-login" class="btn btn-outline-secondary rounded-3">
+                           <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </RouterLink>
+                        <RouterLink to="/" class="btn btn-outline-info rounded-3">
+                           <i class="fas fa-user-circle me-2"></i>Return to Selection
+                        </RouterLink>
+                    </div>
                   </div>
                 </form>
               </div>
             </div>
+
             <div class="text-center mt-4">
               <p class="text-muted small mb-0">
                 © 2024 RYT-Tyre. All rights reserved.
@@ -132,7 +139,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 
-const emit = defineEmits(['back-to-login'])
+const emit = defineEmits(['back-to-login']) // ✅ ADD THIS
 const isLoading = ref(false)
 const errors = reactive({ username: '', email: '', password: '' })
 
@@ -166,7 +173,7 @@ const handleSignUp = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1500))
     alert('Account created successfully!')
-    emit('back-to-login')
+    emit('back-to-login') // ✅ Go back to login after signup
   } catch (err) {
     console.error(err)
   } finally {
@@ -178,7 +185,6 @@ const handleSignUp = async () => {
 <style scoped>
 .signup-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* Ensure this background property is removed to fix the white layer */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
 }
@@ -213,16 +219,14 @@ const handleSignUp = async () => {
   z-index: 2;
 }
 
-/* RE-WRITTEN CARD DESIGN CODE - CSS STARTS HERE */
-
-/* Removed .avatar-wrapper and .avatar specific rules */
-/* Combined into a single utility-like class for direct use on the div */
-.avatar-lg {
+.avatar-wrapper {
   width: 80px;
   height: 80px;
-  display: flex; /* Ensure flex properties if not already there from d-inline-flex */
-  align-items: center;
-  justify-content: center;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
 }
 
 .card {
@@ -251,7 +255,7 @@ const handleSignUp = async () => {
   opacity: 0.7;
 }
 
-/* Password toggle button and icon styles (not directly part of the card structure but related to inputs) */
+/* Password toggle button styling */
 .password-toggle-btn {
   border-color: #ced4da;
   color: #6c757d;
@@ -273,6 +277,7 @@ const handleSignUp = async () => {
   outline: none;
 }
 
+/* Password icon styling */
 .password-icon {
   width: 20px;
   height: 20px;
@@ -284,9 +289,7 @@ const handleSignUp = async () => {
   opacity: 0.8;
 }
 
-/* RE-WRITTEN CARD DESIGN CODE - CSS ENDS HERE */
-
-/* Floating shapes animation - NO CHANGES HERE */
+/* Floating shapes animation */
 .floating-shapes {
   position: relative;
   width: 100%;
@@ -333,7 +336,7 @@ const handleSignUp = async () => {
   }
 }
 
-/* Responsive adjustments - NO CHANGES HERE */
+/* Responsive adjustments */
 @media (max-width: 991.98px) {
   .login-form-container {
     padding: 1rem;
@@ -350,7 +353,7 @@ const handleSignUp = async () => {
   }
 }
 
-/* Icon styling - NO CHANGES HERE */
+/* Icon styling */
 .fas {
   font-family: "Font Awesome 5 Free";
   font-weight: 900;

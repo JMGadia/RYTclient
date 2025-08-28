@@ -100,20 +100,13 @@
 
                   <div class="text-center">
                     <p class="text-muted mb-3">Don't have an account?</p>
-                    <button
-                      type="button"
-                      class="btn btn-outline-primary rounded-3 me-2"
-                      @click="goToSignUp"
-                    >
+                    <RouterLink to="admin-signup" class="btn btn-outline-secondary rounded-3 me2">
                       <i class="fas fa-user-plus me-2"></i>Sign Up
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary rounded-3"
-                      @click="goBack"
+                    </RouterLink>
+                    <RouterLink to="/" class="btn btn-outline-secondary rounded-3"
                     >
-                      <i class="fas fa-arrow-left me-2"></i>Back to Account
-                    </button>
+                      <i class="fas fa-arrow-left me-2"></i>Return to Selection
+                    </RouterLink>
                   </div>
                 </div>
               </div>
@@ -134,23 +127,14 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import SuperSignUp from './AdminSignUp.vue'
 
 // Define the emits for this component. Added 'login-success'
-const emit = defineEmits(['go-back', 'login-success'])
+const emit = defineEmits([ 'login-success'])
 
-const showSignUp = ref(false)
 const isLoading = ref(false)
 const loginForm = reactive({ username: '', password: '' })
 const errors = reactive({ username: '', password: '' })
 
-const goToSignUp = () => {
-  showSignUp.value = true
-}
-
-const goBack = () => {
-  emit('go-back')
-}
 
 const handleLogin = async () => {
   errors.username = ''

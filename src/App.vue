@@ -1,90 +1,77 @@
 <script setup>
-import { ref } from 'vue'
-import { SpeedInsights } from "@vercel/speed-insights/vue"
-import AccountSelection from './components/AccountSelection.vue'
-import SuperAdmin from './components/SuperlogIn.vue'
-import Admin from './components/AdminlogIn.vue'
-import SuperDash_main from './components/SuperAdmin.vue'
-import AdminDashboard from './components/Admin.vue'
+import { SpeedInsights } from '@vercel/speed-insights/vue';
+import { useRouter } from 'vue-router'; // Import useRouter hook
 
+const router = useRouter(); // Initialize the router
 
-const currentPage = ref('account-selection')
+// All currentPage logic is removed as the router handles view state
 
 const handleNavigateToSuperAdmin = () => {
-  currentPage.value = 'super-admin'
-}
+  router.push({ name: 'super signup' }); // Navigate to the Super Admin signup route instead of login
+};
+
+// New handler to navigate back to Super Admin Login
+const handleNavigateToSuperLogin = () => {
+  router.push({ name: 'super login' }); // Navigate to the Super Admin login route
+};
 
 const handleNavigateToAdmin = () => {
-  currentPage.value = 'admin'
-}
+  router.push({ name: 'admin signup' }); // Navigate to the Admin login route
+};
 
 const handleGoBack = () => {
-  currentPage.value = 'account-selection'
-}
+  router.push({ name: 'account selection' }); // Navigate back to account selection
+};
 
 const handleLoginSuccess = (userData) => {
-  console.log('Login successful:', userData)
+  console.log('Login successful:', userData);
   if (userData.role === 'admin') {
-    currentPage.value = 'admin-dashboard' // Redirect to AdminDash_StockIn (default admin view)
+    router.push({ name: 'admin' }); // Redirect to Admin Dashboard
   } else if (userData.role === 'super-admin') {
-    currentPage.value = 'super-dashboard' // Redirect to Super Admin Dashboard
+    router.push({ name: 'super admin' }); // Redirect to Super Admin Dashboard
   }
-}
+};
 
-// Handles navigation events emitted by AdminDash_StockIn and AdminDash_StockOut
+// Handles navigation events from admin dashboards (e.g., to stock-out)
 const handleAdminDashboardNavigation = (page) => {
-  currentPage.value = `admin-${page}` // Sets currentPage to 'admin-stock-in' or 'admin-stock-out'
-}
+  // Assuming 'page' will directly map to a route name suffix or be 'stock-out'
+  if (page === 'stock-out') {
+    router.push({ name: 'admin stock-out' });
+  } else {
+    // Default to admin dashboard or another specific route if 'page' indicates it
+    router.push({ name: 'admin dashboard' });
+  }
+};
 
-// Handles go-back event from AdminDash_StockOut (though sidebar navigation is primary)
 const handleStockOutGoBack = () => {
-  currentPage.value = 'admin-dashboard'; // Always go back to Stock In dashboard
-}
+  router.push({ name: 'admin dashboard' }); // Always go back to Admin Dashboard
+};
 
-// Handles logout from SuperDash_main
 const handleSuperAdminLogout = () => {
-  currentPage.value = 'account-selection'; // Go back to account selection on logout
-}
+  router.push({ name: 'account selection' }); // Go back to account selection on logout
+};
 
-// Inside your App.vue script setup
 const handleAdminLogout = () => {
-  currentPage.value = 'account-selection';
-}
+  router.push({ name: 'account selection' }); // Go back to account selection on logout
+};
 </script>
 
 <template>
-  <speed-insights/>
-  <AccountSelection
-    v-if="currentPage === 'account-selection'"
+  <speed-insights />
+
+  <!-- The RouterView component will render the component associated with the current route -->
+  <!-- All events that were previously passed to specific components now need to be handled
+        by the component currently rendered by RouterView. This is a common pattern:
+        the parent (App.vue) defines the handlers, and the child (rendered by RouterView) emits them. -->
+  <router-view
     @navigate-to-super-admin="handleNavigateToSuperAdmin"
+    @navigate-to-super-login="handleNavigateToSuperLogin" 
     @navigate-to-admin="handleNavigateToAdmin"
-  />
-  
-  <SuperAdmin
-    v-else-if="currentPage === 'super-admin'"
     @go-back="handleGoBack"
     @login-success="handleLoginSuccess"
-  />
-
-  <Admin
-    v-else-if="currentPage === 'admin'"
-    @go-back="handleGoBack"
-    @login-success="handleLoginSuccess"
-  />
-
-  <AdminDashboard
-    v-else-if="currentPage === 'admin-dashboard'"
     @navigate-to="handleAdminDashboardNavigation"
-    @logout="handleAdminLogout" />
-
-  <AdminDash_StockOut
-    v-else-if="currentPage === 'admin-stock-out'"
-    @navigate-to="handleAdminDashboardNavigation"
-    @go-back="handleStockOutGoBack"
-  />
-
-  <SuperDash_main
-    v-else-if="currentPage === 'super-dashboard'"
-    @logout="handleSuperAdminLogout"
+    @logout="handleAdminLogout"
+    @stock-out-go-back="handleStockOutGoBack"
+    @super-admin-logout="handleSuperAdminLogout"
   />
 </template>
