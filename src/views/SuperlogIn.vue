@@ -149,9 +149,10 @@ const handleLogin = async () => {
       router.push("/super-admin");
     } catch (err) {
        alert(err.error_description || err.message);
-    } finally {
-        isLoading.value = false
-    }
+    } 
+
+    isLoading.value = false
+    
 }
 </script>
 

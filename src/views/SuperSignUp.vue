@@ -150,17 +150,10 @@ const handleSignUp = async () => {
     const { error } = await supabase.auth.signUp({
       email: email.value,
       password: password.value,
-      options: {
-        emailRedirectTo: "http://localhost:5173/"
-      }
     });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     router.push("/super-login");
-
   } catch (error) {
     alert(error.error_description || error.message);
   } finally {

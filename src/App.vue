@@ -9,8 +9,6 @@ const handleNavigateToSuperAdmin = () => {
   router.push({ name: 'super signup' });
 };
 
-// ... (other handlers remain the same)
-
 const handleNavigateToSuperLogin = () => {
   router.push({ name: 'super login' });
 };
