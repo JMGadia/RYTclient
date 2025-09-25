@@ -52,10 +52,10 @@
                         v-model="email"
                         placeholder="Enter your email"
                         required
-                        :class="{ 'is-invalid': errors.username }"
+                        :class="{ 'is-invalid': errors.email }"
                       />
-                      <div v-if="errors.username" class="invalid-feedback">
-                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.username }}
+                      <div v-if="errors.email" class="invalid-feedback">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.email }}
                       </div>
                     </div>
 
@@ -125,7 +125,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { supabase } from '../supabase'
+import { supabase } from '../server/supabase'
 import router from '../router'
 
 const emit = defineEmits(['login-success'])
@@ -136,23 +136,46 @@ const isLoading = ref(false)
 const errors = reactive({ email: '', password: '' })
 
 const handleLogin = async () => {
-    isLoading.value = true
-    errors.email = ''
-    errors.password = ''
+  isLoading.value = true
+  errors.email = ''
+  errors.password = ''
 
-    try {
-        const { error } = await supabase.auth.signInWithPassword({
-            email: email.value,
-            password: password.value,
-        });
-      if (error) throw error;
-      router.push("/super-admin");
-    } catch (err) {
-       alert(err.error_description || err.message);
-    } 
+  try {
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    });
 
-    isLoading.value = false
-    
+    if (signInError) {
+      console.error(signInError.error_description || signInError.message);
+      // More specific error message for the user
+      if (signInError.message.includes('Invalid login credentials')) {
+        errors.email = "Invalid email or password. Please check your credentials.";
+        errors.password = "Invalid email or password. Please check your credentials.";
+      } else {
+        errors.email = signInError.message;
+      }
+      
+      // If the sign-in failed, check if the user is unconfirmed
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !user.email_confirmed_at) {
+          errors.email = "Please check your email to confirm your account before logging in.";
+      }
+
+      isLoading.value = false;
+      return;
+    }
+
+    // Success -> redirect to the Super Admin Dashboard
+    // THIS IS ALREADY CORRECTLY SET
+    router.push("/super-admin"); 
+
+  } catch (err) {
+    console.error('An unexpected error occurred:', err.message);
+    errors.email = "An unexpected error occurred. Please try again.";
+  } finally {
+    isLoading.value = false;
+  }
 }
 </script>
 

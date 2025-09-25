@@ -65,4 +65,5 @@ const handleAdminLogout = () => {
     @stock-out-go-back="handleStockOutGoBack"
     @super-admin-logout="handleSuperAdminLogout"
   />
+
 </template>

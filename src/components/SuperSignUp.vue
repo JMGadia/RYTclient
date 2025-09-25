@@ -39,14 +39,15 @@
 
                 <form @submit.prevent="handleSignUp" >
                   <div class="mb-3">
-                    <label for="signup-username" class="form-label fw-semibold">
-                      <i class="fas fa-user me-2 text-muted"></i>Create Username
+                    <label for="username-input" class="form-label fw-semibold">
+                      <i class="fas fa-user me-2 text-muted"></i>Enter Username
                     </label>
                     <input 
-                      class="form-control form-control-lg rounded-3" 
                       type="username" 
+                      class="form-control form-control-lg rounded-3" 
+                      id="username-input" 
                       v-model="username"
-                      placeholder="Create username"
+                      placeholder="Enter username"
                       required
                       :class="{ 'is-invalid': errors.username }"
                     >
@@ -56,13 +57,13 @@
                   </div>
 
                   <div class="mb-3">
-                    <label for="signup-email" class="form-label fw-semibold">
+                    <label for="email-input" class="form-label fw-semibold">
                       <i class="fas fa-envelope me-2 text-muted"></i>Enter Email
                     </label>
                     <input 
                       type="email" 
                       class="form-control form-control-lg rounded-3" 
-                      id="signup-email" 
+                      id="email-input" 
                       v-model="email"
                       placeholder="Enter email"
                       required
@@ -74,13 +75,13 @@
                   </div>
 
                   <div class="mb-4">
-                    <label for="signup-password" class="form-label fw-semibold">
+                    <label for="password-input" class="form-label fw-semibold">
                       <i class="fas fa-lock me-2 text-muted"></i>Create Password
                     </label>
                     <input 
                       type="password" 
                       class="form-control form-control-lg rounded-3" 
-                      id="signup-password" 
+                      id="password-input" 
                       v-model="password"
                       placeholder="Create password"
                       required
@@ -106,7 +107,7 @@
                   <div class="text-center">
                     <p class="text-muted mb-3">Already have an account?</p>
                     <div class="d-flex justify-content-center gap-2">
-                        <RouterLink to="/super-login" class="btn btn-outline-secondary rounded-3">
+                        <RouterLink to="/super-login"  class="btn btn-outline-secondary rounded-3">
                            <i class="fas fa-sign-in-alt me-2"></i>Login
                         </RouterLink>
                         <RouterLink to="/" class="btn btn-outline-info rounded-3">
@@ -130,36 +131,105 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { supabase } from '../supabase';
+import { ref, reactive, onMounted } from 'vue';
+import { supabase } from '../server/supabase';
 import router from '../router/index';
 
-const emit = defineEmits(['back-to-login']);
 const isLoading = ref(false);
-const errors = reactive({ email: '', password: '' }); // Removed 'username'
+const errors = reactive({ username: '', email: '', password: ''});
+const successMessage = ref(""); // Note: This will now be largely unused as we redirect
 
+const username = ref("");
 const email = ref("");
 const password = ref("");
+const isSigningUp = ref(false);
 
 const handleSignUp = async () => {
-  isLoading.value = true;
-  errors.email = '';
-  errors.password = '';
+    isLoading.value = true;
+    errors.username = '';
+    errors.email = '';
+    errors.password = '';
+    successMessage.value = '';
 
-  try {
-    const { error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-    });
+    // Basic validation before request
+    if (!username.value) { errors.username = "Username is required."; isLoading.value = false; return; }
+    if (!email.value) { errors.email = "Email is required."; isLoading.value = false; return; }
+    if (!password.value) { errors.password = "Password is required."; isLoading.value = false; return; }
 
-    if (error) throw error;
-    router.push("/super-login");
-  } catch (error) {
-    alert(error.error_description || error.message);
-  } finally {
-    isLoading.value = false;
-  }
+    try {
+        isSigningUp.value = true;
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: email.value,
+            password: password.value,
+        });
+
+        if (signUpError) {
+            console.error('Sign up error:', signUpError.message);
+            if (signUpError.message.toLowerCase().includes("password")) {
+                errors.password = signUpError.message;
+            } else {
+                errors.email = signUpError.message;
+            }
+            isSigningUp.value = false;
+            isLoading.value = false;
+            return;
+        }
+
+        // 🎯 CRITICAL CHANGE: Redirect to Success.vue immediately after a successful sign-up email is sent.
+        // This confirms the action to the user and tells them to check their email.
+        router.push("/success");
+        isSigningUp.value = false;
+
+        // The following block is now redundant, but kept for context/fallback if session exists
+        const user = signUpData.user;
+        if (user) {
+            await insertProfile(user.id);
+        }
+
+    } catch (err) {
+        console.error('An unexpected error occurred:', err.message);
+        errors.email = "An unexpected error occurred. Please try again.";
+    } finally {
+        isLoading.value = false;
+    }
 };
+
+// Extracted function for inserting the profile
+const insertProfile = async (userId) => {
+    const { error: insertError } = await supabase
+        .from('superaccount')
+        .insert([
+            { user_id: userId, username: username.value, email: email.value }
+        ]);
+
+    if (insertError) {
+        console.error('Profile insertion error:', insertError.message);
+        return;
+    }
+
+    console.log('User signed up and profile created:', userId);
+    
+    // ⚠️ IMPORTANT: Removed the router.push("/super-login") from here.
+    // In a real application, after profile insertion on confirmation, you'd typically redirect to the main app dashboard.
+};
+
+onMounted(() => {
+    // This listener is for handling post-email confirmation flow (when the user clicks the link in the email).
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        // Run this logic when a user confirms their email and is signed in.
+        if (event === 'SIGNED_IN' && !isSigningUp.value) {
+            const user = session?.user;
+            if (user) {
+                // Now it's safe to insert the profile.
+                await insertProfile(user.id);
+                
+                // After email verification and profile insertion, redirect to the dashboard or main app area.
+                // NOTE: '/admin' is used here as an example dashboard route from your router configuration.
+                router.push("/success"); // Redirect to success page after email confirmation
+            }
+        }
+    });
+});
 </script>
 
 <style scoped>

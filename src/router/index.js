@@ -13,13 +13,13 @@ const router = createRouter({
         {
             path: '/super-login',
             name: 'super login',
-            component: () => import('../views/SuperlogIn.vue')
+            component: () => import('../components/SuperlogIn.vue')
         },
 
         {
             path: '/super-signup',
             name: 'super signup',
-            component: () => import('../views/SuperSignUp.vue')
+            component: () => import('../components/SuperSignUp.vue')
         },
 
         {
@@ -31,19 +31,25 @@ const router = createRouter({
         {
             path: '/admin-login',
             name: 'admin login',
-            component: () => import('../views/AdminlogIn.vue')
+            component: () => import('../components/AdminlogIn.vue')
         },
 
         {
             path: '/admin-signup',
             name: 'admin signup',
-            component: () => import('../views/AdminSignUp.vue')
+            component: () => import('../components/AdminSignUp.vue')
         },
 
         {
             path: '/admin',
             name: 'admin',
             component: () => import('../views/Admin.vue')
+        },
+
+        {
+            path: '/success',
+            name: 'success',
+            component: () => import('../components/Success.vue')
         }
         
     ],

@@ -638,5 +638,6 @@ const playHoverSound = () => {
   // Optional: Add hover sound effect
   console.log('Card hovered')
 }
+
 </script>
 <!--End of Logic-->

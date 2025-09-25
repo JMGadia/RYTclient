@@ -43,6 +43,13 @@
             data-bs-target="#logoutConfirmationModal"
             >Logout</a
           >
+          <a
+            href="#"
+            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteConfirmationModal"
+            >Delete Account</a
+          >
         </div>
         <a
           href="#"
@@ -117,9 +124,12 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                   <li><a class="dropdown-item" href="#">Profile</a></li>
+                  <li><hr class="dropdown-divider" /></li>
                   <li><a class="dropdown-item" href="#">Settings</a></li>
                   <li><hr class="dropdown-divider" /></li>
                   <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmationModal">Logout</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete Account</a></li>
                 </ul>
               </li>
           </ul>
@@ -144,6 +154,7 @@
                       </div>
                       <i class="fas fa-chart-bar fa-3x opacity-50"></i>
                     </div>
+                  
                   </div>
                 </div>
               </div>
@@ -287,7 +298,7 @@
             <h2 class="h4">Tire Stock Monitoring</h2>
             <p>
               View and manage current stock levels, low stock alerts, and details for different tire
-              types. 📊
+              types.
             </p>
 
             <div class="row g-4 mb-4">
@@ -510,64 +521,39 @@
             </div>
           </div>
 
-          <div v-else-if="activeFeature === 'users'">
-            <h2 class="h4">User Management</h2>
-            <p>View, add, edit, and delete user accounts (admins, customers, etc.).</p>
-
-            <div class="card mt-4">
-              <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">User Accounts</h5>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="user in users" :key="user.id">
-                        <td>{{ user.id }}</td>
-                        <td>{{ user.name }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
-                          <span
-                            :class="['badge', user.role === 'Admin' ? 'bg-danger' : 'bg-success']"
-                          >
-                            {{ user.role }}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            :class="[
-                              'badge',
-                              user.status === 'Active' ? 'bg-success' : 'bg-secondary',
-                            ]"
-                          >
-                            {{ user.status }}
-                          </span>
-                        </td>
-                        <td>
-                          <button class="btn btn-sm btn-info me-2 text-white">
-                            <i class="fas fa-edit"></i> Edit
-                          </button>
-                          <button class="btn btn-sm btn-danger">
-                            <i class="fas fa-trash-alt"></i> Delete
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+          <div class="container-fluid py-4" v-if="activeFeature === 'user-management'">
+                <h2 class="mb-4">User Management</h2>
+                <div class="card shadow-sm mb-4">
+                  <div class="card-body">
+                    <h5 class="card-title">All Users</h5>
+                    <div class="table-responsive">
+                      <table class="table table-hover table-striped">
+                        <thead>
+                          <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="user in users" :key="user.id">
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role }}</td>
+                            <td>
+                              <button class="btn btn-sm btn-danger" @click="deleteUser(user.id)">Delete</button>
+                            </td>
+                          </tr>
+                          <tr v-if="users.length === 0">
+                            <td colspan="4" class="text-center">No users found.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+           </div>
           <div v-else-if="activeFeature === 'settings'">
             <h2 class="h4">System Settings</h2>
             <p>Configure application settings, permissions, and other administrative options.</p>
@@ -597,7 +583,58 @@
         </div>
       </div>
     </div>
-
+    
+    <div
+      class="modal fade"
+      id="deleteConfirmationModal"
+      tabindex="-1"
+      aria-labelledby="deleteConfirmationModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteConfirmationModalLabel">
+              Confirm Account Deletion
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body text-center">
+            <div class="p-3">
+              <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+              <p class="fs-5">
+                Are you absolutely sure you want to delete your account?
+              </p>
+              <p class="text-muted">
+                This action is permanent and cannot be undone. All associated
+                data will be lost.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer justify-content-center border-0">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              @click="confirmDeleteAccount"
+            >
+              Delete My Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -886,7 +923,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
-import { supabase } from '../supabase';
+import { supabase } from '../server/supabase';
 import router from '../router';
 
 const emit = defineEmits(['logout']);
@@ -895,6 +932,7 @@ const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
 let logoutModal = null; // A reference to the Bootstrap Modal instance
+let deleteAccountModal = null;
 
 const users = ref([
   { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', status: 'Active' },
@@ -1097,7 +1135,6 @@ const checkMobile = () => {
   }
 };
 
-// ... existing script setup ...
 
 const handleLogout = () => {
   if (logoutModal) {
@@ -1124,6 +1161,47 @@ const confirmLogout = async () => {
   router.push("/");
 };
 
+const confirmDeleteAccount = async () => {
+  try {
+    // 1. Get the current session to get the user ID
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      alert('Could not retrieve session. Please log in again.');
+      return;
+    }
+    const currentUserId = session.user.id;
+
+    // 2. Make an API call to your secure, server-side function
+    const response = await fetch('/api/delete-user', { // Replace with your endpoint URL
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete account on the server.');
+    }
+
+    // 3. Log out the user on the client after successful server-side deletion
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      console.error('Error signing out:', signOutError.message);
+    }
+    
+    // 4. Redirect the user
+    router.push('/');
+    alert('Your account has been successfully deleted.');
+
+  } catch (error) {
+    console.error('Account deletion failed:', error);
+    alert('An error occurred. Please try again later.');
+  } finally {
+    if (deleteAccountModal) {
+      deleteAccountModal.hide();
+    }
+    document.body.style.overflow = '';
+  }
+};
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -1164,6 +1242,10 @@ onMounted(() => {
     const modalElement = document.getElementById('logoutConfirmationModal');
     if (modalElement && window.bootstrap && window.bootstrap.Modal) {
       logoutModal = new window.bootstrap.Modal(modalElement);
+    }
+    const deleteModalElement = document.getElementById('deleteConfirmationModal');
+    if (deleteModalElement && window.bootstrap && window.bootstrap.Modal) {
+      deleteAccountModal = new window.bootstrap.Modal(deleteModalElement);
     }
     if (activeFeature.value === 'sales-report') {
       createCharts();
