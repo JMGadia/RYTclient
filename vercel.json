@@ -1,0 +1,14 @@
+{
+  "routes": [
+    {
+      "src": "/api/create-liveness-session",
+      "methods": ["POST"],
+      "dest": "/api/create-liveness-session.js"
+    },
+    {
+      "src": "/api/get-liveness-results",
+      "methods": ["POST"],
+      "dest": "/api/get-liveness-results.js"
+    }
+  ]
+}
