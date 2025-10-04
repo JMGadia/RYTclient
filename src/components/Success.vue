@@ -23,39 +23,58 @@
   </div>
 </template>
 
+// Success.vue - Modify the script section
+
 <script>
 export default {
-  name: 'SuccessPage',
   data() {
     return {
-      redirecting: true,
-      countdown: 5,
-      // Already correct for Super Admin flow
       redirectRoute: '/super-admin', 
-      countdownTimer: null,
+      countdown: 3, // Initial countdown time
+      timer: null,
+      redirecting: true, // Show the countdown message
+      // Add a property to check if this is the initial login flow
+      isFirstLogin: false,
     };
   },
+  
   mounted() {
-    this.startCountdown();
+    // Check local storage for a flag. If it exists, this is a re-login.
+    this.isFirstLogin = !localStorage.getItem('superAdmin_hasLoggedIn');
+    
+    if (this.isFirstLogin) {
+      // Set the flag in local storage to mark subsequent logins as re-logins
+      localStorage.setItem('superAdmin_hasLoggedIn', 'true');
+      
+      // Proceed with the visual success page and countdown
+      this.startCountdown();
+    } else {
+      // This is a re-login: immediately skip to the dashboard
+      this.redirecting = false;
+      this.redirectToDashboard();
+    }
   },
+  
   beforeUnmount() {
-    clearInterval(this.countdownTimer);
+    // Clear the timer when the component is destroyed
+    clearTimeout(this.timer);
   },
+  
   methods: {
     startCountdown() {
-      this.countdownTimer = setInterval(() => {
-        this.countdown -= 1;
-        if (this.countdown <= 0) {
-          clearInterval(this.countdownTimer);
-          this.redirectToDashboard();
-        }
-      }, 1000);
+      if (this.countdown > 0) {
+        this.timer = setTimeout(() => {
+          this.countdown--;
+          this.startCountdown();
+        }, 1000);
+      } else {
+        this.redirectToDashboard();
+      }
     },
+    
     redirectToDashboard() {
       if (this.$router) {
-        this.$router.push(this.redirectRoute);
-      } else {
-        console.log(`Redirecting to ${this.redirectRoute}`);
+        this.$router.push(this.redirectRoute); // Redirects to /super-admin
       }
     }
   }

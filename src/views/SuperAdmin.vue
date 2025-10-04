@@ -83,11 +83,12 @@
         >
           <i class="fas fa-shopping-cart me-2"></i>Purchased Orders
         </a>
+        <!-- FIX 1: The click event now sets the correct feature name -->
         <a
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
-          :class="{ 'active-link': activeFeature === 'users' }"
-          @click.prevent="setActiveFeature('users')"
+          :class="{ 'active-link': activeFeature === 'user-management' }"
+          @click.prevent="setActiveFeature('user-management')"
         >
           <i class="fas fa-users me-2"></i>User Management
         </a>
@@ -232,7 +233,7 @@
                 </div>
               </div>
             </div>
-            </div>
+          </div>
           <div v-else-if="activeFeature === 'sales-report'">
             <h2 class="h4">Sales Report Overview</h2>
             <p>View key sales metrics and performance over time.</p>
@@ -520,43 +521,44 @@
               </div>
             </div>
           </div>
-
-          <div class="container-fluid py-4" v-if="activeFeature === 'user-management'">
-                <h2 class="mb-4">User Management</h2>
-                <div class="card shadow-sm mb-4">
-                  <div class="card-body">
-                    <h5 class="card-title">All Users</h5>
-                    <div class="table-responsive">
-                      <table class="table table-hover table-striped">
-                        <thead>
-                          <tr>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="user in users" :key="user.id">
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>{{ user.role }}</td>
-                            <td>
-                              <button class="btn btn-sm btn-danger" @click="deleteUser(user.id)">Delete</button>
-                            </td>
-                          </tr>
-                          <tr v-if="users.length === 0">
-                            <td colspan="4" class="text-center">No users found.</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+          <!-- FIX 2: User Management section is now placed here -->
+          <div v-else-if="activeFeature === 'user-management'">
+            <h2 class="mb-4">User Management</h2>
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title">All Users</h5>
+                <p class="card-subtitle mb-3 text-muted">This table updates in real-time as users sign up or are removed.</p>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped">
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th class="text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="user in users" :key="user.id">
+                        <td>{{ user.username || 'N/A' }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                          <span class="badge" :class="user.role === 'Super Admin' ? 'bg-danger' : 'bg-primary'">{{ user.role }}</span>
+                        </td>
+                        <td class="text-center">
+                          <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id, user.username)">
+                            <i class="fas fa-trash-alt me-1"></i>Delete
+                          </button>
+                        </td>
+                      </tr>
+                      <tr v-if="users.length === 0">
+                        <td colspan="4" class="text-center py-4">No users found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-           </div>
-          <div v-else-if="activeFeature === 'settings'">
-            <h2 class="h4">System Settings</h2>
-            <p>Configure application settings, permissions, and other administrative options.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -578,7 +580,7 @@
           </div>
           <div class="modal-footer justify-content-center border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button>
+            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button> 
           </div>
         </div>
       </div>
@@ -637,6 +639,7 @@
     </div>
   </div>
 </template>
+
 
 <style scoped>
 
@@ -924,22 +927,21 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
-import router from '../router';
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits(['logout']);
+const router = useRouter();
 
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
-let logoutModal = null; // A reference to the Bootstrap Modal instance
+let logoutModal = null; 
 let deleteAccountModal = null;
+let userManagementChannel = null; // To hold our realtime channel subscription
 
-const users = ref([
-  { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', status: 'Active' },
-  { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'User', status: 'Active' },
-  { id: 3, name: 'Bob Johnson', email: 'bob.j@example.com', role: 'User', status: 'Inactive' },
-]);
+// MODIFICATION: The static users array is replaced with a reactive ref, initially empty.
+const users = ref([]);
 
+// Your existing static data for other dashboard panels is kept.
 const tires = ref([
   { id: 1, type: 'All-Season', size: '205/55R16', brand: 'Michelin', stock: 150, minStock: 50 },
   { id: 2, type: 'Performance', size: '225/45R17', brand: 'Goodyear', stock: 30, minStock: 40 },
@@ -948,7 +950,6 @@ const tires = ref([
   { id: 5, type: 'Touring', size: '215/60R16', brand: 'Pirelli', stock: 120, minStock: 30 },
   { id: 6, type: 'All-Terrain', size: '235/75R15', brand: 'Cooper', stock: 65, minStock: 25 },
 ]);
-
 const salesData = ref({
   totalSalesToday: 2350,
   totalOrdersToday: 45,
@@ -984,7 +985,6 @@ const salesData = ref({
     ],
   },
 });
-
 const orders = ref([
   { id: 101, customer: 'John Doe', date: '2025-08-10', amount: 1250, status: 'Completed' },
   { id: 102, customer: 'Jane Smith', date: '2025-08-10', amount: 800, status: 'Pending' },
@@ -997,42 +997,32 @@ const orders = ref([
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
+// All your original computed properties are preserved.
 const totalSalesLast30Days = computed(() => {
-  // A simple mockup calculation for the dashboard card
   return salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) * 4;
 });
-
 const newUsersCount = computed(() => {
-  // A simple mockup calculation for the dashboard card
-  return users.value.length;
+  return users.value.length; // This will now be dynamic based on the database.
 });
-
 const totalStock = computed(() => {
   return tires.value.reduce((sum, tire) => sum + tire.stock, 0);
 });
-
 const lowStockCount = computed(() => {
   return tires.value.filter((tire) => tire.stock <= tire.minStock).length;
 });
-
 const totalTireTypes = computed(() => {
   return tires.value.length;
 });
-
 const totalSalesToday = computed(() => salesData.value.totalSalesToday);
 const totalOrdersToday = computed(() => salesData.value.totalOrdersToday);
-
 const totalOrders = computed(() => orders.value.length);
 const pendingOrdersCount = computed(() => orders.value.filter(o => o.status === 'Pending').length);
 const completedOrdersCount = computed(() => orders.value.filter(o => o.status === 'Completed').length);
-
 const filteredOrders = computed(() => {
   let filtered = orders.value;
-  // Apply status filter first
   if (selectedStatus.value !== 'All') {
     filtered = filtered.filter(order => order.status === selectedStatus.value);
   }
-  // Then apply search query
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(order =>
@@ -1050,74 +1040,34 @@ let salesByTireTypeChart = null;
 const createCharts = () => {
   if (salesTrendChart) salesTrendChart.destroy();
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
-
   const salesTrendCtx = document.getElementById('salesTrendChart');
   if (salesTrendCtx) {
     salesTrendChart = new Chart(salesTrendCtx, {
       type: 'bar',
       data: salesData.value.salesTrend,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: {
-              display: false,
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-          },
-        },
-      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
     });
   }
-
   const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
   if (salesByTireTypeCtx) {
-    salesByTireTypeChart = new Chart(salesByTireTypeCtx, {
-      type: 'pie',
-      data: salesData.value.salesByTireType,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
+    salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
   }
 };
-
 const pageTitle = computed(() => {
   switch (activeFeature.value) {
-    case 'dashboard':
-      return 'Dashboard';
-    case 'sales-report':
-      return 'Sales Report';
-    case 'stock-monitoring':
-      return 'Stock Monitoring';
-    case 'orders':
-      return 'Purchased Orders';
-    case 'users':
-      return 'User Management';
-    case 'settings':
-      return 'System Settings';
-    default:
-      return 'Super Admin Dashboard';
+    case 'dashboard': return 'Dashboard';
+    case 'sales-report': return 'Sales Report';
+    case 'stock-monitoring': return 'Stock Monitoring';
+    case 'orders': return 'Purchased Orders';
+    case 'users': return 'User Management';
+    case 'settings': return 'System Settings';
+    default: return 'Super Admin Dashboard';
   }
 });
-
 const setActiveFeature = (feature) => {
   activeFeature.value = feature;
   toggleSidebar();
 };
-
 const toggleSidebar = () => {
   sidebarToggled.value = !sidebarToggled.value;
   if (isMobile.value && sidebarToggled.value) {
@@ -1126,7 +1076,6 @@ const toggleSidebar = () => {
     document.body.style.overflow = '';
   }
 };
-
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768;
   if (!isMobile.value) {
@@ -1134,8 +1083,6 @@ const checkMobile = () => {
     document.body.style.overflow = '';
   }
 };
-
-
 const handleLogout = () => {
   if (logoutModal) {
     logoutModal.show();
@@ -1143,61 +1090,44 @@ const handleLogout = () => {
 };
 
 const confirmLogout = async () => {
+  const { error } = await supabase.auth.signOut();
   if (logoutModal) {
     logoutModal.hide();
   }
   document.body.style.overflow = '';
-  // Find and remove the modal backdrop element
   const backdrop = document.querySelector('.modal-backdrop');
   if (backdrop) {
     backdrop.remove();
   }
-  emit('logout');
-  const { error } = await supabase.auth.signOut();
   if (error) {
     console.error("Logout failed:", error.message);
-    alert("An error occurred during logout. Please try again.");
   }
-  router.push("/");
+  router.push('/');
 };
 
 const confirmDeleteAccount = async () => {
   try {
-    // 1. Get the current session to get the user ID
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      alert('Could not retrieve session. Please log in again.');
-      return;
-    }
-    const currentUserId = session.user.id;
-
-    // 2. Make an API call to your secure, server-side function
-    const response = await fetch('/api/delete-user', { // Replace with your endpoint URL
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUserId }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete account on the server.');
-    }
-
-    // 3. Log out the user on the client after successful server-side deletion
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) {
-      console.error('Error signing out:', signOutError.message);
-    }
+    // MODIFICATION: Calling the correct function name 'delete_own_account'
+    const { error: rpcError } = await supabase.rpc('delete_own_account');
     
-    // 4. Redirect the user
-    router.push('/');
-    alert('Your account has been successfully deleted.');
+    if (rpcError) {
+      throw rpcError;
+    }
+
+    await supabase.auth.signOut();
+    router.push('/'); 
+    alert('Your account has been successfully and permanently deleted.');
 
   } catch (error) {
     console.error('Account deletion failed:', error);
-    alert('An error occurred. Please try again later.');
+    alert(`An error occurred during account deletion: ${error.message}`);
   } finally {
     if (deleteAccountModal) {
       deleteAccountModal.hide();
+    }
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
     }
     document.body.style.overflow = '';
   }
@@ -1205,40 +1135,94 @@ const confirmDeleteAccount = async () => {
 
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'Completed':
-      return 'bg-success';
-    case 'Pending':
-      return 'bg-warning text-dark';
-    case 'Shipped':
-      return 'bg-primary';
-    default:
-      return 'bg-secondary';
+    case 'Completed': return 'bg-success';
+    case 'Pending': return 'bg-warning text-dark';
+    case 'Shipped': return 'bg-primary';
+    default: return 'bg-secondary';
   }
 };
-
 const getCardBorder = (status) => {
   switch (status) {
-    case 'Completed':
-      return 'border-completed';
-    case 'Shipped':
-      return 'border-shipped';
-    case 'Pending':
-      return 'border-pending';
-    default:
-      return '';
+    case 'Completed': return 'border-completed';
+    case 'Shipped': return 'border-shipped';
+    case 'Pending': return 'border-pending';
+    default: return '';
+  }
+};
+const filterOrders = (status) => {
+  selectedStatus.value = status;
+};
+
+// --- NEW: Function to fetch initial user data from Supabase ---
+const fetchUsers = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, email, role')
+    .neq('role', 'Super Admin'); // This line excludes the Super Admin.
+
+  if (error) {
+    console.error('Error fetching users:', error);
+  } else {
+    users.value = data;
   }
 };
 
-const filterOrders = (status) => {
-  selectedStatus.value = status;
+// --- NEW: Function for Super Admin to delete a user from the management panel ---
+const deleteUser = async (userId, username) => {
+  if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
+    const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
+    if (error) alert(`Failed to delete user: ${error.message}`);
+    else alert(`User "${username || 'N/A'}" has been deleted.`);
+  }
 };
 
 onMounted(() => {
   checkMobile();
   window.addEventListener('resize', checkMobile);
 
+  // MODIFICATION: Fetch users and subscribe to real-time changes
+  fetchUsers();
+  userManagementChannel = supabase
+    .channel('public:profiles')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'profiles' },
+      (payload) => {
+        // --- Real-time events also ignore Super Admins ---
+        
+        // When a new user is inserted, only add them if they are not a Super Admin.
+        if (payload.eventType === 'INSERT' && payload.new.role !== 'Super Admin') {
+          users.value.push(payload.new);
+        }
+        
+        // When a user is deleted from the database, remove them from the list.
+        if (payload.eventType === 'DELETE') {
+          users.value = users.value.filter(user => user.id !== payload.old.id);
+        }
+        
+        // When a user's profile is updated.
+        if (payload.eventType === 'UPDATE') {
+          const index = users.value.findIndex(user => user.id === payload.new.id);
+
+          // If an existing user in the list is promoted to 'Super Admin', remove them.
+          if (payload.new.role === 'Super Admin' && index !== -1) {
+            users.value.splice(index, 1);
+          } 
+          // Otherwise, if they are just a regular user, update their details.
+          else if (index !== -1) {
+            users.value[index] = payload.new;
+          }
+          // Or, if they were previously a Super Admin and are now a regular user, add them to the list.
+          else if (index === -1 && payload.new.role !== 'Super Admin') {
+            users.value.push(payload.new);
+          }
+        }
+      }
+    )
+    .subscribe();
+  
+  // Your original logic for initializing modals and charts
   nextTick(() => {
-    // This is the correct way to access the Bootstrap Modal class since it's globally available
     const modalElement = document.getElementById('logoutConfirmationModal');
     if (modalElement && window.bootstrap && window.bootstrap.Modal) {
       logoutModal = new window.bootstrap.Modal(modalElement);
@@ -1257,6 +1241,11 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkMobile);
   if (salesTrendChart) salesTrendChart.destroy();
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+
+  // MODIFICATION: Unsubscribe from the channel to prevent memory leaks
+ if (userManagementChannel) {
+    supabase.removeChannel(userManagementChannel);
+  }
 });
 
 watch(activeFeature, (newFeature) => {

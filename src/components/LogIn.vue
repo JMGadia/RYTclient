@@ -1,36 +1,24 @@
 <template>
   <div>
-    <SuperSignUp v-if="showSignUp" @back-to-login="showSignUp = false" />
-    <div v-else class="login-page min-vh-100">
+    <div class="login-page min-vh-100">
       <div class="background-overlay"></div>
-
       <div class="container-fluid h-100">
         <div class="row h-100">
-          <!-- Left side -->
           <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative">
             <div class="text-center z-index-2">
               <div class="mb-4">
-                <i class="fas fa-user-shield fa-5x mb-3 text-white-50"></i>
+                <i class="fas fa-warehouse fa-5x mb-3 text-white-50"></i>
               </div>
               <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-              <h2 class="h3 fw-light mb-4">Admin Portal</h2>
+              <h2 class="h3 fw-light mb-4">Inventory & Ordering Portal</h2>
               <p class="lead mb-0">
-                Secure access to administrative controls and system management
+                Secure access for customers and administrators.
               </p>
             </div>
-            <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
-              <div class="floating-shapes">
-                <div class="shape shape-1"></div>
-                <div class="shape shape-2"></div>
-                <div class="shape shape-3"></div>
-              </div>
             </div>
-          </div>
 
-          <!-- Right side -->
           <div class="col-lg-6 d-flex flex-column justify-content-center">
             <div class="login-form-container mx-auto">
-              <!-- Login Form -->
               <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-5">
                   <div class="text-center mb-4">
@@ -40,25 +28,25 @@
                       </div>
                     </div>
                     <h3 class="card-title fw-bold text-dark mb-2">Welcome Back!</h3>
-                    <p class="text-muted mb-0">Please log in to your admin account</p>
+                    <p class="text-muted mb-0">Please log in to your account</p>
                   </div>
 
                   <form @submit.prevent="handleLogin" novalidate>
                     <div class="mb-3">
-                      <label for="username" class="form-label fw-semibold">
-                        <i class="fas fa-user me-2 text-muted"></i>Username
+                      <label for="email" class="form-label fw-semibold">
+                        <i class="fas fa-user me-2 text-muted"></i>Email
                       </label>
                       <input
-                        type="text"
+                        type="email"
                         class="form-control form-control-lg rounded-3"
-                        id="username"
-                        v-model="loginForm.username"
-                        placeholder="Enter your username"
+                        id="email"
+                        v-model="email"
+                        placeholder="Enter your email"
                         required
-                        :class="{ 'is-invalid': errors.username }"
+                        :class="{ 'is-invalid': errors.email }"
                       />
-                      <div v-if="errors.username" class="invalid-feedback">
-                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.username }}
+                      <div v-if="errors.email" class="invalid-feedback">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.email }}
                       </div>
                     </div>
 
@@ -70,7 +58,7 @@
                         type="password"
                         class="form-control form-control-lg rounded-3"
                         id="password"
-                        v-model="loginForm.password"
+                        v-model="password"
                         placeholder="Enter your password"
                         required
                         :class="{ 'is-invalid': errors.password }"
@@ -93,32 +81,16 @@
                     </div>
                   </form>
 
-                  <div class="text-center mb-4">
-                    <hr class="my-4">
-                    <span class="text-muted bg-white px-3">or</span>
-                  </div>
-
                   <div class="text-center">
                     <p class="text-muted mb-3">Don't have an account?</p>
-                    <RouterLink to="admin-signup" class="btn btn-outline-secondary rounded-3 me2">
+                    <RouterLink to="/signup" class="btn btn-outline-primary rounded-3">
                       <i class="fas fa-user-plus me-2"></i>Sign Up
-                    </RouterLink>
-                    <RouterLink to="/" class="btn btn-outline-secondary rounded-3"
-                    >
-                      <i class="fas fa-arrow-left me-2"></i>Return to Selection
                     </RouterLink>
                   </div>
                 </div>
               </div>
-
-              <div class="text-center mt-4">
-                <p class="text-muted small mb-0">
-                  © 2024 RYT-Tyre. All rights reserved.
-                </p>
-              </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -127,51 +99,63 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { supabase } from '../server/supabase'
+import { useRouter } from 'vue-router'
 
-// Define the emits for this component. Added 'login-success'
-const emit = defineEmits([ 'login-success'])
+const router = useRouter() 
 
+const email = ref("")
+const password = ref("")
 const isLoading = ref(false)
-const loginForm = reactive({ username: '', password: '' })
-const errors = reactive({ username: '', password: '' })
-
+const errors = reactive({ email: '', password: '' })
 
 const handleLogin = async () => {
-  errors.username = ''
+  isLoading.value = true
+  errors.email = ''
   errors.password = ''
 
-  // Basic validation
-  if (!loginForm.username.trim()) {
-    errors.username = 'Username is required'
-    return
-  }
-  if (!loginForm.password.trim()) {
-    errors.password = 'Password is required'
-    return
-  }
-  if (loginForm.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters'
-    return
-  }
-
-  isLoading.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // 1. Sign in the user
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    });
 
-    // Hardcoded login for demonstration
-    if (loginForm.username === 'admin' && loginForm.password === 'password') {
-      // Emit login-success event with user data
-      emit('login-success', { username: loginForm.username, role: 'admin' })
-      // Removed the alert here, parent component will handle redirection/feedback
+    if (signInError) throw signInError;
+
+    // 2. Get the user data to check their role
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user && user.user_metadata) {
+      const userRole = user.user_metadata.role;
+
+      // 3. Redirect based on the role
+      if (userRole === 'Super Admin') {
+        // IMPORTANT: Make sure you have a route named 'SuperAdminDashboard'
+        router.push({ name: 'SuperAdminDashboard' }); 
+      } else if (userRole === 'Admin') {
+        // IMPORTANT: Make sure you have a route named 'AdminDashboard'
+        router.push({ name: 'AdminDashboard' });
+      } else {
+        // Default for 'Client' role
+        router.push({ name: 'OrderingSystem' });
+      }
     } else {
-      errors.username = 'Invalid username or password'
+      throw new Error("Could not retrieve user details after login.");
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    errors.username = 'An unexpected error occurred during login.';
+
+  } catch (err) {
+    console.error('Login error:', err.message);
+    if (err.message.includes('Invalid login credentials')) {
+        errors.email = "Invalid email or password. Please try again.";
+        errors.password = "Invalid email or password. Please try again.";
+    } else if (err.message.includes('Email not confirmed')) {
+        errors.email = "Please check your inbox and confirm your email address before logging in.";
+    } else {
+        errors.email = err.message;
+    }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
