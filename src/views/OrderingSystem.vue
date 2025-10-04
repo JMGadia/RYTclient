@@ -3,7 +3,7 @@
      <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 border-bottom shadow-sm">
         <div class="container">
           <a class="navbar-brand d-flex align-items-center order-0" href="#">
-            <img src="/images/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
+            <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
             <strong class="text-dark fs-5">RYT-Tyre</strong>
           </a>
 
@@ -11,29 +11,29 @@
             <form class="d-flex">
               <input class="form-control rounded-5" type="search" placeholder="Search" aria-label="Search" />
               <button class="btn btn-outline-primary ms-2 rounded-circle p-2" type="submit">
-                <img src="/images/searchIcon.png" height="25" />
+                <img src="../assets/searchIcon.png" height="25" />
               </button>
             </form>
           </div>
 
           <div class="d-flex align-items-center order-1 order-lg-2">
             <a href="#" class="text-dark me-3">
-                <img src="/images/userIcon.png" alt="Account Management" height="24" />
+                <img src="../assets/userIcon.png" alt="Account Management" height="24" />
             </a>
             <span class="mx-2 text-muted">|</span>
             <a href="#" class="me-3">
-              <img src="/images/orderTrackicon.png" alt="Order Tracking" height="24" />
+              <img src="../assets/orderTrackicon.png" alt="Order Tracking" height="24" />
             </a>
             <span class="mx-2 text-muted">|</span>
             <a href="#">
-              <img src="/images/cartIcon.png" alt="Cart" height="24" />
+              <img src="../assets/cartIcon.png" alt="Cart" height="24" />
             </a>
           </div>
         </div>
       </nav>
 
     <section class="advertisement-banner">
-      <img src="/images/mainAds.png" alt="Best place to buy tires online advertisement" class="img-fluid" />
+      <img src="../assets/mainAds.png" alt="Best place to buy tires online advertisement" class="img-fluid" />
     </section>
 
     <section class="py-5 bg-light border-bottom">
