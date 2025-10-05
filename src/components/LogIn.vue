@@ -111,7 +111,7 @@
                   <button
                     type="button"
                     class="btn btn-outline-primary rounded-3"
-                    @click="$router.push({ name: 'sign up' })"
+                    @click="$router.push({ name: 'signup' })"
                   >
                     <i class="fas fa-user-plus me-2"></i>Sign Up
                   </button>
