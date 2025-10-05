@@ -17,15 +17,15 @@
           </div>
 
           <div class="d-flex align-items-center order-1 order-lg-2">
-            <a href="#" class="text-dark me-3">
+            <a href="#" class="text-dark me-3" @click.prevent="router.push({ name: 'profile' })">
                 <img src="../assets/userIcon.png" alt="Account Management" height="24" />
             </a>
             <span class="mx-2 text-muted">|</span>
-            <a href="#" class="me-3">
+            <a href="#" class="me-3" @click.prevent="router.push({ name: 'order tracking' })">
               <img src="../assets/orderTrackicon.png" alt="Order Tracking" height="24" />
             </a>
             <span class="mx-2 text-muted">|</span>
-            <a href="#">
+            <a href="#" @click.prevent="router.push({ name: 'cart' })">
               <img src="../assets/cartIcon.png" alt="Cart" height="24" />
             </a>
           </div>
@@ -158,6 +158,9 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const recommendedBrands = ref([
   { name: 'Toyota', image: '/images/brands/toyota.png' },
@@ -166,252 +169,61 @@ const recommendedBrands = ref([
   { name: 'Mitsubishi', image: '/images/brands/mitsubishi.png' },
   { name: 'Nissan', image: '/images/brands/nissan.png' },
   { name: 'Hyundai', image: '/images/brands/hyundai.png' },
-  // Add more brands as needed
 ]);
 
 const tireProducts = ref([
-  { name: 'Toyota', image: '/images/brands/toyota.png' },
-  { name: 'Honda', image: '/images/brands/honda.png' },
-  { name: 'Ford', image: '/images/brands/ford.png' },
-  { name: 'Mitsubishi', image: '/images/brands/mitsubishi.png' },
-  // Add more brands as needed
+  { name: 'Goodyear Assurance', price: '4500', stock: 10, image: '/images/brands/toyota.png' },
+  { name: 'Michelin Primacy', price: '5200', stock: 5, image: '/images/brands/honda.png' },
+  { name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/brands/ford.png' },
+  { name: 'Yokohama BluEarth', price: '4650', stock: 12, image: '/images/brands/mitsubishi.png' },
 ]);
 
 const nonTireProducts = ref([
-  { name: 'Toyota', image: '/images/brands/toyota.png' },
-  { name: 'Honda', image: '/images/brands/honda.png' },
-  { name: 'Ford', image: '/images/brands/ford.png' },
-  { name: 'Mitsubishi', image: '/images/brands/mitsubishi.png' },
-  // Add more brands as needed
+  { name: 'Engine Oil 5L', price: '1250', image: '/images/brands/nissan.png' },
+  { name: 'Car Battery', price: '3500', image: '/images/brands/hyundai.png' },
+  { name: 'Wiper Blades', price: '600', image: '/images/brands/toyota.png' },
+  { name: 'Brake Pads', price: '1800', image: '/images/brands/honda.png' },
 ]);
 
-// You may already have tireProducts and nonTireProducts defined elsewhere
 </script>
 
 <style scoped>
-/* Font import for a more modern look */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
-
-.ordering-page {
-  font-family: 'Roboto', sans-serif; /* A clean, modern sans-serif font */
-  color: #333; /* Softer dark text color */
-  background-color: #f8f9fa; /* Light background for the entire page */
-}
-
-/* Navbar specific adjustments */
-.navbar-brand strong {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  color: #212529 !important;
-}
-
-.navbar .form-control {
-  border-color: #ced4da;
-}
-
-.navbar .btn-outline-primary {
-  border-color: #0d6efd;
-  color: #0d6efd;
-}
-
-.navbar .btn-outline-primary:hover {
-  background-color: #0d6efd;
-  color: #fff;
-}
-
-/* New style for the advertisement banner */
-.advertisement-banner img {
-  width: 100%;
-  height: auto;
-  display: block; /* Ensures no extra space below image */
-}
-
-/* Section headings */
-.section-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
-  color: #212529;
-  position: relative;
-  padding-bottom: 10px;
-  margin-bottom: 40px !important;
-}
-
-.section-title::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background-color: #0d6efd;
-  border-radius: 2px;
-}
-
-/* Info section (Reliable Shipping, etc.) */
-section.py-5.bg-light.border-bottom {
-  background-color: #ffffff !important; /* White background for clarity */
-}
-
-.bg-light .col-md-4 h5 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  color: #212529;
-}
-
-.bg-light .col-md-4 p {
-  color: #6c757d; /* Softer text color for descriptions */
-}
-
-/* Recommended Brands Section */
-.recommended-section {
-  background-color: #f8f9fa; /* Consistent light background */
-}
-
-.recommended-scroll {
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
-  padding-bottom: 20px; /* Space for scrollbar if visible */
-}
-
-.recommended-scroll::-webkit-scrollbar {
-  height: 8px; /* Thinner scrollbar */
-}
-
-.recommended-scroll::-webkit-scrollbar-track {
-  background: #e9ecef; /* Light track */
-  border-radius: 10px;
-}
-
-.recommended-scroll::-webkit-scrollbar-thumb {
-  background: #ced4da; /* Grey thumb */
-  border-radius: 10px;
-}
-
-.recommended-scroll::-webkit-scrollbar-thumb:hover {
-  background: #aab2bd; /* Darker thumb on hover */
-}
-
-.rounded-lg-card {
-  border-radius: 1rem !important; /* More pronounced rounded corners */
-}
-
-/* Product Card Styling (Tires & Non-Tires) */
-.card {
-  border: none; /* Remove default card border */
-  border-radius: 0.75rem; /* Slightly rounded corners for all cards */
-  overflow: hidden; /* Ensures image corners are also rounded */
-  transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
-}
-
-.card:hover {
-  transform: translateY(-5px) scale(1.02); /* Lift and slight enlarge effect */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* More prominent shadow on hover */
-}
-
-.card-img-container {
-  height: 160px; /* Slightly taller image container */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #fff; /* White background for product images */
-  border-bottom: 1px solid #eee; /* Subtle separator */
-}
-
-.card-img-top {
-  max-height: 100%; /* Ensure image fits container */
-  max-width: 100%; /* Ensure image fits container */
-  object-fit: contain;
-  padding: 10px; /* Reduce padding slightly */
-}
-
-.product-name {
-  min-height: 40px; /* Ensure consistent height for names */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Poppins', sans-serif;
-  color: #212529;
-}
-
-.product-card .card-body {
-  padding: 1rem; /* Adjust padding */
-}
-
-.product-card .badge {
-  font-size: 0.8rem;
-  padding: 0.4em 0.7em;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.btn-primary, .btn-outline-primary {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  border-radius: 50rem !important; /* Pill-shaped buttons */
-  padding: 0.5rem 1.5rem; /* Adjusted padding */
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-.btn-primary:hover {
-  background-color: #0a58ca;
-  border-color: #0a58ca;
-  transform: translateY(-2px); /* Slight lift on hover */
-  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
-}
-
-.btn-outline-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.1);
-}
-
-/* Footer Improvements */
-footer {
-  background-color: #212529 !important; /* Darker footer for contrast */
-  color: #e9ecef; /* Lighter text for readability */
-}
-
-footer h6 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
-  color: #ffffff; /* White headings */
-}
-
-footer p.small {
-  color: rgba(255, 255, 255, 0.75) !important; /* Softer white for paragraph text */
-}
-
-.payment-icons i {
-  font-size: 1.8rem; /* Larger payment icons */
-  color: #adb5bd; /* Slightly muted color for icons */
-  transition: color 0.3s ease, transform 0.3s ease;
-}
-
-.payment-icons i:hover {
-  color: #ffffff; /* White on hover */
-  transform: scale(1.1); /* Slight enlarge on hover */
-  text-shadow: none; /* Remove previous text-shadow */
-}
-
-footer .text-white-50 {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-footer .text-white-50:hover {
-  color: #ffffff !important;
-  text-decoration: underline !important;
-}
-
-/* Utility classes for responsive spacing and alignment */
-@media (min-width: 992px) {
-  .justify-content-lg-center {
-    justify-content: center !important;
-  }
-}
+.ordering-page { font-family: 'Roboto', sans-serif; color: #333; background-color: #f8f9fa; }
+.navbar-brand strong { font-family: 'Poppins', sans-serif; font-weight: 600; color: #212529 !important; }
+.navbar .form-control { border-color: #ced4da; }
+.navbar .btn-outline-primary { border-color: #0d6efd; color: #0d6efd; }
+.navbar .btn-outline-primary:hover { background-color: #0d6efd; color: #fff; }
+.advertisement-banner img { width: 100%; height: auto; display: block; }
+.section-title { font-family: 'Poppins', sans-serif; font-weight: 700; color: #212529; position: relative; padding-bottom: 10px; margin-bottom: 40px !important; }
+.section-title::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 60px; height: 3px; background-color: #0d6efd; border-radius: 2px; }
+section.py-5.bg-light.border-bottom { background-color: #ffffff !important; }
+.bg-light .col-md-4 h5 { font-family: 'Poppins', sans-serif; font-weight: 600; color: #212529; }
+.bg-light .col-md-4 p { color: #6c757d; }
+.recommended-section { background-color: #f8f9fa; }
+.recommended-scroll { -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
+.recommended-scroll::-webkit-scrollbar { height: 8px; }
+.recommended-scroll::-webkit-scrollbar-track { background: #e9ecef; border-radius: 10px; }
+.recommended-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
+.recommended-scroll::-webkit-scrollbar-thumb:hover { background: #aab2bd; }
+.rounded-lg-card { border-radius: 1rem !important; }
+.card { border: none; border-radius: 0.75rem; overflow: hidden; transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+.card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
+.card-img-container { height: 160px; display: flex; justify-content: center; align-items: center; background-color: #fff; border-bottom: 1px solid #eee; }
+.card-img-top { max-height: 100%; max-width: 100%; object-fit: contain; padding: 10px; }
+.product-name { min-height: 40px; display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; color: #212529; }
+.product-card .card-body { padding: 1rem; }
+.product-card .badge { font-size: 0.8rem; padding: 0.4em 0.7em; border-radius: 0.5rem; font-weight: 500; letter-spacing: 0.5px; }
+.btn-primary, .btn-outline-primary { font-family: 'Poppins', sans-serif; font-weight: 500; border-radius: 50rem !important; padding: 0.5rem 1.5rem; transition: all 0.3s ease; }
+.btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
+.btn-primary:hover { background-color: #0a58ca; border-color: #0a58ca; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2); }
+.btn-outline-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.1); }
+footer { background-color: #212529 !important; color: #e9ecef; }
+footer h6 { font-family: 'Poppins', sans-serif; font-weight: 700; color: #ffffff; }
+footer p.small { color: rgba(255, 255, 255, 0.75) !important; }
+.payment-icons i { font-size: 1.8rem; color: #adb5bd; transition: color 0.3s ease, transform 0.3s ease; }
+.payment-icons i:hover { color: #ffffff; transform: scale(1.1); text-shadow: none; }
+footer .text-white-50 { color: rgba(255, 255, 255, 0.6) !important; }
+footer .text-white-50:hover { color: #ffffff !important; text-decoration: underline !important; }
+@media (min-width: 992px) { .justify-content-lg-center { justify-content: center !important; } }
 </style>
