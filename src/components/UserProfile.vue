@@ -6,8 +6,7 @@
 
         <div class="mb-3">
           <label for="usernameDisplay" class="form-label fw-semibold">Username</label>
-          
-          <div v-if="!isEditing" @click="startEditing" class="read-only-input" id="usernameDisplay">
+          <div v-if="!isEditing" @click="startEditing" class="read-only-input">
             <span>{{ username }}</span>
             <i class="fas fa-pencil-alt text-muted"></i>
           </div>
@@ -48,13 +47,31 @@
             </button>
           </div>
           <div class="col-6">
-            <button class="btn btn-outline-danger w-100 h-100 p-3" @click="handleLogout">
+            <button class="btn btn-outline-danger w-100 h-100 p-3" @click="showLogoutConfirm = true">
               <i class="fas fa-sign-out-alt d-block mb-1"></i>
               Log Out
             </button>
           </div>
         </div>
+      </div>
+    </div>
 
+    <div class="modal-backdrop" v-if="showLogoutConfirm"></div>
+    <div class="modal fade" :class="{ 'show': showLogoutConfirm }" style="display: block;" v-if="showLogoutConfirm">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Confirm Logout</h5>
+            <button type="button" class="btn-close" @click="showLogoutConfirm = false"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to log out?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="showLogoutConfirm = false">Cancel</button>
+            <button type="button" class="btn btn-danger" @click="handleLogout">Confirm</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -74,6 +91,7 @@ const editableUsername = ref('');
 const usernameInput = ref(null);
 const isLoading = ref(false);
 const user = ref(null);
+const showLogoutConfirm = ref(false); // NEW: State to control the modal
 
 onMounted(async () => {
   try {
@@ -89,17 +107,8 @@ onMounted(async () => {
         .eq('id', user.value.id)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        // Ignore error 'PGRST116' which means no rows found.
-        // Handle other errors.
-        throw profileError;
-      }
-
-      if (profileData) {
-        username.value = profileData.username;
-      } else {
-        username.value = "No profile found";
-      }
+      if (profileError && profileError.code !== 'PGRST116') throw profileError;
+      if (profileData) username.value = profileData.username;
     }
   } catch (error) {
     console.error('Error fetching user profile:', error.message);
@@ -114,7 +123,6 @@ const startEditing = async () => {
   usernameInput.value.focus();
 };
 
-// UPDATED: Now has more detailed error logging
 const saveUsername = async () => {
   if (!editableUsername.value.trim() || editableUsername.value === username.value) {
     isEditing.value = false;
@@ -126,17 +134,10 @@ const saveUsername = async () => {
     const { error } = await supabase.rpc('update_my_username', {
       new_username: editableUsername.value
     });
-
-    if (error) {
-      // This will throw the error to be caught by the catch block
-      throw error;
-    }
-
+    if (error) throw error;
     username.value = editableUsername.value;
     alert('Username updated successfully!');
-
   } catch (error) {
-    // This will give us a much more detailed error message
     console.error('An error occurred during saveUsername:', error);
     alert(`Failed to update username. See console for details. Error: ${error.message}`);
   } finally {
@@ -153,7 +154,8 @@ const handleLogout = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    router.push({ name: 'login' });
+    showLogoutConfirm.value = false; // Close the modal
+    router.push({ name: 'login' }); // Redirect
   } catch (error) {
     alert(error.message);
   }
@@ -165,11 +167,24 @@ const handleLogout = async () => {
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap');
 .user-profile-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: calc(100vh - 56px); padding: 2rem 0; }
 .profile-container { width: 100%; max-width: 500px; border: none; border-radius: 0.75rem; }
-.card-body h3 { font-family: 'Poppins', sans-serif; }
+.card-body h3, .modal-title { font-family: 'Poppins', sans-serif; }
 .form-label { font-family: 'Poppins', sans-serif; font-size: 0.9rem; }
 .read-only-input { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0.75rem; font-size: 1rem; font-weight: 400; line-height: 1.5; color: #212529; background-color: #fff; border: 1px solid #ced4da; border-radius: 0.375rem; cursor: pointer; min-height: 38px; }
 .read-only-input:hover { border-color: #86b7fe; }
 input:disabled { background-color: #e9ecef; cursor: not-allowed; }
 .btn { font-family: 'Poppins', sans-serif; font-size: 0.9rem; transition: all 0.2s ease-in-out; }
 .btn i { font-size: 1.2rem; }
+
+/* Modal Styles */
+.modal.show { display: block; }
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  opacity: 0.5;
+}
 </style>

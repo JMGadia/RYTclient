@@ -67,7 +67,9 @@
                 </li>
               </ul>
               <div class="d-grid">
-                <button class="btn btn-primary btn-lg rounded-pill">Proceed to Checkout</button>
+                <button class="btn btn-primary btn-lg rounded-pill" @click="router.push({ name: 'payment system' })">
+                  Proceed to Checkout
+                </button>
               </div>
             </div>
           </div>
@@ -78,7 +80,9 @@
 </template>
 
 <script setup>
-// Logic will be added later
+import { useRouter } from 'vue-router'; // UPDATED: Import useRouter
+
+const router = useRouter(); // UPDATED: Initialize the router
 </script>
 
 <style scoped>
