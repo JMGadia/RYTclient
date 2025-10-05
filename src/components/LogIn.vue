@@ -1,94 +1,126 @@
 <template>
-  <div>
-    <div class="login-page min-vh-100">
-      <div class="background-overlay"></div>
-      <div class="container-fluid h-100">
-        <div class="row h-100">
-          <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative">
-            <div class="text-center z-index-2">
-              <div class="mb-4">
-                <i class="fas fa-warehouse fa-5x mb-3 text-white-50"></i>
-              </div>
-              <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-              <h2 class="h3 fw-light mb-4">Inventory & Ordering Portal</h2>
-              <p class="lead mb-0">
-                Secure access for customers and administrators.
-              </p>
-            </div>
-            </div>
+  <div class="login-page">
+    <div class="background-overlay"></div>
 
-          <div class="col-lg-6 d-flex flex-column justify-content-center">
-            <div class="login-form-container mx-auto">
-              <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-body p-5">
-                  <div class="text-center mb-4">
-                    <div class="avatar-wrapper mx-auto mb-3">
-                      <div class="avatar bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center">
-                        <i class="fas fa-user-tie fa-2x text-primary"></i>
-                      </div>
+    <div class="container-fluid">
+      <div class="row min-vh-100 align-items-center">
+        <div
+          class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative"
+        >
+          <div class="text-center z-index-2 px-4">
+            <div class="mb-4">
+              <i class="fas fa-user fa-5x mb-3 text-white-50"></i>
+            </div>
+            <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
+            <h2 class="h3 fw-light mb-4">Customer Log In</h2>
+            <p class="lead mb-0">Access your account to manage your orders and track activity.</p>
+          </div>
+
+          <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+            <div class="floating-shapes">
+              <div class="shape shape-1"></div>
+              <div class="shape shape-2"></div>
+              <div class="shape shape-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6 d-flex flex-column justify-content-center py-5">
+          <div class="login-form-container mx-auto w-100 px-3 px-sm-4 px-md-5">
+            <div class="card shadow-lg border-0 rounded-4">
+              <div class="card-body p-4 p-sm-5">
+                <div class="text-center mb-4">
+                  <div class="avatar-wrapper mx-auto mb-3">
+                    <div class="avatar bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="fas fa-user fa-2x text-primary"></i>
                     </div>
-                    <h3 class="card-title fw-bold text-dark mb-2">Welcome Back!</h3>
-                    <p class="text-muted mb-0">Please log in to your account</p>
+                  </div>
+                  <h3 class="card-title fw-bold text-dark mb-2">Welcome Back!</h3>
+                  <p class="text-muted mb-0">Please log in to your account</p>
+                </div>
+
+                <form @submit.prevent="handleLogin" novalidate>
+                  <div class="mb-3">
+                    <label for="email" class="form-label fw-semibold">
+                      <i class="fas fa-envelope me-2 text-muted"></i>Email
+                    </label>
+                    <input
+                      type="email"
+                      class="form-control form-control-lg rounded-3"
+                      id="email"
+                      v-model="loginForm.email"
+                      placeholder="Enter your email"
+                      required
+                      :class="{ 'is-invalid': errors.email }"
+                    />
+                    <div v-if="errors.email" class="invalid-feedback">
+                      <i class="fas fa-exclamation-circle me-1"></i>{{ errors.email }}
+                    </div>
                   </div>
 
-                  <form @submit.prevent="handleLogin" novalidate>
-                    <div class="mb-3">
-                      <label for="email" class="form-label fw-semibold">
-                        <i class="fas fa-user me-2 text-muted"></i>Email
-                      </label>
+                  <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold">
+                      <i class="fas fa-lock me-2 text-muted"></i>Password
+                    </label>
+                    <div class="password-wrapper">
                       <input
-                        type="email"
-                        class="form-control form-control-lg rounded-3"
-                        id="email"
-                        v-model="email"
-                        placeholder="Enter your email"
-                        required
-                        :class="{ 'is-invalid': errors.email }"
-                      />
-                      <div v-if="errors.email" class="invalid-feedback">
-                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.email }}
-                      </div>
-                    </div>
-
-                    <div class="mb-4">
-                      <label for="password" class="form-label fw-semibold">
-                        <i class="fas fa-lock me-2 text-muted"></i>Password
-                      </label>
-                      <input
-                        type="password"
+                        :type="passwordFieldType"
                         class="form-control form-control-lg rounded-3"
                         id="password"
-                        v-model="password"
+                        v-model="loginForm.password"
                         placeholder="Enter your password"
                         required
                         :class="{ 'is-invalid': errors.password }"
                       />
-                      <div v-if="errors.password" class="invalid-feedback">
-                        <i class="fas fa-exclamation-circle me-1"></i>{{ errors.password }}
-                      </div>
+                      <img
+                        :src="passwordIcon"
+                        @click="togglePasswordVisibility"
+                        alt="Toggle password visibility"
+                        class="password-toggle-icon"
+                      />
                     </div>
-
-                    <div class="d-grid mb-4">
-                      <button
-                        type="submit"
-                        class="btn btn-primary btn-lg rounded-3 fw-semibold"
-                        :disabled="isLoading"
-                      >
-                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                        <i v-else class="fas fa-sign-in-alt me-2"></i>
-                        {{ isLoading ? 'Logging in...' : 'Log In' }}
-                      </button>
+                    <div v-if="errors.password" class="invalid-feedback">
+                      <i class="fas fa-exclamation-circle me-1"></i>{{ errors.password }}
                     </div>
-                  </form>
-
-                  <div class="text-center">
-                    <p class="text-muted mb-3">Don't have an account?</p>
-                    <RouterLink to="/signup" class="btn btn-outline-primary rounded-3">
-                      <i class="fas fa-user-plus me-2"></i>Sign Up
-                    </RouterLink>
                   </div>
+
+                  <div class="d-flex justify-content-end mb-4">
+                    <a
+                      href="#"
+                      @click.prevent="goToForgotPassword"
+                      class="text-primary text-decoration-none small"
+                    >
+                      Forgot Password?
+                    </a>
+                  </div>
+                  <div class="d-grid mb-4">
+                    <button
+                      type="submit"
+                      class="btn btn-primary btn-lg rounded-3 fw-semibold"
+                      :disabled="isLoading"
+                    >
+                      <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                      <i v-else class="fas fa-sign-in-alt me-2"></i>
+                      {{ isLoading ? 'Logging in...' : 'Log In' }}
+                    </button>
+                  </div>
+                </form>
+
+                <div class="text-center">
+                  <p class="text-muted mb-2">Don't have an account?</p>
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary rounded-3"
+                    @click="$router.push({ name: 'sign up' })"
+                  >
+                    <i class="fas fa-user-plus me-2"></i>Sign Up
+                  </button>
                 </div>
               </div>
+            </div>
+
+            <div class="text-center mt-4">
+              <p class="text-muted small mb-0">© 2024 RYT-Tyre. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -98,69 +130,100 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { supabase } from '../server/supabase'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from '../server/supabase'
 
-const router = useRouter() 
+const router = useRouter()
 
-const email = ref("")
-const password = ref("")
+const loginForm = reactive({
+  email: '',
+  password: ''
+})
+
+const errors = reactive({
+  email: '',
+  password: ''
+})
+
 const isLoading = ref(false)
-const errors = reactive({ email: '', password: '' })
 
+// --- Password Visibility Logic ---
+const isPasswordVisible = ref(false)
+
+const passwordFieldType = computed(() => {
+  return isPasswordVisible.value ? 'text' : 'password'
+})
+
+const passwordIcon = computed(() => {
+  return isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png'
+})
+
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value
+}
+// --- END OF LOGIC ---
+
+const goToForgotPassword = () => {
+  router.push({ name: 'ForgotPassword' });
+};
+
+// --- ⬇️ UPDATED: handleLogin function with role-based redirection ---
 const handleLogin = async () => {
-  isLoading.value = true
   errors.email = ''
   errors.password = ''
 
+  if (!loginForm.email.trim()) {
+    errors.email = 'Email is required'
+    return
+  }
+  if (loginForm.password.length < 6) {
+    errors.password = 'Password must be at least 6 characters'
+    return
+  }
+
+  isLoading.value = true
   try {
-    // 1. Sign in the user
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    });
+    // 1. Sign in the user and get their session data
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: loginForm.email,
+      password: loginForm.password,
+    })
 
-    if (signInError) throw signInError;
+    if (authError) throw authError
+    if (!authData.user) throw new Error("User not found after login.");
 
-    // 2. Get the user data to check their role
-    const { data: { user } } = await supabase.auth.getUser();
+    // 2. Fetch the user's profile to check their role
+    // Assumes you have a 'profiles' table with a 'role' column linked by user ID
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .single() // Use .single() to expect just one result
 
-    if (user && user.user_metadata) {
-      const userRole = user.user_metadata.role;
+    if (profileError) throw profileError
 
-      // 3. Redirect based on the role
-      if (userRole === 'Super Admin') {
-        // IMPORTANT: Make sure you have a route named 'SuperAdminDashboard'
-        router.push({ name: 'SuperAdminDashboard' }); 
-      } else if (userRole === 'Admin') {
-        // IMPORTANT: Make sure you have a route named 'AdminDashboard'
-        router.push({ name: 'AdminDashboard' });
-      } else {
-        // Default for 'Client' role
-        router.push({ name: 'OrderingSystem' });
-      }
+    // 3. Redirect based on the role
+    if (profileData && profileData.role === 'Super Admin') {
+      // User is an admin, redirect to SuperAdmin dashboard
+      router.push({ name: 'super admin' })
     } else {
-      throw new Error("Could not retrieve user details after login.");
+      // User is a regular customer, redirect to Ordering System
+      router.push({ name: 'ordering system' })
     }
 
-  } catch (err) {
-    console.error('Login error:', err.message);
-    if (err.message.includes('Invalid login credentials')) {
-        errors.email = "Invalid email or password. Please try again.";
-        errors.password = "Invalid email or password. Please try again.";
-    } else if (err.message.includes('Email not confirmed')) {
-        errors.email = "Please check your inbox and confirm your email address before logging in.";
-    } else {
-        errors.email = err.message;
-    }
+  } catch (error) {
+    console.error('Login failed:', error.message)
+    alert('Login failed. Please check your credentials and try again.')
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
+// --- ⬆️ END OF UPDATE ---
 </script>
 
 <style scoped>
+/* All existing styles remain the same */
 .login-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -185,23 +248,14 @@ const handleLogin = async () => {
   overflow: hidden;
 }
 
-.z-index-2 {
-  z-index: 2;
-}
-
 .login-form-container {
   max-width: 480px;
   width: 100%;
-  padding: 2rem;
   position: relative;
   z-index: 2;
 }
 
-.avatar-wrapper {
-  width: 80px;
-  height: 80px;
-}
-
+.avatar-wrapper,
 .avatar {
   width: 80px;
   height: 80px;
@@ -228,46 +282,6 @@ const handleLogin = async () => {
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-.btn-primary:disabled {
-  transform: none;
-  opacity: 0.7;
-}
-
-/* Password toggle button styling */
-.password-toggle-btn {
-  border-color: #ced4da;
-  color: #6c757d;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-}
-
-.password-toggle-btn:hover {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-  color: #495057;
-}
-
-.password-toggle-btn:focus {
-  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
-  outline: none;
-}
-
-/* Password icon styling */
-.password-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  transition: opacity 0.2s ease;
-}
-
-.password-toggle-btn:hover .password-icon {
-  opacity: 0.8;
-}
-
-/* Floating shapes animation */
 .floating-shapes {
   position: relative;
   width: 100%;
@@ -286,7 +300,6 @@ const handleLogin = async () => {
   height: 100px;
   top: 20%;
   left: 10%;
-  animation-delay: 0s;
 }
 
 .shape-2 {
@@ -314,7 +327,12 @@ const handleLogin = async () => {
   }
 }
 
-/* Responsive adjustments */
+@media (max-width: 767.98px) {
+  .floating-shapes {
+    display: none;
+  }
+}
+
 @media (max-width: 991.98px) {
   .login-form-container {
     padding: 1rem;
@@ -325,15 +343,28 @@ const handleLogin = async () => {
   .card-body {
     padding: 2rem !important;
   }
-  
+
   .login-form-container {
     padding: 0.5rem;
   }
 }
 
-/* Icon styling */
-.fas {
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper .form-control {
+  padding-right: 45px;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: auto;
+  cursor: pointer;
+  z-index: 3;
 }
 </style>

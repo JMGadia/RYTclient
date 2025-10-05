@@ -1,74 +1,128 @@
 <template>
-  <div class="signup-page min-vh-100">
+  <div class="login-page">
     <div class="background-overlay"></div>
-
-    <div class="container-fluid h-100">
-      <div class="row h-100">
+    <div class="container-fluid">
+      <div class="row min-vh-100 align-items-center">
         <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center bg-primary-gradient text-white position-relative">
-          <div class="text-center z-index-2">
-            <div class="mb-4">
-              <i class="fas fa-box-open fa-5x mb-3 text-white-50"></i>
-            </div>
-            <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-            <h2 class="h3 fw-light mb-4">Customer Portal</h2>
-            <p class="lead mb-0">
-              Manage your orders and services seamlessly.
-            </p>
-          </div>
-          <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10"></div>
-        </div>
+           <div class="text-center z-index-2 px-4">
+             <div class="mb-4">
+               <i class="fas fa-user-plus fa-5x mb-3 text-white-50"></i>
+             </div>
+             <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
+             <h2 class="h3 fw-light mb-4">Customer Sign Up</h2>
+             <p class="lead mb-0">
+               Create your account to place orders and track your transactions.
+             </p>
+           </div>
 
-        <div class="col-lg-6 d-flex flex-column justify-content-center">
-          <div class="login-form-container mx-auto">
+           <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+             <div class="floating-shapes">
+               <div class="shape shape-1"></div>
+               <div class="shape shape-2"></div>
+               <div class="shape shape-3"></div>
+             </div>
+           </div>
+         </div>
+
+        <div class="col-12 col-lg-6 d-flex flex-column justify-content-center py-5">
+          <div class="login-form-container mx-auto w-100 px-3 px-sm-4 px-md-5">
             <div class="card shadow-lg border-0 rounded-4">
-              <div class="card-body p-5">
-                <div class="text-center mb-4">
-                  <div class="d-inline-flex align-items-center justify-content-center avatar-lg bg-primary-subtle rounded-circle mb-3">
-                    <i class="fas fa-user-plus fa-2x text-primary"></i>
+              <div class="card-body p-4 p-sm-5">
+                  <div class="text-center mb-4">
+                   <div class="avatar-wrapper mx-auto mb-3">
+                     <div class="avatar bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center">
+                       <i class="fas fa-user-plus fa-2x text-primary"></i>
+                     </div>
+                   </div>
+                   <h3 class="card-title fw-bold text-dark mb-2">Create an Account</h3>
+                   <p class="text-muted mb-0">Fill out the form to register</p>
                   </div>
-                  <h3 class="card-title fw-bold text-dark mb-2">Create Your Account</h3>
-                  <p class="text-muted mb-0">A quick liveness check is required</p>
-                </div>
 
-                <div v-if="errors.form" class="alert alert-danger mb-3">
-                  {{ errors.form }}
-                </div>
-                 <div v-if="livenessStatus" class="alert alert-info mb-3">
-                  {{ livenessStatus }}
-                </div>
-
-                <form @submit.prevent="handleSignUp">
+                <form @submit.prevent="handleSignUp" novalidate>
                   <div class="mb-3">
-                    <label for="username-input" class="form-label fw-semibold">Username</label>
-                    <input type="text" class="form-control form-control-lg rounded-3" id="username-input" v-model="username" required>
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-user me-2 text-muted"></i>Create Username
+                    </label>
+                    <input type="text" class="form-control form-control-lg rounded-3" v-model="form.username" placeholder="Enter your username" required :class="{ 'is-invalid': errors.username }" />
+                    <div v-if="errors.username" class="invalid-feedback">{{ errors.username }}</div>
                   </div>
                   <div class="mb-3">
-                    <label for="email-input" class="form-label fw-semibold">Email</label>
-                    <input type="email" class="form-control form-control-lg rounded-3" id="email-input" v-model="email" required>
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-envelope me-2 text-muted"></i>Email
+                    </label>
+                    <input type="email" class="form-control form-control-lg rounded-3" v-model="form.email" placeholder="Enter your email" required :class="{ 'is-invalid': errors.email }" />
+                    <div v-if="errors.email" class="invalid-feedback">{{ errors.email }}</div>
                   </div>
-                  <div class="mb-4">
-                    <label for="password-input" class="form-label fw-semibold">Password</label>
-                    <input type="password" class="form-control form-control-lg rounded-3" id="password-input" v-model="password" required>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-lock me-2 text-muted"></i>Create Password
+                    </label>
+                    <div class="password-wrapper">
+                      <input 
+                        :type="passwordFieldType" 
+                        class="form-control form-control-lg rounded-3" 
+                        v-model="form.password" 
+                        placeholder="Enter your password" 
+                        required 
+                        :class="{ 'is-invalid': errors.password }" 
+                      />
+                      <img
+                        :src="passwordIcon"
+                        @click="togglePasswordVisibility"
+                        alt="Toggle password visibility"
+                        class="password-toggle-icon"
+                      />
+                    </div>
+                    <div v-if="errors.password" class="invalid-feedback">{{ errors.password }}</div>
                   </div>
-                  
+                  <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="facialRecognition" v-model="form.facialRecognition" />
+                    <label class="form-check-label" for="facialRecognition">
+                      Enable facial recognition login and agree to the <a href="#">Terms and Conditions</a>
+                    </label>
+                  </div>
+
                   <div class="d-grid mb-4">
                     <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-semibold" :disabled="isLoading">
                       <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                      <i v-else class="fas fa-user-check me-2"></i>
-                      {{ isLoading ? 'Verifying...' : 'Start Verification' }}
+                      <i v-else class="fas fa-user-plus me-2"></i>
+                      {{ isLoading ? 'Processing...' : 'Sign Up' }}
                     </button>
                   </div>
-                  
-                  <div class="text-center">
-                    <p class="text-muted mb-3">Already have an account?</p>
-                    <RouterLink to="/" class="btn btn-outline-secondary rounded-3">
-                       <i class="fas fa-sign-in-alt me-2"></i>Login
-                    </RouterLink>
-                  </div>
                 </form>
+
+                <div class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary rounded-3"
+                    @click="$router.push({ name: 'login' })"
+                  >
+                    <i class="fas fa-arrow-left me-2"></i>Back to Login
+                  </button>
+                </div>
               </div>
             </div>
+
+            <div class="text-center mt-4">
+              <p class="text-muted small mb-0">
+                © 2025 RYT-Tyre. All rights reserved.
+              </p>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showCameraModal" class="camera-modal">
+      <div class="camera-modal-content">
+        <h4 class="text-center mb-3">Face Verification</h4>
+        <p class="text-center text-muted mb-3">Please center your face in the frame and capture a photo.</p>
+        <video ref="videoRef" autoplay playsinline class="w-100 rounded-3 mb-3"></video>
+        <div class="d-grid gap-2">
+           <button @click="captureAndVerify" class="btn btn-success btn-lg">
+             <i class="fas fa-camera me-2"></i>Capture Photo
+           </button>
+           <button @click="closeCamera" class="btn btn-secondary btn-sm">Cancel</button>
         </div>
       </div>
     </div>
@@ -76,131 +130,207 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { supabase } from '../server/supabase';
-import { useRouter } from 'vue-router';
+import { ref, reactive, onUnmounted, onMounted, computed } from 'vue' // <-- Added onMounted and computed
+import { useRouter } from 'vue-router'
+import { supabase } from '../server/supabase'
 
-const router = useRouter();
-const isLoading = ref(false);
-const errors = reactive({ form: '' });
-const livenessStatus = ref('');
+const router = useRouter()
 
-const username = ref("");
-const email = ref("");
-const password = ref("");
+const form = reactive({
+  username: '',
+  email: '',
+  password: '',
+  facialRecognition: false
+})
 
-const handleSignUp = async () => {
-  isLoading.value = true;
-  errors.form = '';
-  livenessStatus.value = 'Starting liveness check...';
+const errors = reactive({
+  username: '',
+  email: '',
+  password: ''
+})
 
-  if (!username.value || !email.value || !password.value) {
-    errors.form = 'All fields are required.';
-    isLoading.value = false;
-    return;
+const isLoading = ref(false)
+const showCameraModal = ref(false)
+const videoRef = ref(null)
+let stream = null;
+
+// --- ⬇️ NEW: Password Visibility Logic (copied from Login.vue) ---
+const isPasswordVisible = ref(false)
+
+const passwordFieldType = computed(() => {
+  return isPasswordVisible.value ? 'text' : 'password'
+})
+
+const passwordIcon = computed(() => {
+  return isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png'
+})
+
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value
+}
+// --- ⬆️ END OF NEW LOGIC ---
+
+// --- ⬇️ NEW: Check for existing superadmin on component mount ---
+onMounted(async () => {
+  try {
+    // Assuming your table is named 'profiles' and has a 'role' column.
+    // Adjust if your schema is different.
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'superadmin')
+      .limit(1)
+
+    if (error) throw error
+
+    // If a superadmin is found (data array is not empty), redirect to login.
+    if (data && data.length > 0) {
+      console.log('Superadmin exists. Redirecting to login.')
+      router.push({ name: 'login' })
+    }
+  } catch (error) {
+    console.error('Error checking for superadmin:', error.message)
+    // Optional: Show an error to the user
   }
+})
+// --- ⬆️ END OF NEW LOGIC ---
+
+const startCamera = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    if (videoRef.value) {
+      videoRef.value.srcObject = stream;
+    }
+  } catch (err) {
+    console.error("Error accessing camera:", err);
+    alert("Could not access the camera. Please ensure you have given permission.");
+    closeCamera();
+  }
+}
+
+const closeCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+  showCameraModal.value = false
+  isLoading.value = false;
+}
+
+const captureAndVerify = async () => {
+  if (!videoRef.value) return;
+
+  isLoading.value = true;
+  const canvas = document.createElement('canvas');
+  canvas.width = videoRef.value.videoWidth;
+  canvas.height = videoRef.value.videoHeight;
+  const context = canvas.getContext('2d');
+  context.drawImage(videoRef.value, 0, 0, canvas.width, canvas.height);
+  const imageBase64 = canvas.toDataURL('image/jpeg');
+  
+  closeCamera();
 
   try {
-    // 1. Call your backend to get a liveness SessionId
-    const response = await fetch('/api/create-liveness-session', { method: 'POST' });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Could not start liveness session.');
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/verify-face`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64 })
+    });
 
-    const { SessionId } = data;
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Face verification failed.');
+    }
 
-    // 2. Open the liveness check UI in a new window
-    const livenessUrl = `https://us-east-1.face.rekognition.aws/start-liveness-session?sessionId=${SessionId}`;
-    const livenessWindow = window.open(livenessUrl, '_blank', 'width=500,height=700');
-    
-    // 3. Start polling for the result
-    pollForResults(SessionId, livenessWindow);
+    console.log('Face verification successful!');
+    await proceedWithSupabaseSignUp();
 
   } catch (error) {
-    console.error(error);
-    errors.form = error.message;
+    console.error('Face verification failed:', error.message);
+    alert(`Face verification failed: ${error.message}`);
+  } finally {
     isLoading.value = false;
-    livenessStatus.value = '';
   }
-};
+}
 
-const pollForResults = (sessionId, livenessWindow) => {
-  livenessStatus.value = 'Liveness check in progress... Please complete the steps in the pop-up window.';
-  
-  const intervalId = setInterval(async () => {
-    // Stop polling if the window is closed by the user
-    if (livenessWindow.closed) {
-      clearInterval(intervalId);
-      errors.form = 'Liveness check cancelled.';
-      isLoading.value = false;
-      livenessStatus.value = '';
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/get-liveness-results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ SessionId: sessionId }),
-      });
-      const result = await response.json();
-
-      // We only care if the check has succeeded
-      if (result.status === 'SUCCEEDED') {
-        clearInterval(intervalId);
-        livenessWindow.close();
-
-        if (result.isLive) {
-          livenessStatus.value = 'Liveness check passed! Creating your account...';
-          await createSupabaseUser();
-        } else {
-          throw new Error('Liveness check failed. Please try again.');
+const proceedWithSupabaseSignUp = async () => {
+  isLoading.value = true;
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          username: form.username
         }
       }
-    } catch (error) {
-      clearInterval(intervalId);
-      errors.form = error.message;
-      isLoading.value = false;
-      livenessStatus.value = '';
-    }
-  }, 2000); // Check for the result every 2 seconds
-};
+    });
 
-const createSupabaseUser = async () => {
-  const { error: signUpError } = await supabase.auth.signUp({
-    email: email.value,
-    password: password.value,
-    options: {
-      data: { 
-        username: username.value,
-        role: 'Client'
-      }
-    }
-  });
+    if (error) throw error;
+    
+    alert('Account created! Please check your email for a verification link.');
+    // ⬇️ BUG FIX: Changed 'Login' to 'login'
+    router.push({ name: 'login' });
 
-  if (signUpError) {
-      errors.form = signUpError.message;
-  } else {
-    alert("Sign up successful! Please check your email for verification.");
-    router.push({ name: 'Login' }); // Or your login route
+  } catch (error) {
+    console.error('Sign-up failed:', error.message);
+    alert(`Sign-up failed: ${error.message}`);
+  } finally {
+    isLoading.value = false;
   }
-  
-  isLoading.value = false;
-  livenessStatus.value = '';
 };
+
+const handleSignUp = async () => {
+  errors.username = ''
+  errors.email = ''
+  errors.password = ''
+
+  let hasError = false;
+  if (!form.username.trim()) { errors.username = 'Username is required'; hasError = true; }
+  if (!form.email.trim()) { errors.email = 'Email is required'; hasError = true; }
+  if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
+  if (hasError) return;
+
+  if (form.facialRecognition) {
+    showCameraModal.value = true;
+    startCamera();
+  } else {
+    await proceedWithSupabaseSignUp();
+  }
+}
+
+onUnmounted(() => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+})
 </script>
 
 <style scoped>
 
-/* Include the rest of the original CSS from SuperSignUp.vue */
-.signup-page {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* --- ⬇️ NEW STYLES for Password Toggle --- */
+.password-wrapper {
   position: relative;
 }
 
-.signup-page {
+.password-wrapper .form-control {
+  padding-right: 45px;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: auto;
+  cursor: pointer;
+  z-index: 3;
+}
+/* --- ⬆️ END OF NEW STYLES --- */
+
+/* All existing styles remain the same */
+.login-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* Ensure this background property is removed to fix the white layer */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
 }
@@ -223,28 +353,18 @@ const createSupabaseUser = async () => {
   overflow: hidden;
 }
 
-.z-index-2 {
-  z-index: 2;
-}
-
-.login-form-container {
-  max-width: 480px;
+.login-form-container { 
+  max-width: 720px; /* or try 640px or 720px */
   width: 100%;
   padding: 2rem;
-  position: relative;
+  position: relative; 
   z-index: 2;
 }
 
-/* RE-WRITTEN CARD DESIGN CODE - CSS STARTS HERE */
-
-/* Removed .avatar-wrapper and .avatar specific rules */
-/* Combined into a single utility-like class for direct use on the div */
-.avatar-lg {
+.avatar-wrapper,
+.avatar {
   width: 80px;
   height: 80px;
-  display: flex; /* Ensure flex properties if not already there from d-inline-flex */
-  align-items: center;
-  justify-content: center;
 }
 
 .card {
@@ -268,47 +388,6 @@ const createSupabaseUser = async () => {
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-.btn-primary:disabled {
-  transform: none;
-  opacity: 0.7;
-}
-
-/* Password toggle button and icon styles (not directly part of the card structure but related to inputs) */
-.password-toggle-btn {
-  border-color: #ced4da;
-  color: #6c757d;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-}
-
-.password-toggle-btn:hover {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-  color: #495057;
-}
-
-.password-toggle-btn:focus {
-  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
-  outline: none;
-}
-
-.password-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  transition: opacity 0.2s ease;
-}
-
-.password-toggle-btn:hover .password-icon {
-  opacity: 0.8;
-}
-
-/* RE-WRITTEN CARD DESIGN CODE - CSS ENDS HERE */
-
-/* Floating shapes animation - NO CHANGES HERE */
 .floating-shapes {
   position: relative;
   width: 100%;
@@ -327,7 +406,6 @@ const createSupabaseUser = async () => {
   height: 100px;
   top: 20%;
   left: 10%;
-  animation-delay: 0s;
 }
 
 .shape-2 {
@@ -355,26 +433,27 @@ const createSupabaseUser = async () => {
   }
 }
 
-/* Responsive adjustments - NO CHANGES HERE */
-@media (max-width: 991.98px) {
-  .login-form-container {
-    padding: 1rem;
-  }
+
+/* NEW: Styles for the camera modal */
+.camera-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
 }
 
-@media (max-width: 575.98px) {
-  .card-body {
-    padding: 2rem !important;
-  }
-  
-  .login-form-container {
-    padding: 0.5rem;
-  }
-}
-
-/* Icon styling - NO CHANGES HERE */
-.fas {
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
+.camera-modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 </style>

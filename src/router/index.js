@@ -7,13 +7,13 @@ const router = createRouter({
 
         {
             path: "/",
-            name: "super signup",
+            name: "signup",
             component: SuperSignUp,
         },
 
         {
-            path: '/super-login',
-            name: 'super login',
+            path: '/login',
+            name: 'login',
             component: () => import('../components/LogIn.vue')
         },
 

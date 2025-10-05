@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-amplify/ui-vue": "^4.3.5",
     "@aws-sdk/client-rekognition": "^3.901.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@supabase/supabase-js": "^2.56.0",
@@ -16,6 +17,7 @@
     "aws-amplify": "^6.15.7",
     "bootstrap": "^5.3.7",
     "chart.js": "^4.5.0",
+    "multiparty": "^4.2.3",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
