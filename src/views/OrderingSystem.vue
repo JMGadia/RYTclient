@@ -1,229 +1,360 @@
 <template>
   <div class="ordering-page">
-     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 border-bottom shadow-sm">
-        <div class="container">
-          <a class="navbar-brand d-flex align-items-center order-0" href="#">
-            <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
-            <strong class="text-dark fs-5">RYT-Tyre</strong>
+    <nav class="navbar navbar-expand-md navbar-light bg-white py-3 border-bottom shadow-sm sticky-top">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+          <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
+          <strong class="text-dark fs-5">RYT-Tyre</strong>
+        </a>
+
+        <form class="d-none d-md-flex mx-auto" style="max-width: 500px;" @submit.prevent>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+            <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search for tires and parts..." aria-label="Search" />
+          </div>
+        </form>
+
+        <button class="navbar-toggler d-md-none" type="button" @click="isMobileMenuOpen = !isMobileMenuOpen">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="d-none d-md-flex align-items-center">
+          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'profile' })" title="My Account">
+            <img src="../assets/userIcon.png" alt="Account Management" height="28" />
           </a>
-
-          <div class="col-12 col-md-6 col-lg-5 mx-auto order-2 order-lg-1 mt-2 mt-lg-0">
-            <form class="d-flex">
-              <input class="form-control rounded-5" type="search" placeholder="Search" aria-label="Search" />
-              <button class="btn btn-outline-primary ms-2 rounded-circle p-2" type="submit">
-                <img src="../assets/searchIcon.png" height="25" />
-              </button>
-            </form>
-          </div>
-
-          <div class="d-flex align-items-center order-1 order-lg-2">
-            <a href="#" class="text-dark me-3" @click.prevent="router.push({ name: 'profile' })">
-                <img src="../assets/userIcon.png" alt="Account Management" height="24" />
-            </a>
-            <span class="mx-2 text-muted">|</span>
-            <a href="#" class="me-3" @click.prevent="router.push({ name: 'order tracking' })">
-              <img src="../assets/orderTrackicon.png" alt="Order Tracking" height="24" />
-            </a>
-            <span class="mx-2 text-muted">|</span>
-            <a href="#" @click.prevent="router.push({ name: 'cart' })">
-              <img src="../assets/cartIcon.png" alt="Cart" height="24" />
-            </a>
-          </div>
+          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'order tracking' })" title="Track Order">
+            <img src="../assets/orderTrackicon.png" alt="Order Tracking" height="28" />
+          </a>
+          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'cart' })" title="Shopping Cart">
+            <img src="../assets/cartIcon.png" alt="Cart" height="28" />
+          </a>
         </div>
-      </nav>
+      </div>
+    </nav>
+
+    <div class="container d-md-none py-2 bg-white border-bottom">
+        <form @submit.prevent>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+                <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search..." aria-label="Search" />
+            </div>
+        </form>
+    </div>
+
+    <Transition name="slide-right">
+      <div v-if="isMobileMenuOpen" class="mobile-side-panel">
+        <ul class="list-unstyled mb-0">
+          <li>
+            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('profile')">
+              <img src="../assets/userIcon.png" alt="Account" height="24" />
+              <span>My Account</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('order tracking')">
+              <img src="../assets/orderTrackicon.png" alt="Track Order" height="24" />
+              <span>Track Order</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('cart')">
+              <img src="../assets/cartIcon.png" alt="Cart" height="24" />
+              <span>Shopping Cart</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </Transition>
 
     <section class="advertisement-banner">
       <img src="../assets/mainAds.png" alt="Best place to buy tires online advertisement" class="img-fluid" />
     </section>
 
-    <section class="py-5 bg-light border-bottom">
-      <div class="container">
-        <div class="row text-center">
-          <div class="col-md-4">
-            <i class="fas fa-shipping-fast fa-2x text-primary mb-3"></i>
-            <h5 class="fw-bold">Reliable Shipping</h5>
-            <p class="text-secondary">Fast delivery with optional shipping insurance available.</p>
-          </div>
-          <div class="col-md-4">
-            <i class="fas fa-shield-alt fa-2x text-primary mb-3"></i>
-            <h5 class="fw-bold">You're Safe With Us</h5>
-            <p class="text-secondary">Secure payment system supporting major debit and credit cards.</p>
-          </div>
-          <div class="col-md-4">
-            <i class="fas fa-tags fa-2x text-primary mb-3"></i>
-            <h5 class="fw-bold">Best Quality & Pricing</h5>
-            <p class="text-secondary">Affordable and quality tires and auto products for every vehicle.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-5 text-center recommended-section">
-      <div class="container">
-        <h2 class="fw-bold mb-4 section-title">Recommended Tire Car Brands</h2>
-        <div class="row flex-nowrap overflow-auto recommended-scroll justify-content-lg-center">
-          <div
-            class="col-8 col-sm-4 col-md-3 col-lg-2 mb-4"
-            v-for="brand in recommendedBrands"
-            :key="brand.name"
-          >
-            <div class="card h-100 shadow-sm rounded-lg-card">
-              <div class="card-img-container">
-                <img :src="brand.image" class="card-img-top p-3" :alt="brand.name + ' logo'">
-              </div>
-              <div class="card-body d-flex flex-column justify-content-between align-items-center">
-                <h6 class="card-title fw-semibold text-center mb-3">{{ brand.name }}</h6>
-                <button class="btn btn-sm btn-outline-primary rounded-pill px-4">Explore</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-5 bg-light">
-      <div class="container">
-        <h3 class="fw-bold mb-4 text-center section-title">CHOOSE YOUR TIRES</h3>
-        <div class="row g-4 justify-content-center">
-          <div class="col-6 col-md-4 col-lg-3" v-for="product in tireProducts" :key="product.name">
-            <div class="card h-100 shadow-sm product-card">
-              <div class="card-img-container">
-                <img :src="product.image" class="card-img-top p-3" :alt="product.name">
-              </div>
-              <div class="card-body text-center d-flex flex-column">
-                <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
-                <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                <span v-if="product.stock === 0" class="badge bg-danger mb-3 align-self-center stock-badge">Out of Stock</span>
-                <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.stock === 0">
-                  Add to Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="py-5">
-      <div class="container">
-        <h3 class="fw-bold mb-4 text-center section-title">NON-TIRE PRODUCTS</h3>
-        <div class="row g-4 justify-content-center">
-          <div class="col-6 col-md-4 col-lg-3" v-for="product in nonTireProducts" :key="product.name">
-            <div class="card h-100 shadow-sm product-card">
-              <div class="card-img-container">
-                <img :src="product.image" class="card-img-top p-3" :alt="product.name">
-              </div>
-              <div class="card-body text-center d-flex flex-column">
-                <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
-                <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4">Add to Cart</button>
+        <div class="container">
+            <h3 class="fw-bold mb-4 text-center section-title">BROWSE BY CATEGORY</h3>
+            <div class="d-flex justify-content-center flex-wrap gap-2">
+                <button @click="selectCategory('All')" :class="['btn-glass', { 'active': selectedCategory === 'All' }]">All</button>
+                <button @click="selectCategory('Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Tires' }]">Tires</button>
+                <button @click="selectCategory('Oils & Fluids')" :class="['btn-glass', { 'active': selectedCategory === 'Oils & Fluids' }]">Oils & Fluids</button>
+                <button @click="selectCategory('Parts')" :class="['btn-glass', { 'active': selectedCategory === 'Parts' }]">Parts</button>
+            </div>
+        </div>
+    </section>
+
+    <div v-if="selectedCategory === 'All'">
+        <section class="py-5">
+          <div class="container">
+            <h3 class="fw-bold mb-4 text-center section-title">CHOOSE YOUR TIRES</h3>
+            <div class="row g-4 justify-content-center">
+              <div class="col-6 col-md-4 col-lg-3" v-for="product in tireProducts" :key="product.name">
+                <div class="card h-100 product-card">
+                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
+                  <div class="card-body text-center d-flex flex-column">
+                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
+                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
+                    <span v-if="product.stock === 0" class="badge bg-danger mb-3 align-self-center stock-badge">Out of Stock</span>
+                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.stock === 0">Add to Cart</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
+
+        <section class="py-5">
+          <div class="container">
+            <h3 class="fw-bold mb-4 text-center section-title">NON-TIRE PRODUCTS</h3>
+            <div class="row g-4 justify-content-center">
+              <div class="col-6 col-md-4 col-lg-3" v-for="product in nonTireProducts" :key="product.name">
+                <div class="card h-100 product-card">
+                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
+                  <div class="card-body text-center d-flex flex-column">
+                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
+                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
+                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4">Add to Cart</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+    </div>
+
+    <div v-else>
+        <section class="py-5">
+          <div class="container">
+            <div v-if="filteredProducts.length > 0" class="row g-4 justify-content-center">
+              <div class="col-6 col-md-4 col-lg-3" v-for="product in filteredProducts" :key="product.id">
+                <div class="card h-100 product-card">
+                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
+                  <div class="card-body text-center d-flex flex-column">
+                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
+                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
+                    <span v-if="product.stock === 0" class="badge bg-danger mb-3 align-self-center stock-badge">Out of Stock</span>
+                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.stock === 0">Add to Cart</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+             <div v-else class="text-center py-5">
+                <p class="text-muted fs-5">No products found in this category.</p>
+            </div>
+          </div>
+        </section>
+    </div>
 
     <footer class="bg-dark text-white pt-5 pb-3">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-4 mb-4">
-            <img src="/images/background.jpg" alt="RYT Logo" height="45" class="mb-3 rounded-circle shadow-sm" />
-            <p class="small text-white-75 pe-lg-4">#1 Trusted Tire Supplier in the Philippines. Dedicated to top-quality products, reliable service, and expert support.</p>
-          </div>
-          <div class="col-md-4 mb-4">
-            <h6 class="text-uppercase fw-bold mb-3">Contact Us</h6>
-            <p class="small text-white-75"><i class="fas fa-envelope me-2"></i>info@ryt-tyre.cc</p>
-          </div>
-          <div class="col-md-4 mb-4">
-            <h6 class="text-uppercase fw-bold mb-3">We Accept</h6>
-            <div class="payment-icons">
-              <i class="fab fa-cc-visa me-3"></i>
-              <i class="fab fa-cc-mastercard me-3"></i>
-              <i class="fab fa-cc-paypal me-3"></i>
-              <i class="fab fa-cc-amex"></i>
-            </div>
-          </div>
-        </div>
-        <hr class="bg-white my-4" />
-        <div class="text-center small text-white-50">
-          &copy; {{ new Date().getFullYear() }} RYT-Tyre. All rights reserved. |
-          <a href="#" class="text-white-50 text-decoration-none mx-2">Privacy Policy</a> |
-          <a href="#" class="text-white-50 text-decoration-none mx-2">Terms & Conditions</a>
-        </div>
-      </div>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+const isMobileMenuOpen = ref(false);
+const selectedCategory = ref('All');
 
-const recommendedBrands = ref([
-  { name: 'Toyota', image: '/images/brands/toyota.png' },
-  { name: 'Honda', image: '/images/brands/honda.png' },
-  { name: 'Ford', image: '/images/brands/ford.png' },
-  { name: 'Mitsubishi', image: '/images/brands/mitsubishi.png' },
-  { name: 'Nissan', image: '/images/brands/nissan.png' },
-  { name: 'Hyundai', image: '/images/brands/hyundai.png' },
-]);
+const navigateAndCloseMenu = (routeName) => {
+  isMobileMenuOpen.value = false;
+  router.push({ name: routeName });
+};
 
+// Original data for the "All" view
 const tireProducts = ref([
-  { name: 'Goodyear Assurance', price: '4500', stock: 10, image: '/images/brands/toyota.png' },
-  { name: 'Michelin Primacy', price: '5200', stock: 5, image: '/images/brands/honda.png' },
-  { name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/brands/ford.png' },
-  { name: 'Yokohama BluEarth', price: '4650', stock: 12, image: '/images/brands/mitsubishi.png' },
+  { name: 'Goodyear Assurance', price: '4500', stock: 10, image: '../assets/products/honda.png' },
+  { name: 'Michelin Primacy', price: '5200', stock: 5, image: '../assets/products/toyota.png' },
+  { name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/tires/bridgestone.png' },
+]);
+const nonTireProducts = ref([
+  { name: 'Engine Oil 5L', price: '1250', image: '/images/others/oil.png' },
+  { name: 'Wiper Blades', price: '600', image: '/images/others/wiper.png' },
+  { name: 'Brake Pads', price: '1800', image: '/images/others/brake.png' },
 ]);
 
-const nonTireProducts = ref([
-  { name: 'Engine Oil 5L', price: '1250', image: '/images/brands/nissan.png' },
-  { name: 'Car Battery', price: '3500', image: '/images/brands/hyundai.png' },
-  { name: 'Wiper Blades', price: '600', image: '/images/brands/toyota.png' },
-  { name: 'Brake Pads', price: '1800', image: '/images/brands/honda.png' },
+// Combined list for filtering logic, with a 'category' property added
+const allProducts = ref([
+    { id: 1, name: 'Goodyear Assurance', price: '4500', stock: 10, image: '../assets/products/honda.png', category: 'Tires' },
+    { id: 2, name: 'Michelin Primacy', price: '5200', stock: 5, image: '../assets/products/toyota.png', category: 'Tires' },
+    { id: 3, name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/tires/bridgestone.png', category: 'Tires' },
+    { id: 4, name: 'Engine Oil 5L', price: '1250', stock: 15, image: '/images/others/oil.png', category: 'Oils & Fluids' },
+    { id: 5, name: 'Wiper Blades', price: '600', stock: 20, image: '/images/others/wiper.png', category: 'Parts' },
+    { id: 6, name: 'Brake Pads', price: '1800', stock: 12, image: '/images/others/brake.png', category: 'Parts' },
 ]);
+
+const selectCategory = (category) => {
+  selectedCategory.value = category;
+};
+
+const filteredProducts = computed(() => {
+  if (selectedCategory.value === 'All') return [];
+  return allProducts.value.filter(product => product.category === selectedCategory.value);
+});
 
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
-.ordering-page { font-family: 'Roboto', sans-serif; color: #333; background-color: #f8f9fa; }
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+@keyframes auroraAnimation {
+    0% { transform: rotate(0deg) translateX(10%); }
+    50% { transform: rotate(180deg) translateX(10%); }
+    100% { transform: rotate(360deg) translateX(10%); }
+}
+
+.ordering-page { 
+  font-family: 'Roboto', sans-serif; 
+  position: relative;
+  background-color: #0c0a24;
+  overflow-x: hidden;
+}
+
+.ordering-page::before {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%; right: -50%; bottom: -50%;
+  z-index: 0;
+  background-image: 
+    radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
+    radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
+  filter: blur(100px);
+  animation: auroraAnimation 20s ease-in-out infinite;
+}
+
+.navbar, section, footer {
+  position: relative;
+  z-index: 1;
+}
+
+section {
+  background-color: transparent !important;
+}
+
+.section-title { 
+  font-family: 'Poppins', sans-serif; 
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  position: relative; 
+  padding-bottom: 10px; 
+}
+.section-title::after { 
+  content: ''; 
+  position: absolute; 
+  left: 50%; bottom: 0; 
+  transform: translateX(-50%); 
+  width: 60px; height: 3px; 
+  background-color: #0d6efd; 
+  border-radius: 2px; 
+}
+
+.product-card { 
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem; 
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); 
+}
+.card-img-container { 
+  background-color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  height: 160px; 
+}
+
+/* --- NAVBAR STYLES --- */
 .navbar-brand strong { font-family: 'Poppins', sans-serif; font-weight: 600; color: #212529 !important; }
-.navbar .form-control { border-color: #ced4da; }
-.navbar .btn-outline-primary { border-color: #0d6efd; color: #0d6efd; }
-.navbar .btn-outline-primary:hover { background-color: #0d6efd; color: #fff; }
+.input-group-text { border-radius: 50rem 0 0 50rem; background-color: #f8f9fa; }
+.form-control:focus { box-shadow: none; border-color: #ced4da; }
+.navbar-toggler { border: none; }
+.navbar-toggler:focus { box-shadow: none; }
+.nav-icon-link { 
+    margin-left: 1rem; 
+}
+
+/* --- MOBILE SIDE PANEL STYLES --- */
+.mobile-side-panel {
+  position: fixed;
+  top: 80px;
+  right: 0;
+  width: auto;
+  background-color: #343a40; /* Simple solid dark color */
+  border-radius: 1rem 0 0 1rem; /* Rounded on the left side */
+  box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1050;
+  padding: 0.5rem;
+  padding-left: 2rem; /* Make space for the handle */
+}
+/* This creates the "handle" from your sketch */
+.mobile-side-panel::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 60px;
+  background-color: #343a40;
+  border-radius: 10px 0 0 10px;
+}
+.panel-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  color: #f8f9fa;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  white-space: nowrap; /* Prevent text from wrapping */
+}
+.panel-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.panel-link img {
+  filter: invert(1);
+  margin-right: 0.75rem;
+}
+
+/* --- TRANSITION FOR THE PANEL --- */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.4s ease;
+}
+.slide-right-enter-from,
+.slide-right-leave-to {
+  transform: translateX(100%);
+}
+
 .advertisement-banner img { width: 100%; height: auto; display: block; }
-.section-title { font-family: 'Poppins', sans-serif; font-weight: 700; color: #212529; position: relative; padding-bottom: 10px; margin-bottom: 40px !important; }
-.section-title::after { content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 60px; height: 3px; background-color: #0d6efd; border-radius: 2px; }
-section.py-5.bg-light.border-bottom { background-color: #ffffff !important; }
-.bg-light .col-md-4 h5 { font-family: 'Poppins', sans-serif; font-weight: 600; color: #212529; }
-.bg-light .col-md-4 p { color: #6c757d; }
-.recommended-section { background-color: #f8f9fa; }
-.recommended-scroll { -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
-.recommended-scroll::-webkit-scrollbar { height: 8px; }
-.recommended-scroll::-webkit-scrollbar-track { background: #e9ecef; border-radius: 10px; }
-.recommended-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
-.recommended-scroll::-webkit-scrollbar-thumb:hover { background: #aab2bd; }
-.rounded-lg-card { border-radius: 1rem !important; }
-.card { border: none; border-radius: 0.75rem; overflow: hidden; transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
-.card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
-.card-img-container { height: 160px; display: flex; justify-content: center; align-items: center; background-color: #fff; border-bottom: 1px solid #eee; }
+
 .card-img-top { max-height: 100%; max-width: 100%; object-fit: contain; padding: 10px; }
 .product-name { min-height: 40px; display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; color: #212529; }
 .product-card .card-body { padding: 1rem; }
-.product-card .badge { font-size: 0.8rem; padding: 0.4em 0.7em; border-radius: 0.5rem; font-weight: 500; letter-spacing: 0.5px; }
-.btn-primary, .btn-outline-primary { font-family: 'Poppins', sans-serif; font-weight: 500; border-radius: 50rem !important; padding: 0.5rem 1.5rem; transition: all 0.3s ease; }
-.btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
-.btn-primary:hover { background-color: #0a58ca; border-color: #0a58ca; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2); }
-.btn-outline-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(13, 110, 253, 0.1); }
-footer { background-color: #212529 !important; color: #e9ecef; }
-footer h6 { font-family: 'Poppins', sans-serif; font-weight: 700; color: #ffffff; }
-footer p.small { color: rgba(255, 255, 255, 0.75) !important; }
-.payment-icons i { font-size: 1.8rem; color: #adb5bd; transition: color 0.3s ease, transform 0.3s ease; }
-.payment-icons i:hover { color: #ffffff; transform: scale(1.1); text-shadow: none; }
-footer .text-white-50 { color: rgba(255, 255, 255, 0.6) !important; }
-footer .text-white-50:hover { color: #ffffff !important; text-decoration: underline !important; }
-@media (min-width: 992px) { .justify-content-lg-center { justify-content: center !important; } }
+.btn { font-family: 'Poppins', sans-serif; font-weight: 500; }
+footer { background-color: rgba(12, 10, 36, 0.8) !important; backdrop-filter: blur(5px); }
+
+.btn-glass {
+  padding: 0.5rem 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 50rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.btn-glass.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+@media (max-width: 767.98px) {
+  h3.section-title { font-size: 1.5rem; }
+  section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+  .card-img-container { height: 120px; }
+  .product-name { font-size: 0.9rem; }
+}
 </style>
