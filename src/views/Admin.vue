@@ -1,4 +1,3 @@
-<!--Back-bone Section-->
 <template>
   <div id="admin-dashboard" class="d-flex flex-column min-vh-100 bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
@@ -20,11 +19,10 @@
                 ref="adminDropdownToggle"
                 @click.prevent="toggleDesktopAdminMenu"
               >
-                <i class="fas fa-user-circle me-1"></i> Admin User
+                <i class="fas fa-user-circle me-1"></i> {{ currentUser.username }}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" v-show="desktopAdminDropdownOpen">
-                <li><a class="dropdown-item" href="#">Profile</a></li>
-                <li><a class="dropdown-item" href="#">Settings</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="showProfileModal = true">Profile</a></li>
                 <li><hr class="dropdown-divider" /></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
               </ul>
@@ -33,7 +31,6 @@
         </div>
       </div>
     </nav>
-
     <div class="d-flex flex-grow-1">
       <div
         :class="[
@@ -53,13 +50,12 @@
               >
                 <div>
                   <i class="fas fa-user-circle me-2"></i>
-                  <span>Admin User</span>
+                  <span>{{ currentUser.username }}</span>
                 </div>
                 <i :class="adminMenuOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
               </div>
               <ul v-if="adminMenuOpen" class="ps-4 mt-2">
-                <li><a class="text-white d-block py-1" href="#">Profile</a></li>
-                <li><a class="text-white d-block py-1" href="#">Settings</a></li>
+                <li><a class="text-white d-block py-1" href="#" @click.prevent="showProfileModal = true; closeSidebar();">Profile</a></li>
                 <li><a class="text-white d-block py-1" href="#" @click.prevent="logout">Logout</a></li>
               </ul>
             </li>
@@ -70,7 +66,6 @@
                 <span>Notifications</span>
               </a>
             </li>
-
             <li
               class="nav-item mt-3 mb-2"
               v-for="item in menuItems"
@@ -86,7 +81,7 @@
                 <span v-if="!isCollapsed || isMobile">{{ item.label }}</span>
               </a>
             </li>
-          </ul>
+            </ul>
         </nav>
       </div>
 
@@ -95,7 +90,6 @@
         class="sidebar-overlay"
         @click="closeSidebar"
       ></div>
-
       <main class="flex-grow-1 p-4">
         <h2 class="text-primary mb-4">{{ currentView }}</h2>
 
@@ -141,7 +135,7 @@
               </ul>
             </div>
           </div>
-        </div>
+          </div>
 
         <div v-if="currentView === 'Stock In'">
           <div class="card shadow-sm border-0 rounded-lg mb-4">
@@ -153,16 +147,16 @@
                   <input type="text" class="form-control" id="productNameIn" v-model="stockIn.productName" required>
                 </div>
                 <div class="mb-3">
-                  <label for="quantityIn" class="form-label">Quantity</label>
-                  <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
+                  <label for="sizeIn" class="form-label">Size</label>
+                  <input type="text" class="form-control" id="sizeIn" v-model="stockIn.size" required>
                 </div>
                 <div class="mb-3">
                   <label for="supplierIn" class="form-label">Supplier</label>
                   <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
                 </div>
                 <div class="mb-3">
-                  <label for="dateIn" class="form-label">Date</label>
-                  <input type="date" class="form-control" id="dateIn" v-model="stockIn.date" required>
+                  <label for="dateTimeIn" class="form-label">Date and Time</label>
+                  <input type="datetime-local" class="form-control" id="dateTimeIn" v-model="stockIn.dateTime" required>
                 </div>
                 <button type="submit" class="btn btn-success rounded-pill px-4">Record Stock In</button>
               </form>
@@ -177,17 +171,17 @@
                   <thead>
                     <tr>
                       <th>Product Name</th>
-                      <th>Quantity</th>
+                      <th>Size</th>
                       <th>Supplier</th>
-                      <th>Date</th>
+                      <th>Date and Time</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in stockInHistory" :key="index">
                       <td>{{ item.productName }}</td>
-                      <td>{{ item.quantity }}</td>
+                      <td>{{ item.size }}</td>
                       <td>{{ item.supplier }}</td>
-                      <td>{{ item.date }}</td>
+                      <td>{{ item.dateTime }}</td>
                     </tr>
                     <tr v-if="stockInHistory.length === 0">
                       <td colspan="4" class="text-center text-muted">No stock in records yet.</td>
@@ -197,7 +191,7 @@
               </div>
             </div>
           </div>
-        </div>
+          </div>
 
         <div v-if="currentView === 'Stock Out'">
           <div class="d-flex justify-content-between align-items-center mb-4">
@@ -266,12 +260,48 @@
               </div>
             </div>
           </div>
-        </div>
+          </div>
       </main>
-    </div>
+      </div>
 
-    <div v-if="showLogoutModal" class="logout-modal-overlay">
-      <div class="logout-modal-card card shadow-lg">
+    <div v-if="showProfileModal" class="custom-modal-overlay">
+      <div class="custom-modal-card card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+          <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i> User Profile</h5>
+        </div>
+        <div class="card-body">
+          <form @submit.prevent="saveProfile">
+            <div class="mb-3">
+              <label for="profileUsername" class="form-label fw-bold">Username</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="profileUsername" 
+                v-model="editableUser.username" 
+                required
+              >
+            </div>
+            <div class="mb-4">
+              <label for="profileEmail" class="form-label fw-bold">Email</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                id="profileEmail" 
+                :value="currentUser.email"
+                disabled
+              >
+              <div class="form-text">Email cannot be changed here.</div>
+            </div>
+            <div class="d-flex justify-content-end gap-3">
+              <button type="button" class="btn btn-secondary" @click="cancelProfileEdit">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div v-if="showLogoutModal" class="custom-modal-overlay">
+      <div class="custom-modal-card card shadow-lg">
         <div class="card-header bg-primary text-white text-center">
           <h5 class="mb-0"><i class="fas fa-sign-out-alt me-2"></i> Confirm Logout</h5>
         </div>
@@ -284,12 +314,11 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
 </template>
-<!--End of Back-bone-->
-
-<!--Logic Section-->
 <script>
+import { nextTick } from 'vue';
+
 export default {
   name: 'AdminDashboard',
   emits: ['logout'],
@@ -301,7 +330,8 @@ export default {
       isMobile: false,
       adminMenuOpen: false,
       desktopAdminDropdownOpen: false,
-      showLogoutModal: false, // New data property for the modal
+      showLogoutModal: false, 
+      showProfileModal: false, // New property for Profile Modal
       currentView: 'Dashboard', // Default view
       showAddOrderForm: false,
       menuItems: [
@@ -309,16 +339,28 @@ export default {
         { icon: 'fas fa-boxes', label: 'Stock In' },
         { icon: 'fas fa-truck-loading', label: 'Stock Out' }
       ],
+      // Current User Data (Simulated)
+      currentUser: {
+        username: 'Admin User', // Displayed in navbar/sidebar
+        email: 'admin@ryttire.com'
+      },
+      // Editable copy for the modal
+      editableUser: {
+        username: 'Admin User'
+      },
+      // Objective 4: Updated Stock In model
       stockIn: {
         productName: '',
-        quantity: 1,
+        size: '',
         supplier: '',
-        date: new Date().toISOString().slice(0, 10)
+        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
       },
+      // Objective 4: Updated Stock In history model
       stockInHistory: [
-        { productName: 'Tire Model A', quantity: 100, supplier: 'Supplier X', date: '2023-01-10' },
-        { productName: 'Rim Type B', quantity: 50, supplier: 'Supplier Y', date: '2023-01-15' },
+        { productName: 'Tire Model A', size: '17"', supplier: 'Supplier X', dateTime: '2023-01-10T10:30' },
+        { productName: 'Rim Type B', size: '15"', supplier: 'Supplier Y', dateTime: '2023-01-15T15:00' },
       ],
+      // Stock Out models (untouched as requested)
       stockOut: {
         productName: '',
         quantity: 1,
@@ -333,15 +375,54 @@ export default {
     };
   },
   methods: {
+    // --- Profile Modal Methods (Objective 1) ---
+    saveProfile() {
+      // In a real application, you would call your backend/Supabase update function here
+      this.currentUser.username = this.editableUser.username;
+      this.showProfileModal = false;
+      alert('Profile updated successfully!');
+    },
+    cancelProfileEdit() {
+      // Revert changes when canceled
+      this.editableUser.username = this.currentUser.username;
+      this.showProfileModal = false;
+    },
+
+    // --- Logout Methods (Objective 2) ---
+    logout() {
+      this.showLogoutModal = true;
+    },
+    confirmLogout() {
+      // Clear user data (optional, but good practice)
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      this.showLogoutModal = false;
+      
+      // Emit the logout event (or use Vue Router directly)
+      // Assuming a router is set up, this is the most direct way to go to the root path
+      this.$router.push('/'); 
+    },
+    cancelLogout() {
+      this.showLogoutModal = false;
+    },
+    
+    // --- Navigation and Design Methods (Objective 3) ---
     toggleSidebar() {
       if (this.isMobile) {
         this.isSidebarVisible = !this.isSidebarVisible;
       } else {
         this.isCollapsed = !this.isCollapsed;
       }
+      nextTick(() => {
+        // Ensure dropdown closes if sidebar is collapsed on desktop
+        if (this.isCollapsed && !this.isMobile) {
+          this.desktopAdminDropdownOpen = false;
+        }
+      });
     },
     closeSidebar() {
       this.isSidebarVisible = false;
+      this.adminMenuOpen = false;
     },
     checkMobile() {
       this.isMobile = window.innerWidth < 992;
@@ -364,8 +445,10 @@ export default {
     },
     closeDesktopDropdownOnClickOutside(event) {
       const toggleEl = this.$refs.adminDropdownToggle;
-      const dropdownMenu = toggleEl.nextElementSibling;
-      if (toggleEl && !toggleEl.contains(event.target) && (!dropdownMenu || !dropdownMenu.contains(event.target))) {
+      // Use event.composedPath() if available, or target path logic
+      const path = event.composedPath ? event.composedPath() : (event.path || (event.composedPath && event.composedPath()));
+      
+      if (toggleEl && !path.includes(toggleEl) && !path.includes(toggleEl.nextElementSibling)) {
         this.desktopAdminDropdownOpen = false;
         document.removeEventListener('click', this.closeDesktopDropdownOnClickOutside);
       }
@@ -374,13 +457,21 @@ export default {
       this.currentView = label;
       if (this.isMobile) this.closeSidebar();
     },
+
+    // --- Stock Methods ---
     addStockIn() {
-      this.stockInHistory.unshift({ ...this.stockIn });
+      // Objective 4: Ensure new fields are used
+      this.stockInHistory.unshift({ 
+        productName: this.stockIn.productName,
+        size: this.stockIn.size,
+        supplier: this.stockIn.supplier,
+        dateTime: this.stockIn.dateTime 
+      });
       this.stockIn = {
         productName: '',
-        quantity: 1,
+        size: '',
         supplier: '',
-        date: new Date().toISOString().slice(0, 10)
+        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
       };
       alert('Stock In recorded successfully!');
     },
@@ -399,32 +490,13 @@ export default {
       const order = this.pendingOrders.splice(index, 1)[0];
       this.stockOutHistory.unshift(order);
       alert(`Order for ${order.customer} has been taken.`);
-    },
-    // This method now only shows the modal
-    logout() {
-      this.showLogoutModal = true;
-    },
-    // New method to confirm and perform the logout
-    confirmLogout() {
-     // Clear user data (optional, but good practice)
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      this.showLogoutModal = false;
-      
-      // Hide the modal
-      this.showLogoutModal = false;
-
-      // Emit the logout event to the parent component
-      this.$emit('logout');
-    },
-    // New method to cancel the logout
-    cancelLogout() {
-      this.showLogoutModal = false;
     }
   },
   mounted() {
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
+    // Initialize editable user data
+    this.editableUser = { ...this.currentUser };
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile);
@@ -432,16 +504,13 @@ export default {
   }
 };
 </script>
-<!--End of Logic-->
-
-<!--Design Section-->
 <style scoped>
 /* Ensure Bootstrap and Font Awesome are linked in your main HTML for these styles to work */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
-/* Custom Logout Modal Styles */
-.logout-modal-overlay {
+/* Custom Modal Styles (for Logout and Profile - Objective 1 & 2) */
+.custom-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -451,12 +520,12 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999; /* Higher than other elements to be on top */
+  z-index: 9999; 
   transition: opacity 0.3s ease;
 }
 
-.logout-modal-card {
-  max-width: 400px;
+.custom-modal-card {
+  max-width: 450px;
   width: 90%;
   border-radius: 1rem;
   overflow: hidden;
@@ -474,13 +543,13 @@ export default {
   }
 }
 
-.logout-modal-card .card-header {
+.custom-modal-card .card-header {
   border-bottom: none;
   font-weight: bold;
   padding: 1.5rem;
 }
 
-.logout-modal-card .card-body {
+.custom-modal-card .card-body {
   padding: 2rem;
 }
 
@@ -555,6 +624,10 @@ ul.ps-4 li a {
   font-size: 0.95rem;
 }
 
+/* Updated dropdown z-index for better layering */
+.nav-item.dropdown {
+    position: relative;
+}
 .dropdown-menu {
   z-index: 2000;
   display: block;
@@ -601,4 +674,3 @@ ul.ps-4 li a {
   padding-right: 0;
 }
 </style>
-<!--End of Design-->

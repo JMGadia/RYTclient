@@ -261,50 +261,48 @@ const proceedWithSupabaseSignUp = async () => {
   }
 };
 
-// --- ⬇️ handleSignUp function with email existence check (Objective 1) ---
+// --- ⬇️ handleSignUp function with FUNCTION CALL for email existence check ---
 const handleSignUp = async () => {
-  errors.username = ''
-  errors.email = ''
-  errors.password = ''
+    errors.username = ''
+    errors.email = ''
+    errors.password = ''
 
-  let hasError = false;
-  if (!form.username.trim()) { errors.username = 'Username is required'; hasError = true; }
-  if (!form.email.trim()) { errors.email = 'Email is required'; hasError = true; }
-  if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
-  if (hasError) return;
+    let hasError = false;
+    if (!form.username.trim()) { errors.username = 'Username is required'; hasError = true; }
+    if (!form.email.trim()) { errors.email = 'Email is required'; hasError = true; }
+    if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
+    if (hasError) return;
 
-  isLoading.value = true;
-  
-  try {
-    // Check if a profile with this email already exists in the profiles table.
-    const { data: profileCheck, error: checkError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('email', form.email.trim())
-        .maybeSingle() 
+    isLoading.value = true;
     
-    if (checkError) throw checkError;
+    try {
+        // **FIX: Call the new database function to bypass RLS**
+        const { data: exists, error: checkError } = await supabase.rpc('user_profile_exists_by_email', {
+            p_email: form.email.trim()
+        });
 
-    if (profileCheck) {
-      // User profile already exists, display error and stop signup
-      errors.email = 'User Account Already Exist';
-      isLoading.value = false;
-      return;
+        if (checkError) throw checkError;
+
+        if (exists === true) {
+            // User profile already exists, display error and stop signup
+            errors.email = 'User Account Already Exist';
+            isLoading.value = false;
+            return;
+        }
+
+    } catch (error) {
+        console.error('Pre-sign-up check failed:', error.message);
+        alert(`An error occurred during verification: ${error.message}`);
+        isLoading.value = false;
+        return;
     }
-
-  } catch (error) {
-    console.error('Pre-sign-up check failed:', error.message);
-    alert(`An error occurred during verification: ${error.message}`);
-    isLoading.value = false;
-    return;
-  }
-  
-  if (form.facialRecognition) {
-    showCameraModal.value = true;
-    startCamera();
-  } else {
-    await proceedWithSupabaseSignUp();
-  }
+    
+    if (form.facialRecognition) {
+        showCameraModal.value = true;
+        startCamera();
+    } else {
+        await proceedWithSupabaseSignUp();
+    }
 }
 // --- ⬆️ END OF handleSignUp function ---
 
