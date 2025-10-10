@@ -95,7 +95,7 @@
                   <button
                     type="button"
                     class="btn btn-outline-secondary rounded-3"
-                    @click="$router.push({ name: 'login' })"
+                    @click="$router.push({ path: '/login' })"
                   >
                     <i class="fas fa-arrow-left me-2"></i>Back to Login
                   </button>
