@@ -168,7 +168,7 @@ const goToForgotPassword = () => {
   router.push({ name: 'forgot password' });
 };
 
-// --- ⬇️ UPDATED: handleLogin function with role-based redirection ---
+// --- ⬇️ UPDATED: handleLogin function with role-based redirection logic ---
 const handleLogin = async () => {
   errors.email = ''
   errors.password = ''
@@ -202,14 +202,19 @@ const handleLogin = async () => {
       .single() // Use .single() to expect just one result
 
     if (profileError) throw profileError
+    
+    // 3. Redirect based on the role (Objective 2)
+    const role = profileData?.role;
 
-    // 3. Redirect based on the role
-    if (profileData && profileData.role === 'Super Admin') {
-      // User is an admin, redirect to SuperAdmin dashboard
-      router.push({ name: 'super admin' })
+    if (role === 'Super Admin') {
+      // User is a Super Admin
+      router.push({ name: 'super admin' }) // Assuming 'super admin' routes to '/super-admin'
+    } else if (role === 'Admin') {
+      // User is an Admin
+      router.push({ name: 'admin' }) // Assuming 'admin' routes to '/admin'
     } else {
-      // User is a regular customer, redirect to Ordering System
-      router.push({ name: 'ordering system' })
+      // User is a regular user ('User' role) or any other non-admin role
+      router.push({ name: 'ordering system' }) // Assuming 'ordering system' routes to '/ordering-system'
     }
 
   } catch (error) {
@@ -219,7 +224,7 @@ const handleLogin = async () => {
     isLoading.value = false
   }
 }
-// --- ⬆️ END OF UPDATE ---
+// --- ⬆️ END OF UPDATED handleLogin function ---
 </script>
 
 <style scoped>

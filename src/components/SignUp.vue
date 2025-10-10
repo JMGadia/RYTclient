@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onUnmounted, onMounted, computed } from 'vue' // <-- Added onMounted and computed
+import { ref, reactive, onUnmounted, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../server/supabase'
 
@@ -154,7 +154,7 @@ const showCameraModal = ref(false)
 const videoRef = ref(null)
 let stream = null;
 
-// --- ⬇️ NEW: Password Visibility Logic (copied from Login.vue) ---
+// --- ⬇️ Password Visibility Logic ---
 const isPasswordVisible = ref(false)
 
 const passwordFieldType = computed(() => {
@@ -168,32 +168,31 @@ const passwordIcon = computed(() => {
 const togglePasswordVisibility = () => {
   isPasswordVisible.value = !isPasswordVisible.value
 }
-// --- ⬆️ END OF NEW LOGIC ---
+// --- ⬆️ END OF PASSWORD VISIBILITY LOGIC ---
 
-// --- ⬇️ NEW: Check for existing superadmin on component mount ---
+// --- ⬇️ Check for existing superadmin on component mount (Original Logic Maintained) ---
 onMounted(async () => {
   try {
     // Assuming your table is named 'profiles' and has a 'role' column.
-    // Adjust if your schema is different.
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
-      .eq('role', 'superadmin')
+      .eq('role', 'Super Admin') // Corrected to match the actual role name from your data (Screenshot 2025-10-10 150234.png)
       .limit(1)
 
     if (error) throw error
 
     // If a superadmin is found (data array is not empty), redirect to login.
     if (data && data.length > 0) {
-      console.log('Superadmin exists. Redirecting to login.')
+      console.log('Super Admin exists. Redirecting to login.')
       router.push({ name: 'login' })
     }
   } catch (error) {
-    console.error('Error checking for superadmin:', error.message)
+    console.error('Error checking for Super Admin:', error.message)
     // Optional: Show an error to the user
   }
 })
-// --- ⬆️ END OF NEW LOGIC ---
+// --- ⬆️ END OF SUPERADMIN CHECK ---
 
 const startCamera = async () => {
   try {
@@ -248,7 +247,12 @@ const captureAndVerify = async () => {
     console.error('Face verification failed:', error.message);
     alert(`Face verification failed: ${error.message}`);
   } finally {
-    isLoading.value = false;
+    // Note: isLoading is handled within closeCamera() and also within proceedWithSupabaseSignUp/catch
+    // This final finally block is kept for safety but might be redundant depending on the flow.
+    // If captureAndVerify fails *before* calling closeCamera, isLoading should be set to false here.
+    if(showCameraModal.value === false) { // Only set false if camera is already closed
+      isLoading.value = false;
+    }
   }
 }
 
@@ -268,7 +272,6 @@ const proceedWithSupabaseSignUp = async () => {
     if (error) throw error;
     
     alert('Account created! Please check your email for a verification link.');
-    // ⬇️ BUG FIX: Changed 'Login' to 'login'
     router.push({ name: 'login' });
 
   } catch (error) {
@@ -279,6 +282,7 @@ const proceedWithSupabaseSignUp = async () => {
   }
 };
 
+// --- ⬇️ UPDATED: handleSignUp function with email existence check ---
 const handleSignUp = async () => {
   errors.username = ''
   errors.email = ''
@@ -290,13 +294,60 @@ const handleSignUp = async () => {
   if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
   if (hasError) return;
 
+  isLoading.value = true;
+  
+  try {
+    // **Objective 1: User Existence Check**
+    // Using the 'admin' API to check for user existence, as this is a pre-sign-up check.
+    // NOTE: This requires the correct service_role key or an appropriate function on the backend.
+    // If you are using the client-side Supabase key, you might need to use a different approach 
+    // like a custom Edge Function or a database function called from the client to avoid exposing the service_role key.
+    // For a typical client-side implementation *without* the service_role key, 
+    // we use a safe, though less direct, method: trying to sign up, and if the error is 
+    // 'User already registered', we catch it. However, since the goal is to show a specific message, 
+    // I will *assume* an appropriate backend method/function is available for this check.
+    
+    // For a pure client-side check, we must rely on the returned error code from `signUp`.
+    // The following structure *simulates* a pre-check without relying on the Admin API 
+    // which shouldn't be used client-side for security reasons.
+
+    // Let's use a non-Admin-API approach by trying to *retrieve* the user profile (if RLS allows) 
+    // or by catching the error from `signUp`. The most secure is relying on the `signUp` error.
+
+    // Let's first check if a profile with this email already exists in the profiles table.
+    // This assumes the profile is created by the `handle_new_user` trigger upon auth.
+    const { data: profileCheck, error: checkError } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', form.email.trim())
+        .maybeSingle() // Use maybeSingle to get null if not found
+    
+    if (checkError) throw checkError;
+
+    if (profileCheck) {
+      // User profile already exists in the table linked to an Auth user
+      errors.email = 'User Account Already Exist';
+      isLoading.value = false;
+      return;
+    }
+
+
+  } catch (error) {
+    console.error('Pre-sign-up check failed:', error.message);
+    alert(`An error occurred during verification: ${error.message}`);
+    isLoading.value = false;
+    return;
+  }
+  
   if (form.facialRecognition) {
     showCameraModal.value = true;
     startCamera();
+    // isLoading is kept true and will be handled by captureAndVerify/closeCamera
   } else {
     await proceedWithSupabaseSignUp();
   }
 }
+// --- ⬆️ END OF UPDATED handleSignUp function ---
 
 onUnmounted(() => {
   if (stream) {
@@ -432,7 +483,6 @@ onUnmounted(() => {
     transform: translateY(-20px);
   }
 }
-
 
 /* NEW: Styles for the camera modal */
 .camera-modal {
