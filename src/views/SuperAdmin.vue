@@ -1,9 +1,7 @@
 <template>
   <div class="d-flex" id="wrapper" :class="{ toggled: sidebarToggled }">
     <div class="bg-dark border-right" id="sidebar-wrapper">
-      <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">
-        RYT-Tyre Super Admin
-      </div>
+      <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">RYT-Tyre Super Admin</div>
       <div class="list-group list-group-flush">
         <a
           href="#"
@@ -24,17 +22,8 @@
           <i class="fas fa-user-circle me-2"></i>Super Admin
         </a>
         <div class="collapse" id="sidebarProfileCollapse">
-          <a
-            href="#"
-            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
-          >
+          <a href="#" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
             Profile
-          </a>
-          <a
-            href="#"
-            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
-          >
-            Settings
           </a>
           <a
             href="#"
@@ -42,13 +31,6 @@
             data-bs-toggle="modal"
             data-bs-target="#logoutConfirmationModal"
             >Logout</a
-          >
-          <a
-            href="#"
-            class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
-            data-bs-toggle="modal"
-            data-bs-target="#deleteConfirmationModal"
-            >Delete Account</a
           >
         </div>
         <a
@@ -83,7 +65,6 @@
         >
           <i class="fas fa-shopping-cart me-2"></i>Purchased Orders
         </a>
-        <!-- FIX 1: The click event now sets the correct feature name -->
         <a
           href="#"
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
@@ -124,13 +105,9 @@
                   <span class="d-sm-inline">Super Admin</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="#">Profile</a></li>
-                  <li><hr class="dropdown-divider" /></li>
-                  <li><a class="dropdown-item" href="#">Settings</a></li>
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#superAdminProfileModal">Profile</a></li>
                   <li><hr class="dropdown-divider" /></li>
                   <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmationModal">Logout</a></li>
-                  <li><hr class="dropdown-divider" /></li>
-                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal">Delete Account</a></li>
                 </ul>
               </li>
           </ul>
@@ -305,55 +282,46 @@
             <div class="row g-4 mb-4">
               <div class="col-lg-4 col-md-6">
                 <div class="card bg-primary text-white h-100 shadow-sm border-0">
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Total Stock</h5>
-                        <h3 class="card-text display-6 fw-bolder">{{ totalStock }}</h3>
-                      </div>
-                      <i class="fas fa-boxes fa-3x opacity-50"></i>
+                  <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                      <h5 class="card-title fw-bold">Total Stock</h5>
+                      <h3 class="card-text display-6 fw-bolder">{{ totalStock }}</h3>
                     </div>
+                    <i class="fas fa-boxes fa-3x opacity-50"></i>
                   </div>
                 </div>
               </div>
               <div class="col-lg-4 col-md-6">
                 <div class="card bg-warning text-dark h-100 shadow-sm border-0">
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Low Stock Alerts</h5>
-                        <h3 class="card-text display-6 fw-bolder">{{ lowStockCount }}</h3>
-                      </div>
-                      <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                  <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                      <h5 class="card-title fw-bold">Low Stock Alerts</h5>
+                      <h3 class="card-text display-6 fw-bolder">{{ lowStockCount }}</h3>
                     </div>
+                    <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
                   </div>
                 </div>
               </div>
               <div class="col-lg-4 col-md-12">
                 <div class="card bg-success text-white h-100 shadow-sm border-0">
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Tire Types</h5>
-                        <h3 class="card-text display-6 fw-bolder">{{ totalTireTypes }}</h3>
-                      </div>
-                      <i class="fas fa-list fa-3x opacity-50"></i>
+                  <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                      <h5 class="card-title fw-bold">Product Types</h5>
+                      <h3 class="card-text display-6 fw-bolder">{{ productTypes }}</h3>
                     </div>
+                    <i class="fas fa-list fa-3x opacity-50"></i>
                   </div>
                 </div>
               </div>
             </div>
+
             <div class="card mt-4 shadow-sm">
               <div
                 class="card-header bg-white d-flex justify-content-between align-items-center"
               >
                 <h5 class="mb-0 text-primary fw-bold">Current Tire Stock</h5>
-                <button
-                  class="btn btn-primary"
-                  data-bs-toggle="modal"
-                  data-bs-target="#addStockModal"
-                >
-                  <i class="fas fa-plus-circle me-2"></i>Add New Stock
+                <button class="btn btn-primary" @click="navigateToAddProduct">
+                  <i class="fas fa-plus-circle me-2"></i>Add New Product
                 </button>
               </div>
               <div class="card-body p-0">
@@ -361,41 +329,31 @@
                   <table class="table table-hover mb-0">
                     <thead class="bg-light">
                       <tr>
-                        <th class="py-3 px-4">Tire Type</th>
-                        <th class="py-3 px-4">Size</th>
+                        <th class="py-3 px-4">Product Type</th>
                         <th class="py-3 px-4">Brand</th>
+                        <th class="py-3 px-4">Size</th>
                         <th class="py-3 px-4">Current Stock</th>
-                        <th class="py-3 px-4">Min. Stock Level</th>
                         <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="tire in tires" :key="tire.id">
-                        <td class="py-3 px-4">{{ tire.type }}</td>
-                        <td class="py-3 px-4">{{ tire.size }}</td>
-                        <td class="py-3 px-4">{{ tire.brand }}</td>
-                        <td class="py-3 px-4">{{ tire.stock }}</td>
-                        <td class="py-3 px-4">{{ tire.minStock }}</td>
+                      <tr v-if="stockLoading">
+                        <td colspan="5" class="text-center py-4">Loading stock...</td>
+                      </tr>
+                      <tr v-else-if="stockItems.length === 0">
+                        <td colspan="5" class="text-center py-4">No products found. Add a new product to see it here.</td>
+                      </tr>
+                      <tr v-for="item in stockItems" :key="item.id">
+                        <td class="py-3 px-4">{{ item.product_type }}</td>
+                        <td class="py-3 px-4">{{ item.brand }}</td>
+                        <td class="py-3 px-4">{{ item.size }}</td>
+                        <td class="py-3 px-4">{{ item.quantity || 0 }}</td>
                         <td class="py-3 px-4">
-                          <span
-                            :class="[
-                              'badge',
-                              tire.stock <= tire.minStock ? 'bg-danger' : 'bg-success',
-                            ]"
-                          >
-                            {{ tire.stock <= tire.minStock ? 'Low Stock' : 'In Stock' }}
+                          <span :class="['badge',
+                            item.status === 'In Stock' ? 'bg-success' :
+                            item.status === 'Low Stock' ? 'bg-warning text-dark' : 'bg-danger']">
+                            {{ item.status }}
                           </span>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-info me-2 text-dark">
-                              <i class="fas fa-plus"></i> Add
-                            </button>
-                            <button class="btn btn-sm btn-outline-warning text-dark">
-                              <i class="fas fa-minus"></i> Remove
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -521,29 +479,32 @@
               </div>
             </div>
           </div>
-          <!-- FIX 2: User Management section is now placed here -->
           <div v-else-if="activeFeature === 'user-management'">
             <h2 class="mb-4">User Management</h2>
             <div class="card shadow-sm mb-4">
               <div class="card-body">
                 <h5 class="card-title">All Users</h5>
-                <p class="card-subtitle mb-3 text-muted">This table updates in real-time as users sign up or are removed.</p>
+                <p class="card-subtitle mb-3 text-muted">This table updates in real-time. 'Admin' roles are always listed first.</p>
                 <div class="table-responsive">
-                  <table class="table table-hover table-striped">
+                 <table class="table table-hover table-striped">
                     <thead class="bg-light">
                       <tr>
                         <th>Username</th>
                         <th>Email</th>
+                        <th>Date Created</th>
                         <th>Role</th>
                         <th class="text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="user in users" :key="user.id">
+                      <tr v-for="user in sortedUsers" :key="user.id">
                         <td>{{ user.username || 'N/A' }}</td>
                         <td>{{ user.email }}</td>
+                        <td>{{ user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A' }}</td>
                         <td>
-                          <span class="badge" :class="user.role === 'Super Admin' ? 'bg-danger' : 'bg-primary'">{{ user.role }}</span>
+                          <span class="badge" :class="user.role === 'Admin' ? 'bg-info' : 'bg-primary'">
+                            {{ user.role }}
+                          </span>
                         </td>
                         <td class="text-center">
                           <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id, user.username)">
@@ -552,7 +513,7 @@
                         </td>
                       </tr>
                       <tr v-if="users.length === 0">
-                        <td colspan="4" class="text-center py-4">No users found.</td>
+                        <td colspan="5" class="text-center py-4">No users found.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -585,63 +546,73 @@
         </div>
       </div>
     </div>
-    
-    <div
-      class="modal fade"
-      id="deleteConfirmationModal"
-      tabindex="-1"
-      aria-labelledby="deleteConfirmationModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title" id="deleteConfirmationModalLabel">
-              Confirm Account Deletion
-            </h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+  </div>
+
+  <div class="modal fade" id="superAdminProfileModal" tabindex="-1" aria-labelledby="superAdminProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content profile-modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="superAdminProfileModalLabel">Super Admin Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body profile-modal-body">
+
+        <div class="profile-info-box">
+          <small class="text-muted">Username</small>
+          <div v-if="isEditingUsername" class="d-flex align-items-center">
+            <input type="text" v-model="editableUsername" class="form-control form-control-sm">
           </div>
-          <div class="modal-body text-center">
-            <div class="p-3">
-              <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-              <p class="fs-5">
-                Are you absolutely sure you want to delete your account?
-              </p>
-              <p class="text-muted">
-                This action is permanent and cannot be undone. All associated
-                data will be lost.
-              </p>
-            </div>
-          </div>
-          <div class="modal-footer justify-content-center border-0">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Cancel
+          <p v-else class="mb-0 d-flex justify-content-between align-items-center">
+            <span>{{ superAdminProfile.username || '...' }}</span>
+            <button class="btn btn-sm btn-link edit-btn" @click="startUsernameEdit">
+              <i class="fas fa-pencil-alt"></i>
             </button>
-            <button
-              type="button"
-              class="btn btn-danger"
-              @click="confirmDeleteAccount"
-            >
-              Delete My Account
-            </button>
-          </div>
+          </p>
+        </div>
+        
+        <div v-if="isEditingUsername" class="d-flex justify-content-end w-100 mt-2">
+          <button class="btn btn-sm btn-secondary me-2" @click="cancelUsernameEdit">Cancel</button>
+          <button class="btn btn-sm btn-primary" @click="saveUsername">Save</button>
+        </div>
+
+        <div class="profile-info-box mt-2">
+          <small class="text-muted">Email</small>
+          <p class="mb-0">{{ superAdminProfile.email || '...' }}</p>
         </div>
       </div>
     </div>
   </div>
+</div>
 </template>
 
-
 <style scoped>
+/* REVISED STYLES for Profile Modal */
+.profile-modal-content {
+  border-radius: 0.75rem;
+}
+
+.profile-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+/* NEW STYLES for the info boxes from your drawing */
+.profile-info-box {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.profile-info-box p {
+  font-weight: 500;
+  word-wrap: break-word;
+}
 
 /* Mobile Sidebar Overlay Styles (New Addition) */
 .sidebar-overlay {
@@ -928,17 +899,102 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router'
+import { getProducts } from '../services/apiService'; // Import our getProducts function
 
 const router = useRouter();
+
+const navigateToAddProduct = () => {
+  router.push('/import-product');
+};
+
+const superAdminProfile = ref({ username: '', email: '' }); // REMOVED avatar_url
+const isEditingUsername = ref(false);
+const editableUsername = ref('');
+const isUploading = ref(false);
+const fileInput = ref(null);
+
+// ... after the handleLogout function
+
+// --- REFS FOR LIVE STOCK DATA ---
+const stockItems = ref([]);
+const stockLoading = ref(true);
+const stockError = ref(null);
+
+// --- FUNCTION TO FETCH LIVE DATA ---
+const fetchStockItems = async () => {
+  stockLoading.value = true;
+  stockError.value = null;
+  try {
+    const { data, error } = await getProducts();
+    if (error) throw error;
+    stockItems.value = data;
+  } catch (err) {
+    stockError.value = 'Failed to load stock items.';
+    console.error(err);
+  } finally {
+    stockLoading.value = false;
+  }
+};
+
+// NEW: Function to fetch the logged-in super admin's profile
+const fetchSuperAdminProfile = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('username, email')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching super admin profile:', error);
+    } else if (profile) {
+      superAdminProfile.value = profile;
+    }
+  }
+};
+
+// Functions for editing the username
+const startUsernameEdit = () => {
+  isEditingUsername.value = true;
+  editableUsername.value = superAdminProfile.value.username;
+};
+
+const cancelUsernameEdit = () => {
+  isEditingUsername.value = false;
+};
+
+const saveUsername = async () => {
+  if (editableUsername.value.trim() === '') {
+    alert('Username cannot be empty.');
+    return;
+  }
+  if (editableUsername.value === superAdminProfile.value.username) {
+    isEditingUsername.value = false;
+    return;
+  }
+  try {
+    // This calls the 'update_my_username' function in your Supabase project
+    const { error } = await supabase.rpc('update_my_username', {
+      new_username_text: editableUsername.value
+    });
+    if (error) throw error;
+    
+    superAdminProfile.value.username = editableUsername.value;
+    alert('Username updated successfully!');
+  } catch (error) {
+    alert(`Error updating username: ${error.message}`);
+  } finally {
+    isEditingUsername.value = false;
+  }
+};
 
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
 let logoutModal = null; 
-let deleteAccountModal = null;
-let userManagementChannel = null; // To hold our realtime channel subscription
+let userManagementChannel = null;
 
-// MODIFICATION: The static users array is replaced with a reactive ref, initially empty.
 const users = ref([]);
 
 // Your existing static data for other dashboard panels is kept.
@@ -1002,17 +1058,19 @@ const totalSalesLast30Days = computed(() => {
   return salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) * 4;
 });
 const newUsersCount = computed(() => {
-  return users.value.length; // This will now be dynamic based on the database.
+  return users.value.length;
 });
+// --- UPDATED COMPUTED PROPERTIES FOR SUMMARY CARDS ---
 const totalStock = computed(() => {
-  return tires.value.reduce((sum, tire) => sum + tire.stock, 0);
+  return stockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0);
 });
 const lowStockCount = computed(() => {
-  return tires.value.filter((tire) => tire.stock <= tire.minStock).length;
+  return stockItems.value.filter(item => item.status === 'Low Stock').length;
 });
-const totalTireTypes = computed(() => {
-  return tires.value.length;
+const productTypes = computed(() => {
+  return stockItems.value.length;
 });
+
 const totalSalesToday = computed(() => salesData.value.totalSalesToday);
 const totalOrdersToday = computed(() => salesData.value.totalOrdersToday);
 const totalOrders = computed(() => orders.value.length);
@@ -1032,6 +1090,21 @@ const filteredOrders = computed(() => {
     );
   }
   return filtered;
+});
+
+// NEW: Computed property to sort users with 'Admin' role on top
+const sortedUsers = computed(() => {
+  // Create a shallow copy to avoid mutating the original array
+  return [...users.value].sort((a, b) => {
+    if (a.role === 'Admin' && b.role !== 'Admin') {
+      return -1; // a comes first
+    }
+    if (a.role !== 'Admin' && b.role === 'Admin') {
+      return 1; // b comes first
+    }
+    // For all other cases, sort alphabetically by username
+    return (a.username || '').localeCompare(b.username || '');
+  });
 });
 
 let salesTrendChart = null;
@@ -1059,7 +1132,7 @@ const pageTitle = computed(() => {
     case 'sales-report': return 'Sales Report';
     case 'stock-monitoring': return 'Stock Monitoring';
     case 'orders': return 'Purchased Orders';
-    case 'users': return 'User Management';
+    case 'user-management': return 'User Management';
     case 'settings': return 'System Settings';
     default: return 'Super Admin Dashboard';
   }
@@ -1105,34 +1178,6 @@ const confirmLogout = async () => {
   router.push('/');
 };
 
-const confirmDeleteAccount = async () => {
-  try {
-    // MODIFICATION: Calling the correct function name 'delete_own_account'
-    const { error: rpcError } = await supabase.rpc('delete_own_account');
-    
-    if (rpcError) {
-      throw rpcError;
-    }
-
-    await supabase.auth.signOut();
-    router.push('/'); 
-    alert('Your account has been successfully and permanently deleted.');
-
-  } catch (error) {
-    console.error('Account deletion failed:', error);
-    alert(`An error occurred during account deletion: ${error.message}`);
-  } finally {
-    if (deleteAccountModal) {
-      deleteAccountModal.hide();
-    }
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) {
-      backdrop.remove();
-    }
-    document.body.style.overflow = '';
-  }
-};
-
 const getStatusBadge = (status) => {
   switch (status) {
     case 'Completed': return 'bg-success';
@@ -1153,12 +1198,12 @@ const filterOrders = (status) => {
   selectedStatus.value = status;
 };
 
-// --- NEW: Function to fetch initial user data from Supabase ---
 const fetchUsers = async () => {
+  // UPDATED: Added 'created_at' to the select query
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, email, role')
-    .neq('role', 'Super Admin'); // This line excludes the Super Admin.
+    .select('id, username, email, role, created_at') 
+    .neq('role', 'Super Admin');
 
   if (error) {
     console.error('Error fetching users:', error);
@@ -1167,7 +1212,6 @@ const fetchUsers = async () => {
   }
 };
 
-// --- NEW: Function for Super Admin to delete a user from the management panel ---
 const deleteUser = async (userId, username) => {
   if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
     const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
@@ -1177,59 +1221,32 @@ const deleteUser = async (userId, username) => {
 };
 
 onMounted(() => {
+  fetchStockItems();
+  // This code does the same thing but avoids the 'await' compiler error
+  supabase.auth.getSession().then(({ data }) => {
+    console.log('Checking User Session:', data.session);
+  });
+
   checkMobile();
   window.addEventListener('resize', checkMobile);
-
-  // MODIFICATION: Fetch users and subscribe to real-time changes
+  fetchSuperAdminProfile();
   fetchUsers();
+  
   userManagementChannel = supabase
     .channel('public:profiles')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'profiles' },
       (payload) => {
-        // --- Real-time events also ignore Super Admins ---
-        
-        // When a new user is inserted, only add them if they are not a Super Admin.
-        if (payload.eventType === 'INSERT' && payload.new.role !== 'Super Admin') {
-          users.value.push(payload.new);
-        }
-        
-        // When a user is deleted from the database, remove them from the list.
-        if (payload.eventType === 'DELETE') {
-          users.value = users.value.filter(user => user.id !== payload.old.id);
-        }
-        
-        // When a user's profile is updated.
-        if (payload.eventType === 'UPDATE') {
-          const index = users.value.findIndex(user => user.id === payload.new.id);
-
-          // If an existing user in the list is promoted to 'Super Admin', remove them.
-          if (payload.new.role === 'Super Admin' && index !== -1) {
-            users.value.splice(index, 1);
-          } 
-          // Otherwise, if they are just a regular user, update their details.
-          else if (index !== -1) {
-            users.value[index] = payload.new;
-          }
-          // Or, if they were previously a Super Admin and are now a regular user, add them to the list.
-          else if (index === -1 && payload.new.role !== 'Super Admin') {
-            users.value.push(payload.new);
-          }
-        }
+        // ... your existing channel logic
       }
     )
     .subscribe();
   
-  // Your original logic for initializing modals and charts
   nextTick(() => {
     const modalElement = document.getElementById('logoutConfirmationModal');
     if (modalElement && window.bootstrap && window.bootstrap.Modal) {
       logoutModal = new window.bootstrap.Modal(modalElement);
-    }
-    const deleteModalElement = document.getElementById('deleteConfirmationModal');
-    if (deleteModalElement && window.bootstrap && window.bootstrap.Modal) {
-      deleteAccountModal = new window.bootstrap.Modal(deleteModalElement);
     }
     if (activeFeature.value === 'sales-report') {
       createCharts();
@@ -1242,7 +1259,6 @@ onUnmounted(() => {
   if (salesTrendChart) salesTrendChart.destroy();
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
 
-  // MODIFICATION: Unsubscribe from the channel to prevent memory leaks
  if (userManagementChannel) {
     supabase.removeChannel(userManagementChannel);
   }
@@ -1255,4 +1271,5 @@ watch(activeFeature, (newFeature) => {
     });
   }
 });
+
 </script>

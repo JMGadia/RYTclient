@@ -71,78 +71,48 @@
     </section>
 
     <section class="py-5">
-        <div class="container">
-            <h3 class="fw-bold mb-4 text-center section-title">BROWSE BY CATEGORY</h3>
-            <div class="d-flex justify-content-center flex-wrap gap-2">
-                <button @click="selectCategory('All')" :class="['btn-glass', { 'active': selectedCategory === 'All' }]">All</button>
-                <button @click="selectCategory('Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Tires' }]">Tires</button>
-                <button @click="selectCategory('Oils & Fluids')" :class="['btn-glass', { 'active': selectedCategory === 'Oils & Fluids' }]">Oils & Fluids</button>
-                <button @click="selectCategory('Parts')" :class="['btn-glass', { 'active': selectedCategory === 'Parts' }]">Parts</button>
-            </div>
+      <div class="container">
+        <h3 class="fw-bold mb-4 text-center section-title">BROWSE BY CATEGORY</h3>
+        <div class="d-flex justify-content-center flex-wrap gap-2">
+          <button @click="selectCategory('All')" :class="['btn-glass', { 'active': selectedCategory === 'All' }]">All</button>
+          <button @click="selectCategory('Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Tires' }]">Tires</button>
+          <button @click="selectCategory('Non-Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Non-Tires' }]">Non-Tires</button>
         </div>
+      </div>
     </section>
 
-    <div v-if="selectedCategory === 'All'">
-        <section class="py-5">
-          <div class="container">
-            <h3 class="fw-bold mb-4 text-center section-title">CHOOSE YOUR TIRES</h3>
-            <div class="row g-4 justify-content-center">
-              <div class="col-6 col-md-4 col-lg-3" v-for="product in tireProducts" :key="product.name">
-                <div class="card h-100 product-card">
-                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
-                  <div class="card-body text-center d-flex flex-column">
-                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
-                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                    <span v-if="product.stock === 0" class="badge bg-danger mb-3 align-self-center stock-badge">Out of Stock</span>
-                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.stock === 0">Add to Cart</button>
-                  </div>
-                </div>
+    <section class="py-5">
+      <div class="container">
+        <div v-if="loading" class="text-center py-5 text-white">
+          <p class="fs-5">Loading products...</p>
+        </div>
+        <div v-else-if="error" class="text-center py-5 text-danger">
+          <p class="fs-5">Could not load products at this time.</p>
+        </div>
+        <div v-else-if="filteredProducts.length > 0" class="row g-4 justify-content-center">
+          <div class="col-6 col-md-4 col-lg-3" v-for="product in filteredProducts" :key="product.id">
+            <div class="card h-100 product-card">
+              <div class="card-img-container">
+                <img :src="product.image_url || '/images/placeholder.png'" class="card-img-top p-3" :alt="product.brand">
+              </div>
+              <div class="card-body text-center d-flex flex-column">
+                <h6 class="fw-semibold mb-2 product-name">{{ product.brand }} - {{ product.size }}</h6>
+                <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
+                <span v-if="product.status !== 'In Stock'" class="badge bg-danger mb-3 align-self-center stock-badge">
+                  {{ product.status }}
+                </span>
+                <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.status !== 'In Stock'">
+                  Add to Cart
+                </button>
               </div>
             </div>
           </div>
-        </section>
-
-        <section class="py-5">
-          <div class="container">
-            <h3 class="fw-bold mb-4 text-center section-title">NON-TIRE PRODUCTS</h3>
-            <div class="row g-4 justify-content-center">
-              <div class="col-6 col-md-4 col-lg-3" v-for="product in nonTireProducts" :key="product.name">
-                <div class="card h-100 product-card">
-                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
-                  <div class="card-body text-center d-flex flex-column">
-                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
-                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4">Add to Cart</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-    </div>
-
-    <div v-else>
-        <section class="py-5">
-          <div class="container">
-            <div v-if="filteredProducts.length > 0" class="row g-4 justify-content-center">
-              <div class="col-6 col-md-4 col-lg-3" v-for="product in filteredProducts" :key="product.id">
-                <div class="card h-100 product-card">
-                  <div class="card-img-container"><img :src="product.image" class="card-img-top p-3" :alt="product.name"></div>
-                  <div class="card-body text-center d-flex flex-column">
-                    <h6 class="fw-semibold mb-2 product-name">{{ product.name }}</h6>
-                    <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                    <span v-if="product.stock === 0" class="badge bg-danger mb-3 align-self-center stock-badge">Out of Stock</span>
-                    <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.stock === 0">Add to Cart</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-             <div v-else class="text-center py-5">
-                <p class="text-muted fs-5">No products found in this category.</p>
-            </div>
-          </div>
-        </section>
-    </div>
+        </div>
+        <div v-else class="text-center py-5">
+          <p class="text-muted fs-5">No products found in this category.</p>
+        </div>
+      </div>
+    </section>
 
     <footer class="bg-dark text-white pt-5 pb-3">
     </footer>
@@ -150,9 +120,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { getProducts, getProductImageURL } from '../services/apiService';
 
+// --- Logic for navigation and UI state ---
 const router = useRouter();
 const isMobileMenuOpen = ref(false);
 const selectedCategory = ref('All');
@@ -162,37 +134,45 @@ const navigateAndCloseMenu = (routeName) => {
   router.push({ name: routeName });
 };
 
-// Original data for the "All" view
-const tireProducts = ref([
-  { name: 'Goodyear Assurance', price: '4500', stock: 10, image: '../assets/products/honda.png' },
-  { name: 'Michelin Primacy', price: '5200', stock: 5, image: '../assets/products/toyota.png' },
-  { name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/tires/bridgestone.png' },
-]);
-const nonTireProducts = ref([
-  { name: 'Engine Oil 5L', price: '1250', image: '/images/others/oil.png' },
-  { name: 'Wiper Blades', price: '600', image: '/images/others/wiper.png' },
-  { name: 'Brake Pads', price: '1800', image: '/images/others/brake.png' },
-]);
-
-// Combined list for filtering logic, with a 'category' property added
-const allProducts = ref([
-    { id: 1, name: 'Goodyear Assurance', price: '4500', stock: 10, image: '../assets/products/honda.png', category: 'Tires' },
-    { id: 2, name: 'Michelin Primacy', price: '5200', stock: 5, image: '../assets/products/toyota.png', category: 'Tires' },
-    { id: 3, name: 'Bridgestone Ecopia', price: '4800', stock: 0, image: '/images/tires/bridgestone.png', category: 'Tires' },
-    { id: 4, name: 'Engine Oil 5L', price: '1250', stock: 15, image: '/images/others/oil.png', category: 'Oils & Fluids' },
-    { id: 5, name: 'Wiper Blades', price: '600', stock: 20, image: '/images/others/wiper.png', category: 'Parts' },
-    { id: 6, name: 'Brake Pads', price: '1800', stock: 12, image: '/images/others/brake.png', category: 'Parts' },
-]);
-
 const selectCategory = (category) => {
   selectedCategory.value = category;
 };
 
+// --- Logic for fetching and displaying products ---
+const allProducts = ref([]); // This will hold all products from the database
+const loading = ref(true);
+const error = ref(null);
+
+// This computed property now filters the live 'allProducts' array
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === 'All') return [];
-  return allProducts.value.filter(product => product.category === selectedCategory.value);
+  if (selectedCategory.value === 'All') {
+    return allProducts.value;
+  }
+  return allProducts.value.filter(product => product.product_type === selectedCategory.value);
 });
 
+// This hook fetches data when the component is first loaded
+onMounted(async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    const { data, error: fetchError } = await getProducts();
+    if (fetchError) throw fetchError;
+
+    // Process the data to create the full image URL for each product
+    if (data) {
+      allProducts.value = data.map(product => ({
+        ...product,
+        image_url: getProductImageURL(product.image_url)
+      }));
+    }
+  } catch (err) {
+    error.value = err.message;
+    console.error("Failed to fetch products:", err);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <style scoped>

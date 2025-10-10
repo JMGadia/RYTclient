@@ -132,7 +132,7 @@ const saveUsername = async () => {
   isLoading.value = true;
   try {
     const { error } = await supabase.rpc('update_my_username', {
-      new_username: editableUsername.value
+      new_username_text: editableUsername.value
     });
     if (error) throw error;
     username.value = editableUsername.value;
