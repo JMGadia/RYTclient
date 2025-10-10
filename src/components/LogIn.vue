@@ -168,7 +168,7 @@ const goToForgotPassword = () => {
   router.push({ name: 'forgot password' });
 };
 
-// --- ⬇️ UPDATED: handleLogin function with role-based redirection logic ---
+// --- ⬇️ handleLogin function with role-based redirection logic (Objective 2) ---
 const handleLogin = async () => {
   errors.email = ''
   errors.password = ''
@@ -194,27 +194,26 @@ const handleLogin = async () => {
     if (!authData.user) throw new Error("User not found after login.");
 
     // 2. Fetch the user's profile to check their role
-    // Assumes you have a 'profiles' table with a 'role' column linked by user ID
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', authData.user.id)
-      .single() // Use .single() to expect just one result
+      .single()
 
     if (profileError) throw profileError
     
-    // 3. Redirect based on the role (Objective 2)
+    // 3. Redirect based on the role
     const role = profileData?.role;
 
     if (role === 'Super Admin') {
-      // User is a Super Admin
-      router.push({ name: 'super admin' }) // Assuming 'super admin' routes to '/super-admin'
+      // Redirect to Super Admin dashboard
+      router.push({ name: 'super admin' }) 
     } else if (role === 'Admin') {
-      // User is an Admin
-      router.push({ name: 'admin' }) // Assuming 'admin' routes to '/admin'
+      // Redirect to Admin dashboard
+      router.push({ name: 'admin' }) 
     } else {
-      // User is a regular user ('User' role) or any other non-admin role
-      router.push({ name: 'ordering system' }) // Assuming 'ordering system' routes to '/ordering-system'
+      // Default redirect for 'User' or other roles
+      router.push({ name: 'ordering system' }) 
     }
 
   } catch (error) {
@@ -224,7 +223,7 @@ const handleLogin = async () => {
     isLoading.value = false
   }
 }
-// --- ⬆️ END OF UPDATED handleLogin function ---
+// --- ⬆️ END OF handleLogin function ---
 </script>
 
 <style scoped>

@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onUnmounted, onMounted, computed } from 'vue'
+import { ref, reactive, onUnmounted, computed } from 'vue' 
 import { useRouter } from 'vue-router'
 import { supabase } from '../server/supabase'
 
@@ -170,29 +170,7 @@ const togglePasswordVisibility = () => {
 }
 // --- ⬆️ END OF PASSWORD VISIBILITY LOGIC ---
 
-// --- ⬇️ Check for existing superadmin on component mount (Original Logic Maintained) ---
-onMounted(async () => {
-  try {
-    // Assuming your table is named 'profiles' and has a 'role' column.
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'Super Admin') // Corrected to match the actual role name from your data (Screenshot 2025-10-10 150234.png)
-      .limit(1)
-
-    if (error) throw error
-
-    // If a superadmin is found (data array is not empty), redirect to login.
-    if (data && data.length > 0) {
-      console.log('Super Admin exists. Redirecting to login.')
-      router.push({ name: 'login' })
-    }
-  } catch (error) {
-    console.error('Error checking for Super Admin:', error.message)
-    // Optional: Show an error to the user
-  }
-})
-// --- ⬆️ END OF SUPERADMIN CHECK ---
+// --- onMounted HOOK IS REMOVED as requested to allow Sign Up page to always load ---
 
 const startCamera = async () => {
   try {
@@ -247,10 +225,7 @@ const captureAndVerify = async () => {
     console.error('Face verification failed:', error.message);
     alert(`Face verification failed: ${error.message}`);
   } finally {
-    // Note: isLoading is handled within closeCamera() and also within proceedWithSupabaseSignUp/catch
-    // This final finally block is kept for safety but might be redundant depending on the flow.
-    // If captureAndVerify fails *before* calling closeCamera, isLoading should be set to false here.
-    if(showCameraModal.value === false) { // Only set false if camera is already closed
+    if(showCameraModal.value === false) { 
       isLoading.value = false;
     }
   }
@@ -275,14 +250,18 @@ const proceedWithSupabaseSignUp = async () => {
     router.push({ name: 'login' });
 
   } catch (error) {
+    if (error.message.includes('User already registered') || error.message.includes('duplicate key value violates unique constraint')) {
+        errors.email = 'User Account Already Exist';
+    } else {
+        alert(`Sign-up failed: ${error.message}`);
+    }
     console.error('Sign-up failed:', error.message);
-    alert(`Sign-up failed: ${error.message}`);
   } finally {
     isLoading.value = false;
   }
 };
 
-// --- ⬇️ UPDATED: handleSignUp function with email existence check ---
+// --- ⬇️ handleSignUp function with email existence check (Objective 1) ---
 const handleSignUp = async () => {
   errors.username = ''
   errors.email = ''
@@ -297,40 +276,21 @@ const handleSignUp = async () => {
   isLoading.value = true;
   
   try {
-    // **Objective 1: User Existence Check**
-    // Using the 'admin' API to check for user existence, as this is a pre-sign-up check.
-    // NOTE: This requires the correct service_role key or an appropriate function on the backend.
-    // If you are using the client-side Supabase key, you might need to use a different approach 
-    // like a custom Edge Function or a database function called from the client to avoid exposing the service_role key.
-    // For a typical client-side implementation *without* the service_role key, 
-    // we use a safe, though less direct, method: trying to sign up, and if the error is 
-    // 'User already registered', we catch it. However, since the goal is to show a specific message, 
-    // I will *assume* an appropriate backend method/function is available for this check.
-    
-    // For a pure client-side check, we must rely on the returned error code from `signUp`.
-    // The following structure *simulates* a pre-check without relying on the Admin API 
-    // which shouldn't be used client-side for security reasons.
-
-    // Let's use a non-Admin-API approach by trying to *retrieve* the user profile (if RLS allows) 
-    // or by catching the error from `signUp`. The most secure is relying on the `signUp` error.
-
-    // Let's first check if a profile with this email already exists in the profiles table.
-    // This assumes the profile is created by the `handle_new_user` trigger upon auth.
+    // Check if a profile with this email already exists in the profiles table.
     const { data: profileCheck, error: checkError } = await supabase
         .from('profiles')
         .select('id, email')
         .eq('email', form.email.trim())
-        .maybeSingle() // Use maybeSingle to get null if not found
+        .maybeSingle() 
     
     if (checkError) throw checkError;
 
     if (profileCheck) {
-      // User profile already exists in the table linked to an Auth user
+      // User profile already exists, display error and stop signup
       errors.email = 'User Account Already Exist';
       isLoading.value = false;
       return;
     }
-
 
   } catch (error) {
     console.error('Pre-sign-up check failed:', error.message);
@@ -342,12 +302,11 @@ const handleSignUp = async () => {
   if (form.facialRecognition) {
     showCameraModal.value = true;
     startCamera();
-    // isLoading is kept true and will be handled by captureAndVerify/closeCamera
   } else {
     await proceedWithSupabaseSignUp();
   }
 }
-// --- ⬆️ END OF UPDATED handleSignUp function ---
+// --- ⬆️ END OF handleSignUp function ---
 
 onUnmounted(() => {
   if (stream) {
@@ -405,7 +364,7 @@ onUnmounted(() => {
 }
 
 .login-form-container { 
-  max-width: 720px; /* or try 640px or 720px */
+  max-width: 720px; 
   width: 100%;
   padding: 2rem;
   position: relative; 
