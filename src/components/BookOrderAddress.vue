@@ -28,7 +28,10 @@
               </div>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-              <button v-if="!address.is_default" class="btn btn-sm btn-link text-success" @click="handleSetDefault(address.id)">Set as Default</button>
+              <button v-if="!address.is_default" class="btn btn-sm btn-link text-success" @click="handleSetDefault(address.id)" :disabled="isSettingDefault === address.id">
+                <span v-if="isSettingDefault === address.id" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span v-else>Set as Default</span>
+              </button>
               <div class="ms-auto">
                 <button class="btn btn-sm btn-light border me-2" @click="openEditModal(address)">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" @click="handleDeleteAddress(address.id)">Delete</button>
@@ -87,8 +90,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
+import { useRouter } from 'vue-router';
 
 // --- STATE ---
+const router = useRouter();
 const addresses = ref([]);
 const isLoading = ref(true);
 const isSaving = ref(false);
@@ -96,6 +101,7 @@ const showModal = ref(false);
 const isEditing = ref(false);
 const currentAddress = ref({ id: null, name: '', phone: '', full_address: '' });
 const user = ref(null);
+const isSettingDefault = ref(null); // New state for tracking the loading default button
 
 // --- MODAL CONTROLS ---
 const openAddModal = () => {
@@ -118,7 +124,6 @@ const closeModal = () => {
 const fetchAddresses = async () => {
   isLoading.value = true;
   try {
-    // UPDATED: Now sorts by 'is_default' first to always show the default address at the top
     const { data, error } = await supabase.from('addresses').select('*').order('is_default', { ascending: false }).order('created_at', { ascending: false });
     if (error) throw error;
     addresses.value = data;
@@ -168,17 +173,29 @@ const handleDeleteAddress = async (addressId) => {
   }
 };
 
-// NEW: Function to set the default address by calling the database function
+// --- UPDATED FUNCTION ---
 const handleSetDefault = async (addressId) => {
-    try {
-        const { error } = await supabase.rpc('set_default_address', {
-            address_id_to_set: addressId
-        });
-        if (error) throw error;
-        await fetchAddresses(); // Refresh list to show the new default status
-    } catch (error) {
-        console.error('Error setting default address:', error.message);
+  isSettingDefault.value = addressId; // Set loading state for the specific button
+  try {
+    const { error } = await supabase.rpc('set_default_address', {
+      address_id_to_set: addressId
+    });
+
+    if (error) {
+      // This makes sure the error is caught by the catch block below
+      throw error;
     }
+    
+    // On success, redirect to the payment system
+    router.push({ name: 'payment system' });
+
+  } catch (error) {
+    console.error('Error setting default address:', error.message);
+    // You can add a user-facing notification here (e.g., a toast or alert)
+    alert('Failed to set default address. Check the console for more details.');
+  } finally {
+    isSettingDefault.value = null; // Reset loading state regardless of outcome
+  }
 };
 
 onMounted(async () => {
@@ -200,6 +217,5 @@ onMounted(async () => {
 .card-footer { border-top: 1px solid #f0f0f0; }
 .modal.show { display: block; }
 .modal-backdrop { position: fixed; top: 0; left: 0; z-index: 1050; width: 100vw; height: 100vh; background-color: #000; opacity: 0.5; }
-/* NEW: Style for the "Set as Default" button */
 .btn-link { font-weight: 600; text-decoration: none; }
 </style>

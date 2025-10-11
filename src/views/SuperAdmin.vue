@@ -132,7 +132,7 @@
                       </div>
                       <i class="fas fa-chart-bar fa-3x opacity-50"></i>
                     </div>
-                  
+
                   </div>
                 </div>
               </div>
@@ -347,7 +347,7 @@
                         <td class="py-3 px-4">{{ item.product_type }}</td>
                         <td class="py-3 px-4">{{ item.brand }}</td>
                         <td class="py-3 px-4">{{ item.size }}</td>
-                        <td class="py-3 px-4">{{ item.quantity || 0 }}</td>
+                        <td class="py-3 px-4">{{ item.quantity }}</td>
                         <td class="py-3 px-4">
                           <span :class="['badge',
                             item.status === 'In Stock' ? 'bg-success' :
@@ -541,7 +541,7 @@
           </div>
           <div class="modal-footer justify-content-center border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button> 
+            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button>
           </div>
         </div>
       </div>
@@ -569,7 +569,7 @@
             </button>
           </p>
         </div>
-        
+
         <div v-if="isEditingUsername" class="d-flex justify-content-end w-100 mt-2">
           <button class="btn btn-sm btn-secondary me-2" @click="cancelUsernameEdit">Cancel</button>
           <button class="btn btn-sm btn-primary" @click="saveUsername">Save</button>
@@ -899,7 +899,6 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router'
-import { getProducts } from '../services/apiService'; // Import our getProducts function
 
 const router = useRouter();
 
@@ -907,25 +906,26 @@ const navigateToAddProduct = () => {
   router.push('/import-product');
 };
 
-const superAdminProfile = ref({ username: '', email: '' }); // REMOVED avatar_url
+const superAdminProfile = ref({ username: '', email: '' });
 const isEditingUsername = ref(false);
 const editableUsername = ref('');
-const isUploading = ref(false);
-const fileInput = ref(null);
-
-// ... after the handleLogout function
 
 // --- REFS FOR LIVE STOCK DATA ---
 const stockItems = ref([]);
 const stockLoading = ref(true);
 const stockError = ref(null);
 
-// --- FUNCTION TO FETCH LIVE DATA ---
+// --- UPDATED FUNCTION TO FETCH LIVE DATA ---
 const fetchStockItems = async () => {
   stockLoading.value = true;
   stockError.value = null;
   try {
-    const { data, error } = await getProducts();
+    // UPDATED: Query the 'products' table directly
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('brand', { ascending: true });
+
     if (error) throw error;
     stockItems.value = data;
   } catch (err) {
@@ -936,7 +936,6 @@ const fetchStockItems = async () => {
   }
 };
 
-// NEW: Function to fetch the logged-in super admin's profile
 const fetchSuperAdminProfile = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
@@ -974,12 +973,11 @@ const saveUsername = async () => {
     return;
   }
   try {
-    // This calls the 'update_my_username' function in your Supabase project
     const { error } = await supabase.rpc('update_my_username', {
       new_username_text: editableUsername.value
     });
     if (error) throw error;
-    
+
     superAdminProfile.value.username = editableUsername.value;
     alert('Username updated successfully!');
   } catch (error) {
@@ -992,20 +990,11 @@ const saveUsername = async () => {
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
-let logoutModal = null; 
+let logoutModal = null;
 let userManagementChannel = null;
 
 const users = ref([]);
 
-// Your existing static data for other dashboard panels is kept.
-const tires = ref([
-  { id: 1, type: 'All-Season', size: '205/55R16', brand: 'Michelin', stock: 150, minStock: 50 },
-  { id: 2, type: 'Performance', size: '225/45R17', brand: 'Goodyear', stock: 30, minStock: 40 },
-  { id: 3, type: 'Off-Road', size: '265/70R17', brand: 'BFGoodrich', stock: 80, minStock: 20 },
-  { id: 4, type: 'Winter', size: '195/65R15', brand: 'Bridgestone', stock: 10, minStock: 20 },
-  { id: 5, type: 'Touring', size: '215/60R16', brand: 'Pirelli', stock: 120, minStock: 30 },
-  { id: 6, type: 'All-Terrain', size: '235/75R15', brand: 'Cooper', stock: 65, minStock: 25 },
-]);
 const salesData = ref({
   totalSalesToday: 2350,
   totalOrdersToday: 45,
@@ -1042,18 +1031,13 @@ const salesData = ref({
   },
 });
 const orders = ref([
-  { id: 101, customer: 'John Doe', date: '2025-08-10', amount: 1250, status: 'Completed' },
-  { id: 102, customer: 'Jane Smith', date: '2025-08-10', amount: 800, status: 'Pending' },
-  { id: 103, customer: 'Bob Johnson', date: '2025-08-09', amount: 2100, status: 'Shipped' },
-  { id: 104, customer: 'Alice Williams', date: '2025-08-08', amount: 550, status: 'Completed' },
-  { id: 105, customer: 'Charlie Brown', date: '2025-08-08', amount: 1800, status: 'Pending' },
-  { id: 106, customer: 'Eva Green', date: '2025-08-07', amount: 950, status: 'Completed' },
-  { id: 107, customer: 'Frank Miller', date: '2025-08-07', amount: 450, status: 'Shipped' },
+  { id: 101, customer: 'John Doe', date: '2025-10-10', amount: 1250, status: 'Completed' },
+  { id: 102, customer: 'Jane Smith', date: '2025-10-10', amount: 800, status: 'Pending' },
+  { id: 103, customer: 'Bob Johnson', date: '2025-10-09', amount: 2100, status: 'Shipped' },
 ]);
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
-// All your original computed properties are preserved.
 const totalSalesLast30Days = computed(() => {
   return salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) * 4;
 });
@@ -1092,17 +1076,14 @@ const filteredOrders = computed(() => {
   return filtered;
 });
 
-// NEW: Computed property to sort users with 'Admin' role on top
 const sortedUsers = computed(() => {
-  // Create a shallow copy to avoid mutating the original array
   return [...users.value].sort((a, b) => {
     if (a.role === 'Admin' && b.role !== 'Admin') {
-      return -1; // a comes first
+      return -1;
     }
     if (a.role !== 'Admin' && b.role === 'Admin') {
-      return 1; // b comes first
+      return 1;
     }
-    // For all other cases, sort alphabetically by username
     return (a.username || '').localeCompare(b.username || '');
   });
 });
@@ -1139,38 +1120,25 @@ const pageTitle = computed(() => {
 });
 const setActiveFeature = (feature) => {
   activeFeature.value = feature;
-  toggleSidebar();
+  if (isMobile.value) {
+    toggleSidebar();
+  }
 };
 const toggleSidebar = () => {
   sidebarToggled.value = !sidebarToggled.value;
-  if (isMobile.value && sidebarToggled.value) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
-  }
 };
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768;
   if (!isMobile.value) {
     sidebarToggled.value = false;
-    document.body.style.overflow = '';
-  }
-};
-const handleLogout = () => {
-  if (logoutModal) {
-    logoutModal.show();
   }
 };
 
 const confirmLogout = async () => {
   const { error } = await supabase.auth.signOut();
   if (logoutModal) {
-    logoutModal.hide();
-  }
-  document.body.style.overflow = '';
-  const backdrop = document.querySelector('.modal-backdrop');
-  if (backdrop) {
-    backdrop.remove();
+    const modal = bootstrap.Modal.getInstance(logoutModal);
+    modal.hide();
   }
   if (error) {
     console.error("Logout failed:", error.message);
@@ -1199,10 +1167,9 @@ const filterOrders = (status) => {
 };
 
 const fetchUsers = async () => {
-  // UPDATED: Added 'created_at' to the select query
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, email, role, created_at') 
+    .select('id, username, email, role, created_at')
     .neq('role', 'Super Admin');
 
   if (error) {
@@ -1222,32 +1189,24 @@ const deleteUser = async (userId, username) => {
 
 onMounted(() => {
   fetchStockItems();
-  // This code does the same thing but avoids the 'await' compiler error
-  supabase.auth.getSession().then(({ data }) => {
-    console.log('Checking User Session:', data.session);
-  });
-
   checkMobile();
   window.addEventListener('resize', checkMobile);
   fetchSuperAdminProfile();
   fetchUsers();
-  
+
   userManagementChannel = supabase
     .channel('public:profiles')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'profiles' },
       (payload) => {
-        // ... your existing channel logic
+        fetchUsers();
       }
     )
     .subscribe();
-  
+
   nextTick(() => {
-    const modalElement = document.getElementById('logoutConfirmationModal');
-    if (modalElement && window.bootstrap && window.bootstrap.Modal) {
-      logoutModal = new window.bootstrap.Modal(modalElement);
-    }
+    logoutModal = document.getElementById('logoutConfirmationModal');
     if (activeFeature.value === 'sales-report') {
       createCharts();
     }
@@ -1271,5 +1230,4 @@ watch(activeFeature, (newFeature) => {
     });
   }
 });
-
 </script>

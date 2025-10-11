@@ -98,12 +98,20 @@
               <div class="card-body text-center d-flex flex-column">
                 <h6 class="fw-semibold mb-2 product-name">{{ product.brand }} - {{ product.size }}</h6>
                 <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                <span v-if="product.status !== 'In Stock'" class="badge bg-danger mb-3 align-self-center stock-badge">
+                
+                <span v-if="product.status !== 'In Stock'" 
+                  :class="['badge', 'mb-3', 'align-self-center', 'stock-badge', product.status === 'Out of Stock' ? 'bg-danger' : 'bg-warning text-dark']">
                   {{ product.status }}
                 </span>
-                <button class="btn btn-sm btn-primary mt-auto rounded-pill px-4" :disabled="product.status !== 'In Stock'">
+
+                <button 
+                  v-if="product.status === 'In Stock' || product.status === 'Low Stock'"
+                  class="btn btn-sm btn-primary mt-auto rounded-pill px-4" 
+                  @click="handleAddToCart(product)"
+                >
                   Add to Cart
                 </button>
+
               </div>
             </div>
           </div>
@@ -123,6 +131,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
+import { useCart } from '../composables/useCart'; // Import the new cart composable
+
+// --- Logic for cart ---
+const { addToCart } = useCart();
+const handleAddToCart = (product) => {
+  addToCart(product);
+  router.push({ name: 'cart' });
+};
 
 // --- Logic for navigation and UI state ---
 const router = useRouter();
@@ -139,11 +155,10 @@ const selectCategory = (category) => {
 };
 
 // --- Logic for fetching and displaying products ---
-const allProducts = ref([]); // This will hold all products from the database
+const allProducts = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// This computed property now filters the live 'allProducts' array
 const filteredProducts = computed(() => {
   if (selectedCategory.value === 'All') {
     return allProducts.value;
@@ -151,7 +166,6 @@ const filteredProducts = computed(() => {
   return allProducts.value.filter(product => product.product_type === selectedCategory.value);
 });
 
-// This hook fetches data when the component is first loaded
 onMounted(async () => {
   loading.value = true;
   error.value = null;
@@ -159,7 +173,6 @@ onMounted(async () => {
     const { data, error: fetchError } = await getProducts();
     if (fetchError) throw fetchError;
 
-    // Process the data to create the full image URL for each product
     if (data) {
       allProducts.value = data.map(product => ({
         ...product,
