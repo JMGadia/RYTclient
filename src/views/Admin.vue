@@ -341,9 +341,36 @@
 import { supabase } from '../server/supabase';
 import { nextTick } from 'vue';
 import JsBarcode from 'jsbarcode';
-import Quagga from '@ericblade/quagga2'; // ✅ Corrected Import for Quagga2
+import Quagga from '@ericblade/quagga2'; // ✅ Corrected Import for Quagga2\
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
+
+const router = useRouter();
 
 export default {
+  
+  beforeRouteLeave(to, from, next) {
+    // Define the routes the admin is allowed to go to without a warning.
+    const allowedExitRoutes = ['login', 'signup'];
+
+    // If the destination is one of our allowed pages, let the navigation happen.
+    if (allowedExitRoutes.includes(to.name)) {
+      next(); // Proceed without the pop-up
+      return;
+    }
+
+    // If it's NOT an allowed route (like the browser back button), show the warning.
+    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
+    if (answer) {
+      // Use the hard redirect method to prevent UI glitches
+      supabase.auth.signOut().then(() => {
+        next(false);
+        window.location.href = '/login';
+      });
+    } else {
+      next(false); // Cancel the navigation and stay on the page
+    }
+  },
+
   name: 'AdminDashboard',
   data() {
     return {
