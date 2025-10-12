@@ -33,12 +33,12 @@
     </nav>
 
     <div class="container d-md-none py-2 bg-white border-bottom">
-        <form @submit.prevent>
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-                <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search..." aria-label="Search" />
-            </div>
-        </form>
+      <form @submit.prevent>
+          <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+              <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search..." aria-label="Search" />
+          </div>
+      </form>
     </div>
 
     <Transition name="slide-right">
@@ -66,112 +66,117 @@
       </div>
     </Transition>
 
-    <section class="advertisement-banner">
-      <img src="../assets/mainAds.png" alt="Best place to buy tires online advertisement" class="img-fluid" />
-    </section>
-
-    <section class="py-5">
-      <div class="container">
-        <h3 class="fw-bold mb-4 text-center section-title">BROWSE BY CATEGORY</h3>
-        <div class="d-flex justify-content-center flex-wrap gap-2">
-          <button @click="selectCategory('All')" :class="['btn-glass', { 'active': selectedCategory === 'All' }]">All</button>
-          <button @click="selectCategory('Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Tires' }]">Tires</button>
-          <button @click="selectCategory('Non-Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Non-Tires' }]">Non-Tires</button>
+    <main class="container py-4">
+      
+      <section class="py-5">
+        <div class="container">
+          <h3 class="fw-bold mb-4 text-center section-title">BROWSE BY CATEGORY</h3>
+          <div class="d-flex justify-content-center flex-wrap gap-3">
+            <button @click="selectCategory('All')" :class="['btn-glass', { 'active': selectedCategory === 'All' }]">All</button>
+            <button @click="selectCategory('Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Tires' }]">Tires</button>
+            <button @click="selectCategory('Non-Tires')" :class="['btn-glass', { 'active': selectedCategory === 'Non-Tires' }]">Non-Tires</button>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="py-5">
-      <div class="container">
-        <div v-if="loading" class="text-center py-5 text-white">
-          <p class="fs-5">Loading products...</p>
-        </div>
-        <div v-else-if="error" class="text-center py-5 text-danger">
-          <p class="fs-5">Could not load products at this time.</p>
-        </div>
-        <div v-else-if="filteredProducts.length > 0" class="row g-4 justify-content-center">
-          <div class="col-6 col-md-4 col-lg-3" v-for="product in filteredProducts" :key="product.id">
-            <div class="card h-100 product-card">
-              <div class="card-img-container">
-                <img :src="product.image_url || '/images/placeholder.png'" class="card-img-top p-3" :alt="product.brand">
-              </div>
-              <div class="card-body text-center d-flex flex-column">
-                <h6 class="fw-semibold mb-2 product-name">{{ product.brand }} - {{ product.size }}</h6>
-                <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price }}</p>
-                
-                <span v-if="product.status !== 'In Stock'" 
-                  :class="['badge', 'mb-3', 'align-self-center', 'stock-badge', product.status === 'Out of Stock' ? 'bg-danger' : 'bg-warning text-dark']">
-                  {{ product.status }}
-                </span>
+      <section class="py-5">
+        <div class="container">
+          <div v-if="loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="fs-5 mt-3">Loading products...</p>
+          </div>
+          <div v-else-if="error" class="text-center py-5 text-danger">
+            <p class="fs-5">Could not load products at this time.</p>
+          </div>
+          <div v-else-if="filteredProducts.length > 0" class="row g-4 justify-content-center">
+            <div class="col-6 col-md-4 col-lg-3" v-for="product in filteredProducts" :key="product.id">
+              <div class="card h-100 product-card">
+                <div class="card-img-container">
+                  <img :src="product.image_url || '/images/placeholder.png'" class="card-img-top p-3" :alt="product.brand">
+                </div>
+                <div class="card-body text-center d-flex flex-column">
+                  <h6 class="fw-semibold mb-2 product-name">{{ product.brand }} - {{ product.size }}</h6>
+                  <p class="text-danger fw-bold fs-5 mb-3">₱{{ product.price.toLocaleString() }}</p>
+                  
+                  <span v-if="product.status !== 'In Stock'" 
+                    :class="['badge', 'mb-3', 'align-self-center', 'stock-badge', product.status === 'Out of Stock' ? 'bg-danger' : 'bg-warning text-dark']">
+                    {{ product.status }}
+                  </span>
 
-                <button 
-                  v-if="product.status === 'In Stock' || product.status === 'Low Stock'"
-                  class="btn btn-sm btn-primary mt-auto rounded-pill px-4" 
-                  @click="handleAddToCart(product)"
-                >
-                  Add to Cart
-                </button>
-
+                  <button 
+                    v-if="product.status === 'In Stock' || product.status === 'Low Stock'"
+                    class="btn btn-sm btn-primary mt-auto rounded-pill px-4" 
+                    @click="handleAddToCart(product)"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div v-else class="text-center py-5">
-          <p class="text-muted fs-5">No products found in this category.</p>
-        </div>
-      </div>
-    </section>
-
-    <footer class="bg-dark text-white pt-5 pb-3 footer-section">
-    <div class="container">
-      <div class="row text-center text-md-start">
-
-        <div class="col-md-4 mb-4 mb-md-0">
-          <h5 class="fw-bold text-uppercase mb-3 d-flex align-items-center justify-content-center justify-content-md-start">
-            <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="30" class="me-2 rounded-circle" />
-            RYT-Tyre
-          </h5>
-          <p class="text-white-50">
-            Your trusted one-stop shop for high-quality tires and automotive parts in the Philippines.
-          </p>
-        </div>
-
-        <div class="col-md-4 mb-4 mb-md-0">
-          <h5 class="fw-bold text-uppercase mb-3">Contact Us</h5>
-          <ul class="list-unstyled">
-            <li class="mb-2">
-              <i class="fas fa-envelope me-2"></i>
-              <a href="mailto:contact@ryttyre.com" class="footer-link">ryttyre2024@gmail.com</a>
-            </li>
-            <li class="mb-2">
-              <i class="fas fa-phone-alt me-2"></i>
-              <a href="tel:+639123456789" class="footer-link">0947 993 1979</a>
-            </li>
-            <li>
-              <i class="fas fa-file-contract me-2"></i>
-              <a href="#" class="footer-link">Privacy Policy</a>
-            </li>
-          </ul>
-        </div>
-
-        <div class="col-md-4">
-          <h5 class="fw-bold text-uppercase mb-3">Follow Us</h5>
-          <div>
-            <a href="https://www.facebook.com/profile.php?id=61561174944710" class="social-icon me-3" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-            <a href="https://www.instagram.com/ryttyre" class="social-icon me-3" title="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="https://www.tiktok.com/@ryt.tyre" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a>
+          <div v-else class="text-center py-5">
+            <p class="text-muted fs-5">No products found in this category.</p>
           </div>
         </div>
-
+      </section>
+    </main>
+      <div class="mb-5">
+        <AdScroller />
       </div>
-      
-      <hr class="my-4 bg-white-50">
-      <div class="text-center text-white-50">
-        <p>&copy; 2025 RYT-Tyre. All Rights Reserved.</p>
+    <footer class="bg-dark text-white pt-5 pb-3 footer-section">
+      <div class="container">
+        <div class="row text-center text-md-start">
+          <div class="col-md-4 mb-4 mb-md-0">
+            <h5 class="fw-bold text-uppercase mb-3 d-flex align-items-center justify-content-center justify-content-md-start">
+              <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="30" class="me-2 rounded-circle" />
+              RYT-Tyre
+            </h5>
+            <p class="text-white-50">
+              Your trusted one-stop shop for high-quality tires and automotive parts in the Philippines.
+            </p>
+          </div>
+          <div class="col-md-4 mb-4 mb-md-0">
+            <h5 class="fw-bold text-uppercase mb-3">Contact Us</h5>
+            <ul class="list-unstyled">
+              <li class="mb-2">
+                <i class="fas fa-envelope me-2"></i>
+                <a href="mailto:ryttyre2024@gmail.com" class="footer-link">ryttyre2024@gmail.com</a>
+              </li>
+              <li class="mb-2">
+                <i class="fas fa-phone-alt me-2"></i>
+                <a href="tel:09479931979" class="footer-link">0947 993 1979</a>
+              </li>
+              <li>
+                <i class="fas fa-file-contract me-2"></i>
+                <a href="#" class="footer-link">Privacy Policy</a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5 class="fw-bold text-uppercase mb-3">Follow Us</h5>
+            <div>
+              <a href="https://www.facebook.com/profile.php?id=61561174944710" class="social-icon me-3" title="Facebook">
+                <img src="../assets/facebook.png" alt="Facebook Icon" />
+              </a>
+              <a href="https://www.instagram.com/ryttyre" class="social-icon me-3" title="Instagram">
+                <img src="../assets/instagram.png" alt="Instagram Icon" />
+              </a>
+              <a href="https://www.tiktok.com/@ryt.tyre" class="social-icon" title="TikTok">
+                <img src="../assets/tiktok.png" alt="TikTok Icon" />
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <hr class="my-4 bg-white-50">
+        <div class="text-center text-white-50">
+          <p>&copy; 2025 RYT-Tyre. All Rights Reserved.</p>
+        </div>
       </div>
-    </div>
-  </footer>
-</div>
+    </footer>
+  </div>
 </template>
 
 <script setup>
@@ -180,6 +185,7 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
 import { useCart } from '../composables/useCart'; // Import the new cart composable
 import { supabase } from '../server/supabase';
+import AdScroller from '../components/AdScroller.vue';
 
 // --- 👇 THIS IS THE EXIT GUARD ---
 // Add the 'async' keyword here
@@ -267,6 +273,12 @@ onMounted(async () => {
     0% { transform: rotate(0deg) translateX(10%); }
     50% { transform: rotate(180deg) translateX(10%); }
     100% { transform: rotate(360deg) translateX(10%); }
+}
+
+/* Add this new rule to style the image icons */
+.social-icon img {
+  width: 20px;  /* Adjust size as needed */
+  height: 20px; /* Adjust size as needed */
 }
 
 .ordering-page { 
