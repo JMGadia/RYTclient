@@ -1,5 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import SuperSignUp from '../components/SignUp.vue';
+import { supabase } from '../server/supabase';
+
+// This helper function checks if a user is currently logged in
+const getUser = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user;
+}
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -97,5 +104,35 @@ const router = createRouter({
         
     ],
 });
+
+// --- 👇 THIS IS THE NAVIGATION GUARD ---
+router.beforeEach(async (to, from, next) => {
+  // Get the current user session
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  // Define which pages require a user to be logged in
+  const authRequiredRoutes = [
+    'super admin', 'admin', 'ordering system', 'profile', 
+    'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImortProduct',
+    'update password', 'payment system', 'success', 'forgot password'
+  ]; //
+
+  // Rule 1: If the user is trying to access a protected page BUT is NOT logged in...
+  if (authRequiredRoutes.includes(to.name) && !user) {
+    // ...redirect them to the login page.
+    next({ name: 'login' }); //
+  }
+  // Rule 2: If the user is already logged in BUT tries to access the signup or login page...
+  else if (['signup', 'login'].includes(to.name) && user) {
+    // ...redirect them to their main dashboard instead.
+    next({ name: 'ordering system' }); //
+  }
+  // Rule 3: Otherwise, let them go to the page they requested.
+  else {
+    next();
+  }
+});
+// --- 👆 END OF NAVIGATION GUARD ---
 
 export default router;

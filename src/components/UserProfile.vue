@@ -79,7 +79,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { supabase } from '../server/supabase';
 
 const router = useRouter();
@@ -149,6 +149,30 @@ const saveUsername = async () => {
 const cancelEditing = () => {
   isEditing.value = false;
 };
+
+// --- 👇 THIS IS THE EXIT GUARD ---
+onBeforeRouteLeave((to, from, next) => {
+  // --- START OF FIX ---
+  // Define a list of "safe" internal pages the user can go to without a warning.
+  const safeRoutes = ['ordering system', 'login'];
+
+  // If the destination is one of our safe pages, allow the navigation immediately.
+  if (safeRoutes.includes(to.name)) {
+    next(); // Proceed without the pop-up
+    return;
+  }
+  // --- END OF FIX ---
+
+  // If it's not a safe route (e.g., browser back button), then show the warning.
+  const answer = window.confirm('Are you sure you want to leave this page? You will be logged out for security.');
+  if (answer) {
+    handleLogout();
+    next({ name: 'login' });
+  } else {
+    next(false); 
+  }
+});
+// --- 👆 END OF EXIT GUARD ---
 
 const handleLogout = async () => {
   try {

@@ -898,7 +898,33 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
+
+
+// --- 👇 THIS IS THE EXIT GUARD ---
+onBeforeRouteLeave((to, from, next) => {
+  // Define the routes the admin is ALLOWED to go to without a warning.
+  // We get the names from your router/index.js file.
+  const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
+
+  // If the destination is one of our allowed pages, let the navigation happen.
+  if (allowedExitRoutes.includes(to.name)) {
+    next(); // Proceed without the pop-up
+    return;
+  }
+
+  // If it's NOT an allowed route (like the browser back button), show the warning.
+  const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
+  if (answer) {
+    // We don't need to call confirmLogout() here because the logout button
+    // navigates to an allowed route. This handles accidental leaves.
+    supabase.auth.signOut(); // Log the user out
+    next({ name: 'login' });  // Proceed with navigation
+  } else {
+    next(false); // Cancel the navigation and stay on the page
+  }
+});
+// --- 👆 END OF EXIT GUARD ---
 
 const router = useRouter();
 

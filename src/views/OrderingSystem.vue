@@ -129,9 +129,33 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
 import { useCart } from '../composables/useCart'; // Import the new cart composable
+import { supabase } from '../server/supabase';
+
+// --- 👇 THIS IS THE EXIT GUARD ---
+// Add the 'async' keyword here
+onBeforeRouteLeave(async (to, from, next) => {
+  const safeRoutes = ['profile', 'order tracking', 'cart'];
+
+  if (safeRoutes.includes(to.name)) {
+    next();
+    return;
+  }
+
+  const answer = window.confirm('Are you sure you want to leave this page? You will be logged out for security.');
+  if (answer) {
+    await supabase.auth.signOut();
+    // 1. Tell the router to STOP its current navigation attempt.
+    next(false); 
+    // 2. Force a full page reload to the login page.
+    window.location.href = '/login'; 
+  } else {
+    next(false);
+  }
+});
+// --- 👆 END OF EXIT GUARD ---
 
 // --- Logic for cart ---
 const { addToCart } = useCart();
