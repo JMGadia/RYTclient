@@ -53,7 +53,7 @@ export default async function handler(request, response) {
 
     // Step 4: Check Sharpness Level (Key anti-spoofing check)
     // Photos of other photos or screens are often less sharp.
-    const sharpnessThreshold = 80.0;
+    const sharpnessThreshold = 95.0;
     if (face.Quality.Sharpness < sharpnessThreshold) {
         return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
     }
