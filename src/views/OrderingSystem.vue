@@ -122,9 +122,56 @@
       </div>
     </section>
 
-    <footer class="bg-dark text-white pt-5 pb-3">
-    </footer>
-  </div>
+    <footer class="bg-dark text-white pt-5 pb-3 footer-section">
+    <div class="container">
+      <div class="row text-center text-md-start">
+
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h5 class="fw-bold text-uppercase mb-3 d-flex align-items-center justify-content-center justify-content-md-start">
+            <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="30" class="me-2 rounded-circle" />
+            RYT-Tyre
+          </h5>
+          <p class="text-white-50">
+            Your trusted one-stop shop for high-quality tires and automotive parts in the Philippines.
+          </p>
+        </div>
+
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h5 class="fw-bold text-uppercase mb-3">Contact Us</h5>
+          <ul class="list-unstyled">
+            <li class="mb-2">
+              <i class="fas fa-envelope me-2"></i>
+              <a href="mailto:contact@ryttyre.com" class="footer-link">ryttyre2024@gmail.com</a>
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-phone-alt me-2"></i>
+              <a href="tel:+639123456789" class="footer-link">0947 993 1979</a>
+            </li>
+            <li>
+              <i class="fas fa-file-contract me-2"></i>
+              <a href="#" class="footer-link">Privacy Policy</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="col-md-4">
+          <h5 class="fw-bold text-uppercase mb-3">Follow Us</h5>
+          <div>
+            <a href="https://www.facebook.com/profile.php?id=61561174944710" class="social-icon me-3" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="instagram.com/ryttyre" class="social-icon me-3" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="tiktok.com/@ryt.tyre" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a>
+          </div>
+        </div>
+
+      </div>
+      
+      <hr class="my-4 bg-white-50">
+      <div class="text-center text-white-50">
+        <p>&copy; 2025 RYT-Tyre. All Rights Reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>
 </template>
 
 <script setup>
@@ -373,5 +420,42 @@ footer { background-color: rgba(12, 10, 36, 0.8) !important; backdrop-filter: bl
   section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
   .card-img-container { height: 120px; }
   .product-name { font-size: 0.9rem; }
+}
+
+/* --- FOOTER STYLES --- */
+.footer-section {
+  background-color: rgba(12, 10, 36, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-link {
+  color: #adb5bd; /* Lighter gray for better readability */
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.social-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.social-icon:hover {
+  background-color: #0d6efd; /* Primary blue on hover */
+  transform: translateY(-3px);
+  color: #fff;
 }
 </style>

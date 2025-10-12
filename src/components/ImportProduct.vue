@@ -13,16 +13,21 @@
     <div class="product-details-grid">
       <div class="detail-box">
         <label for="brand">Brand</label>
-        <select id="brand" v-model="product.brand">
-          <option v-for="brand in brandOptions" :key="brand" :value="brand">
-            {{ brand }}
-          </option>
-        </select>
+        <input type="text" id="brand" v-model="product.brand" placeholder="e.g., Michelin" />
       </div>
 
       <div class="detail-box">
         <label for="size">Size</label>
-        <input type="text" id="size" v-model="product.size" placeholder="e.g., 205/55 R16" />
+        <select id="size" v-model="product.size">
+          <option disabled value="">Select a size</option>
+          <template v-for="category in tireSizeOptions" :key="category.label">
+            <optgroup v-for="group in category.groups" :key="group.label" :label="`${category.label} - ${group.label}`">
+              <option v-for="size in group.sizes" :key="size" :value="size">
+                {{ size }}
+              </option>
+            </optgroup>
+          </template>
+        </select>
       </div>
 
       <div class="detail-box">
@@ -83,16 +88,92 @@ const product = ref({
   image_url: null
 });
 
+// Data for the categorized size dropdown
+const tireSizeOptions = ref([
+  {
+    label: 'Passenger Car & Crossover',
+    groups: [
+      { 
+        label: '13-Inch Rims', 
+        sizes: [
+          '155/80R13', '165/65R13', '175/70R13'
+        ] 
+      },
+      { 
+        label: '14-Inch Rims', 
+        sizes: [
+          '165/65R14', '175/65R14', '185/60R14', '185/65R14', '185/70R14'
+        ] 
+      },
+      { 
+        label: '15-Inch Rims', 
+        sizes: [
+          '175/65R15', '185/55R15', '185/60R15', '185/65R15', '195/55R15', 
+          '195/60R15', '195/65R15'
+        ] 
+      },
+      { 
+        label: '16-Inch Rims', 
+        sizes: [
+          '195/55R16', '205/55R16', '205/60R16', '215/60R16', '215/65R16'
+        ] 
+      },
+      { 
+        label: '17-Inch Rims', 
+        sizes: [
+          '205/45R17', '205/50R17', '215/45R17', '215/50R17', '215/55R17', 
+          '225/45R17', '225/50R17'
+        ] 
+      },
+      { 
+        label: '18-Inch Rims', 
+        sizes: [
+          '225/40R18', '225/45R18', '235/40R18', '235/45R18'
+        ] 
+      },
+    ]
+  },
+  {
+    label: 'SUV & Light Truck',
+    groups: [
+      { 
+        label: '15-Inch Rims', 
+        sizes: [
+          '205/70R15', '215/70R15', '225/70R15', '235/75R15', '31X10.50R15'
+        ] 
+      },
+      { 
+        label: '16-Inch Rims', 
+        sizes: [
+          '235/70R16', '245/70R16', '265/70R16', '265/75R16'
+        ] 
+      },
+      { 
+        label: '17-Inch Rims', 
+        sizes: [
+          '225/65R17', '245/65R17', '265/65R17', '265/70R17'
+        ] 
+      },
+      { 
+        label: '18-Inch Rims', 
+        sizes: [
+          '265/60R18', '265/65R18', '285/60R18'
+        ] 
+      },
+      { 
+        label: '20-Inch Rims', 
+        sizes: [
+          '265/50R20', '275/55R20'
+        ] 
+      },
+    ]
+  }
+]);
+
 // --- FIX: DEFINE MISSING VARIABLES HERE ---
 const selectedFile = ref(null);
 const imageUrl = ref(''); // This was missing, causing a console warning
 const isSubmitting = ref(false); // This was missing, causing a console warning
-
-// --- FIX: DEFINE THE ARRAYS FOR YOUR DROPDOWNS ---
-const brandOptions = ref([
-  'BF Goodrich', 'Maxxis', 'Blackhawk', 'Michelin', 'Blacklion',
-  'MRF', 'Bridgestone', 'Yokohama', 'CST'
-]);
 
 const carBrandOptions = ref([
   'Toyota', 'Mitsubishi', 'Ford', 'Nissan', 'Suzuki',

@@ -260,6 +260,20 @@
                 </div>
               </div>
 
+              <div calss="col-lg-4"></div>
+              <div class="row g-4 mt-4">
+                  <div class="col-lg-12">
+                    <div class="card shadow-sm h-100">
+                      <div class="card-header bg-white">
+                        <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
+                      </div>
+                      <div class="card-body">
+                        <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+
               <div class="col-lg-4">
                 <div class="card shadow-sm h-100">
                   <div class="card-header bg-white">
@@ -1036,6 +1050,21 @@ const salesData = ref({
       },
     ],
   },
+
+    salesTrendMonthly: {
+    labels: ['June', 'July', 'August', 'September', 'October'],
+    datasets: [
+      {
+        label: 'Total Sales (₱)',
+        data: [150000, 190000, 175000, 220000, 280000],
+        backgroundColor: '#198754', // A different color (Bootstrap success green)
+        borderColor: '#198754',
+        borderWidth: 1,
+        borderRadius: 5,
+      },
+    ],
+  },
+  
   salesByTireType: {
     labels: ['All-Season', 'Performance', 'Off-Road', 'Winter', 'Touring', 'All-Terrain'],
     datasets: [
@@ -1054,7 +1083,7 @@ const salesData = ref({
       },
     ],
   },
-});
+},);
 const orders = ref([
   { id: 101, customer: 'John Doe', date: '2025-10-10', amount: 1250, status: 'Completed' },
   { id: 102, customer: 'Jane Smith', date: '2025-10-10', amount: 800, status: 'Pending' },
@@ -1115,10 +1144,12 @@ const sortedUsers = computed(() => {
 
 let salesTrendChart = null;
 let salesByTireTypeChart = null;
+let salesTrendMonthlyChart = null; 
 
 const createCharts = () => {
   if (salesTrendChart) salesTrendChart.destroy();
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+  if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
   const salesTrendCtx = document.getElementById('salesTrendChart');
   if (salesTrendCtx) {
     salesTrendChart = new Chart(salesTrendCtx, {
@@ -1130,6 +1161,23 @@ const createCharts = () => {
   const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
   if (salesByTireTypeCtx) {
     salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
+  }
+
+  const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
+  if (salesTrendMonthlyCtx) {
+    salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
+      type: 'bar',
+      data: salesData.value.salesTrendMonthly,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { display: false } },
+          x: { grid: { display: false } }
+        }
+      },
+    });
   }
 };
 const pageTitle = computed(() => {
@@ -1239,6 +1287,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkMobile);
   if (salesTrendChart) salesTrendChart.destroy();
   if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+  if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
  if (userManagementChannel) {
     supabase.removeChannel(userManagementChannel);
