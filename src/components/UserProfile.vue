@@ -154,7 +154,7 @@ const cancelEditing = () => {
 onBeforeRouteLeave((to, from, next) => {
   // --- START OF FIX ---
   // Define a list of "safe" internal pages the user can go to without a warning.
-  const safeRoutes = ['ordering system', 'login'];
+  const safeRoutes = ['ordering system', 'login', 'BookOrderAddress', 'order tracking', 'OrderHistory'];
 
   // If the destination is one of our safe pages, allow the navigation immediately.
   if (safeRoutes.includes(to.name)) {
