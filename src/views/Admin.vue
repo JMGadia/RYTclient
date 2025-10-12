@@ -739,17 +739,31 @@ initQuagga() {
       this.desktopAdminDropdownOpen = !this.desktopAdminDropdownOpen;
     },
     logout() { this.showLogoutModal = true; },
-    confirmLogout() {
-      this.showLogoutModal = false;
-      this.$router.push('/'); 
-    },
-    cancelLogout() { this.showLogoutModal = false; },
-    saveProfile() {
-      // Logic for saving profile remains the same
-    },
-    cancelProfileEdit() {
-      // Logic for canceling profile edit remains the same
+    async confirmLogout() {
+  console.log('Attempting to log out...');
+  this.showLogoutModal = false;
+
+  try {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      // This will tell us if Supabase itself is returning an error
+      console.error('Supabase sign out error:', error);
+      alert(`Logout failed: ${error.message}`);
+      return; // Stop the function here if there's an error
     }
+
+    console.log('Logout successful, redirecting to /');
+    // Forcing a full page reload can sometimes help clear session state
+    await this.$router.push('/');
+    window.location.reload();
+
+  } catch (e) {
+    console.error('An unexpected error occurred during logout:', e);
+    alert('An unexpected error occurred. Please check the console.');
+  }
+},
+    cancelLogout() { this.showLogoutModal = false; },
   },
   mounted() {
     this.checkMobile();

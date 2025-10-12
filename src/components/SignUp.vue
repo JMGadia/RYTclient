@@ -261,6 +261,12 @@ const proceedWithSupabaseSignUp = async () => {
   }
 };
 
+const isValidEmail = (email) => {
+  // This regex checks for a basic email structure (e.g., something@something.com)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 // --- ⬇️ handleSignUp function with FUNCTION CALL for email existence check ---
 const handleSignUp = async () => {
     errors.username = ''
@@ -269,14 +275,33 @@ const handleSignUp = async () => {
 
     let hasError = false;
     if (!form.username.trim()) { errors.username = 'Username is required'; hasError = true; }
-    if (!form.email.trim()) { errors.email = 'Email is required'; hasError = true; }
+    
+    // --- START OF FIX ---
+    if (!form.email.trim()) {
+        errors.email = 'Email is required';
+        hasError = true;
+    } else if (!isValidEmail(form.email.trim())) {
+        errors.email = 'Please enter a valid email address';
+        hasError = true;
+    }
+    // --- END OF FIX ---
+
     if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
+
+    // <<< START OF FIX
+    // Check if the facial recognition checkbox is ticked
+    if (!form.facialRecognition) {
+        alert('You must enable facial recognition and agree to the terms to proceed.');
+        hasError = true;
+    }
+    // <<< END OF FIX
+
     if (hasError) return;
 
     isLoading.value = true;
     
     try {
-        // **FIX: Call the new database function to bypass RLS**
+        // ... rest of the function (database check, etc.)
         const { data: exists, error: checkError } = await supabase.rpc('user_profile_exists_by_email', {
             p_email: form.email.trim()
         });
@@ -284,7 +309,6 @@ const handleSignUp = async () => {
         if (checkError) throw checkError;
 
         if (exists === true) {
-            // User profile already exists, display error and stop signup
             errors.email = 'User Account Already Exist';
             isLoading.value = false;
             return;
@@ -297,10 +321,14 @@ const handleSignUp = async () => {
         return;
     }
     
+    // The rest of your logic remains the same.
+    // Because of the 'return' above, this part will only run if the box is checked.
     if (form.facialRecognition) {
         showCameraModal.value = true;
         startCamera();
     } else {
+        // This 'else' block will now never be reached because of our new validation,
+        // but it's safe to leave it.
         await proceedWithSupabaseSignUp();
     }
 }

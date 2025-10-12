@@ -541,7 +541,7 @@
           </div>
           <div class="modal-footer justify-content-center border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger" @click="confirmLogout">Logout</button>
+            <button type="button" class="btn btn-danger" @click="confirmLogout" data-bs-dismiss="modal">Logout</button>
           </div>
         </div>
       </div>
@@ -990,7 +990,6 @@ const saveUsername = async () => {
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
-let logoutModal = null;
 let userManagementChannel = null;
 
 const users = ref([]);
@@ -1136,14 +1135,12 @@ const checkMobile = () => {
 
 const confirmLogout = async () => {
   const { error } = await supabase.auth.signOut();
-  if (logoutModal) {
-    const modal = bootstrap.Modal.getInstance(logoutModal);
-    modal.hide();
-  }
   if (error) {
     console.error("Logout failed:", error.message);
+  } else {
+    // Redirect to the signup page on successful logout
+    router.push('/');
   }
-  router.push('/');
 };
 
 const getStatusBadge = (status) => {
@@ -1206,7 +1203,6 @@ onMounted(() => {
     .subscribe();
 
   nextTick(() => {
-    logoutModal = document.getElementById('logoutConfirmationModal');
     if (activeFeature.value === 'sales-report') {
       createCharts();
     }

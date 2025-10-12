@@ -111,7 +111,7 @@ const handlePasswordReset = async () => {
   try {
     // This is the page the user will be sent to after clicking the email link
     // You must create this page/route in your application.
-    const redirectTo = `${window.location.origin}/Update-Password`;
+     const redirectTo = `${window.location.origin}/Update-Password`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
       redirectTo: redirectTo,
