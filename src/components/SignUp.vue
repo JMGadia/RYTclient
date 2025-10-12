@@ -114,18 +114,21 @@
     </div>
 
     <div v-if="showCameraModal" class="camera-modal">
-      <div class="camera-modal-content">
-        <h4 class="text-center mb-3">Face Verification</h4>
-        <p class="text-center text-muted mb-3">Please center your face in the frame and capture a photo.</p>
-        <video ref="videoRef" autoplay playsinline class="w-100 rounded-3 mb-3"></video>
-        <div class="d-grid gap-2">
-           <button @click="captureAndVerify" class="btn btn-success btn-lg">
-             <i class="fas fa-camera me-2"></i>Capture Photo
-           </button>
-           <button @click="closeCamera" class="btn btn-secondary btn-sm">Cancel</button>
-        </div>
-      </div>
+  <div class="camera-modal-content">
+    <h4 class="text-center mb-3">Face Verification</h4>
+    <p class="text-center text-muted mb-3">Please center your face in the frame and capture a photo.</p>
+    <video ref="videoRef" autoplay playsinline class="w-100 rounded-3 mb-3"></video>
+    <div class="d-grid gap-2">
+       <button v-if="hasMultipleCameras" @click="flipCamera" class="btn btn-outline-primary">
+         <i class="fas fa-sync-alt me-2"></i>Flip Camera
+       </button>
+       <button @click="captureAndVerify" class="btn btn-success btn-lg">
+         <i class="fas fa-camera me-2"></i>Capture Photo
+       </button>
+       <button @click="closeCamera" class="btn btn-secondary btn-sm">Cancel</button>
     </div>
+  </div>
+</div>
   </div>
 </template>
 
@@ -154,6 +157,13 @@ const showCameraModal = ref(false)
 const videoRef = ref(null)
 let stream = null;
 
+// --- START OF NEW CODE ---
+// To track which camera to use: 'user' for front, 'environment' for back
+const facingMode = ref('user'); 
+// To control if the flip button should be visible
+const hasMultipleCameras = ref(false); 
+// --- END OF NEW CODE ---
+
 // --- ⬇️ Password Visibility Logic ---
 const isPasswordVisible = ref(false)
 
@@ -173,8 +183,18 @@ const togglePasswordVisibility = () => {
 // --- onMounted HOOK IS REMOVED as requested to allow Sign Up page to always load ---
 
 const startCamera = async () => {
+ // Always stop the old stream before starting a new one. This is key for flipping.
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    // MODIFIED: Use the facingMode ref to choose the camera
+    const constraints = {
+      video: { facingMode: facingMode.value },
+      audio: false
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
     if (videoRef.value) {
       videoRef.value.srcObject = stream;
     }
@@ -184,6 +204,16 @@ const startCamera = async () => {
     closeCamera();
   }
 }
+
+// --- START OF NEW CODE ---
+// This new function will be called by our "Flip Camera" button
+const flipCamera = async () => {
+  // Toggle between front and back camera
+  facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+  // Restart the camera stream with the new setting
+  await startCamera();
+}
+// --- END OF NEW CODE ---
 
 const closeCamera = () => {
   if (stream) {
@@ -324,13 +354,24 @@ const handleSignUp = async () => {
     // The rest of your logic remains the same.
     // Because of the 'return' above, this part will only run if the box is checked.
     if (form.facialRecognition) {
+       // --- START OF NEW CODE ---
+        // Check for available video devices before opening the modal
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            hasMultipleCameras.value = videoDevices.length > 1;
+        } catch (err) {
+            console.error("Could not enumerate devices:", err);
+            // Default to not showing the button if there's an error
+            hasMultipleCameras.value = false;
+        }
+        // --- END OF NEW CODE ---
+
         showCameraModal.value = true;
-        startCamera();
-    } else {
-        // This 'else' block will now never be reached because of our new validation,
-        // but it's safe to leave it.
-        await proceedWithSupabaseSignUp();
-    }
+        startCamera(); // This will start the camera for the first time
+        } else {
+            await proceedWithSupabaseSignUp();
+        }
 }
 // --- ⬆️ END OF handleSignUp function ---
 
