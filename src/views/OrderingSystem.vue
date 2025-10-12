@@ -158,8 +158,8 @@
           <h5 class="fw-bold text-uppercase mb-3">Follow Us</h5>
           <div>
             <a href="https://www.facebook.com/profile.php?id=61561174944710" class="social-icon me-3" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-            <a href="instagram.com/ryttyre" class="social-icon me-3" title="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="tiktok.com/@ryt.tyre" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="https://www.instagram.com/ryttyre" class="social-icon me-3" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.tiktok.com/@ryt.tyre" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a>
           </div>
         </div>
 
