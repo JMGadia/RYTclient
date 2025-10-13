@@ -87,47 +87,63 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { supabase } from '../server/supabase'
+// --- IMPORTS & SETUP ---
+import { ref } from 'vue' // Import reactive state management from Vue
+import { useRouter } from 'vue-router' // Import router for navigation (though not directly used in this function, it's standard setup)
+import { supabase } from '../server/supabase' // Import Supabase client for authentication operations
 
+// Initialize the router
 const router = useRouter()
-const email = ref('')
-const isLoading = ref(false)
-const message = ref('')
-const isSuccess = ref(false)
 
+// --- REACTIVE STATE ---
+const email = ref('') // Input field for the user's email address
+const isLoading = ref(false) // State to manage the loading status of the submission button
+const message = ref('') // User-facing message for success or error feedback
+const isSuccess = ref(false) // Boolean to indicate if the reset request was successful
+
+// --- AUTHENTICATION FUNCTION ---
+
+/**
+ * Handles the submission of the password reset form.
+ * Validates the email, calls the Supabase password reset API,
+ * and manages loading and feedback states.
+ */
 const handlePasswordReset = async () => {
+  // Input validation
   if (!email.value) {
     isSuccess.value = false;
     message.value = 'Please enter your email address.';
     return;
   }
 
+  // Reset state and set loading before API call
   isLoading.value = true;
   message.value = '';
   isSuccess.value = false;
 
   try {
-    // FIX: Add the hash symbol (#) to the path to ensure Vue Router (in hash mode)
-    // catches the redirect and the session token for the update page.
-    const redirectTo = `${window.location.origin}/#/Update-Password`;
+    // Construct the full redirect URL, including the hash (#) for Vue Router
+    // This URL is where the user will be sent after clicking the link in the email.
+    const redirectTo = `${window.location.origin}/#success`;
 
+    // Call Supabase API to send the password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
       redirectTo: redirectTo,
     });
 
-    if (error) throw error;
+    if (error) throw error; // Handle API errors
 
+    // Success state
     isSuccess.value = true;
     message.value = 'Success! If an account exists for this email, a password reset link has been sent to your inbox.';
 
   } catch (error) {
+    // Error state - use a generic message for security
     isSuccess.value = false;
-    // Show a generic message to prevent leaking information about which emails are registered
     message.value = 'If an account exists for this email, a password reset link has been sent. If you don\'t see it, please check your spam folder.';
     console.error('Password reset error:', error.message);
   } finally {
+    // Always stop loading, regardless of outcome
     isLoading.value = false;
   }
 };

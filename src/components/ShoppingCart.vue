@@ -89,31 +89,52 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useCart } from '../composables/useCart';
+// --- IMPORTS & SETUP ---
+import { ref, computed } from 'vue'; // Core Vue functions for state and reactivity
+import { useRouter } from 'vue-router'; // Vue Router hook for navigation
+import { useCart } from '../composables/useCart'; // Custom composable for managing cart state and actions
 
+// Initialize the router
 const router = useRouter();
+
+// Destructure reactive cart state and action functions from the composable
 const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
 
-const shippingFee = "Free Shipping"; // Example shipping fee
+// --- REACTIVE STATE & CONSTANTS ---
 
+// Placeholder/Example shipping fee
+const shippingFee = "Free Shipping"; 
+
+// --- COMPUTED PROPERTIES ---
+
+/**
+ * Calculates the grand total for the order. 
+ * Since shipping is marked as "Free", this just mirrors the cart subtotal.
+ */
 const grandTotal = computed(() => {
   return cartTotal.value;
 });
 
-// ADDED FUNCTION
+// --- NAVIGATION & CONTROL FUNCTIONS ---
+
+/**
+ * Navigates the user back to the main product ordering page.
+ */
 const goToOrderingSystem = () => {
   router.push({ name: 'ordering system' });
 };
 
-// The only function that needs to be created
+/**
+ * Handles the logic for proceeding from the cart summary.
+ * Checks if the cart is empty and navigates to the address selection page if items are present.
+ */
 const proceedToAddress = () => {
+  // Prevent proceeding if the cart has no items
   if (cart.value.length === 0) {
     alert("Your cart is empty!");
     return;
   }
-  // UPDATED: Navigate to the address book instead of payment
+  // Navigate to the component where the user selects or sets their shipping address
   router.push({ name: 'BookOrderAddress' });
 };
 </script>

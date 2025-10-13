@@ -1,7 +1,5 @@
-// src/services/apiService.js
-import { supabase } from '../server/supabase'; // Import the initialized Supabase client
+import { supabase } from '../server/supabase';
 
-// --- THIS IS YOUR EXISTING CODE ---
 /**
  * Fetches all products from the database.
  */
@@ -18,14 +16,16 @@ export async function getProducts() {
 }
 
 /**
- * Constructs the public URL for a product image.
+ * Constructs the public URL for a product image stored in Supabase Storage.
+ * @param {string} imagePath - The path of the image in the storage bucket.
+ * @returns {string | null} - The public URL or null if no path is provided.
  */
 export function getProductImageURL(imagePath) {
     if (!imagePath) return null;
     const { data } = supabase
-        .storage
-        .from('product_assets')
-        .getPublicUrl(imagePath);
+      .storage
+      .from('product_assets')
+      .getPublicUrl(imagePath);
     return data.publicUrl;
 }
 
@@ -34,17 +34,19 @@ export function getProductImageURL(imagePath) {
 /**
  * Uploads a product image to the 'product_assets' storage bucket.
  * @param {File} file - The image file to upload.
- * @returns {Promise<string>} - The path of the uploaded file.
+ * @returns {Promise<string>} - The path of the uploaded file within the bucket.
  */
 export async function uploadProductImage(file) {
   if (!file) {
     throw new Error('No file provided for upload.');
   }
 
+  // Create a unique filename based on the current timestamp
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}.${fileExt}`;
   const filePath = `${fileName}`;
 
+  // Upload the file to the Supabase storage bucket
   const { error } = await supabase.storage
     .from('product_assets')
     .upload(filePath, file);
@@ -59,7 +61,7 @@ export async function uploadProductImage(file) {
 
 /**
  * Inserts a new product record into the 'products' table.
- * @param {object} productData - The product data from the form.
+ * @param {object} productData - The product data (including image_url path) from the form.
  */
 export async function createProduct(productData) {
   const { error } = await supabase

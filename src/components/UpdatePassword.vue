@@ -104,65 +104,103 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { supabase } from '../server/supabase'
+// --- IMPORTS & SETUP ---
+import { ref, reactive, computed } from 'vue' // Core Vue functions for state and reactivity
+import { useRouter } from 'vue-router' // Vue Router hook for navigation
+import { supabase } from '../server/supabase' // Supabase client for authentication operations
 
+// Initialize the router
 const router = useRouter()
+
+// --- REACTIVE STATE ---
+
+// Reactive object for binding to the password update form inputs
 const form = reactive({
   password: '',
   confirmPassword: '',
 })
+
+// Loading state for the submission button
 const isLoading = ref(false)
+
+// User-facing feedback message (success or error)
 const message = ref('')
+
+// Boolean to control the styling/display of the message
 const isSuccess = ref(false)
 
-// --- Password Visibility Logic ---
+// --- PASSWORD VISIBILITY LOGIC ---
+
+// State to track if the password input should be visible
 const isPasswordVisible = ref(false)
+
+// Computed property to switch the password input type
 const passwordFieldType = computed(() => isPasswordVisible.value ? 'text' : 'password')
+
+// Computed property to switch the eye icon
 const passwordIcon = computed(() => isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png')
+
+/**
+ * Toggles the state of password visibility.
+ */
 const togglePasswordVisibility = () => { isPasswordVisible.value = !isPasswordVisible.value }
 
+// --- NAVIGATION FUNCTION ---
+
+/**
+ * Navigates the user to the login page.
+ */
 const goToLogin = () => router.push({ name: 'login' });
 
+// --- MAIN UPDATE FUNCTION ---
+
+/**
+ * Handles the logic for updating the user's password.
+ * 1. Performs local input validation (empty fields, length, match).
+ * 2. Calls the Supabase `updateUser` API, which uses the session token from the URL.
+ * 3. Manages loading and feedback states.
+ */
 const handleUpdatePassword = async () => {
-  // --- Validation ---
+  // Reset message and status
+  message.value = '';
+  isSuccess.value = false;
+
+  // --- Input Validation ---
   if (!form.password || !form.confirmPassword) {
     message.value = 'Please fill in both password fields.';
-    isSuccess.value = false;
     return;
   }
   if (form.password.length < 6) {
     message.value = 'Password must be at least 6 characters long.';
-    isSuccess.value = false;
     return;
   }
   if (form.password !== form.confirmPassword) {
     message.value = 'Passwords do not match.';
-    isSuccess.value = false;
     return;
   }
   
+  // Set loading state before API call
   isLoading.value = true;
-  message.value = '';
-  isSuccess.value = false;
 
   try {
-    // Supabase client automatically handles the session from the URL token
+    // Update the user's password using the session implicitly handled by Supabase
     const { error } = await supabase.auth.updateUser({
       password: form.password,
     });
     
     if (error) throw error;
     
+    // Success state
     isSuccess.value = true;
     message.value = 'Your password has been updated successfully!';
 
   } catch (error) {
+    // Error state
     isSuccess.value = false;
     message.value = `Error: ${error.message}`;
     console.error('Password update error:', error);
   } finally {
+    // Always reset loading state
     isLoading.value = false;
   }
 };

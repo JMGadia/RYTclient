@@ -78,36 +78,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
-import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { supabase } from '../server/supabase';
+// --- IMPORTS & SETUP ---
+import { ref, onMounted, nextTick } from 'vue'; // Core Vue functions for state and DOM updates
+import { useRouter, onBeforeRouteLeave } from 'vue-router'; // Vue Router for navigation and route guards
+import { supabase } from '../server/supabase'; // Supabase client for auth and database access
 
+// Initialize the router
 const router = useRouter();
 
-const isEditing = ref(false);
-const username = ref('Loading...');
-const email = ref('Loading...');
-const editableUsername = ref('');
-const usernameInput = ref(null);
-const isLoading = ref(false);
-const user = ref(null);
-const showLogoutConfirm = ref(false); // NEW: State to control the modal
+// --- REACTIVE STATE ---
+const isEditing = ref(false); // Controls the display mode (view vs. edit) for the username
+const username = ref('Loading...'); // Displayed username (read-only)
+const email = ref('Loading...'); // Displayed email
+const editableUsername = ref(''); // Username stored while editing
+const usernameInput = ref(null); // Template ref to focus the input field
+const isLoading = ref(false); // General loading state for profile operations
+const user = ref(null); // Stores the authenticated Supabase user object
+const showLogoutConfirm = ref(false); // Controls the visibility of the logout confirmation modal
 
+// --- DATA FETCHING (onMounted) ---
+
+/**
+ * Fetches the currently authenticated user's session data and profile information (username).
+ */
 onMounted(async () => {
   try {
+    // 1. Get Authentication User Data
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
+    
     if (authUser) {
       user.value = authUser;
       email.value = authUser.email;
 
+      // 2. Fetch the associated username from the 'profiles' table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', user.value.id)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') throw profileError;
+      // Handle potential no-data error (PGRST116) gracefully
+      if (profileError && profileError.code !== 'PGRST116') throw profileError; 
       if (profileData) username.value = profileData.username;
     }
   } catch (error) {
@@ -116,14 +128,24 @@ onMounted(async () => {
   }
 });
 
+// --- USERNAME EDITING FUNCTIONS ---
+
+/**
+ * Initiates the username editing mode.
+ * Copies the current username to the editable state and focuses the input field.
+ */
 const startEditing = async () => {
   editableUsername.value = username.value;
   isEditing.value = true;
-  await nextTick();
+  await nextTick(); // Wait for the DOM to update to show the input field
   usernameInput.value.focus();
 };
 
+/**
+ * Saves the new username to the database using an RPC (Remote Procedure Call).
+ */
 const saveUsername = async () => {
+  // Exit if the input is empty or unchanged
   if (!editableUsername.value.trim() || editableUsername.value === username.value) {
     isEditing.value = false;
     return;
@@ -131,10 +153,13 @@ const saveUsername = async () => {
   
   isLoading.value = true;
   try {
+    // Call the Supabase function to update the username
     const { error } = await supabase.rpc('update_my_username', {
       new_username_text: editableUsername.value
     });
     if (error) throw error;
+    
+    // Update the displayed username on success
     username.value = editableUsername.value;
     alert('Username updated successfully!');
   } catch (error) {
@@ -146,40 +171,53 @@ const saveUsername = async () => {
   }
 };
 
+/**
+ * Cancels editing and reverts the display mode.
+ */
 const cancelEditing = () => {
   isEditing.value = false;
 };
 
-// --- 👇 THIS IS THE EXIT GUARD ---
+// --- ROUTE GUARD (onBeforeRouteLeave) ---
+
+/**
+ * Route guard that fires before navigating away from this component.
+ * Allows navigation to known internal pages without warning, but forces a logout
+ * and prompts the user for confirmation when attempting to leave to an external route.
+ */
 onBeforeRouteLeave((to, from, next) => {
-  // --- START OF FIX ---
-  // Define a list of "safe" internal pages the user can go to without a warning.
+  // Define a list of "safe" internal routes that don't trigger the logout warning.
   const safeRoutes = ['ordering system', 'login', 'BookOrderAddress', 'order tracking', 'OrderHistory'];
 
-  // If the destination is one of our safe pages, allow the navigation immediately.
+  // Allow navigation immediately if the destination is a safe internal page.
   if (safeRoutes.includes(to.name)) {
-    next(); // Proceed without the pop-up
+    next();
     return;
   }
-  // --- END OF FIX ---
 
-  // If it's not a safe route (e.g., browser back button), then show the warning.
+  // For external navigation (e.g., browser back/forward or typing a new URL),
+  // prompt the user and enforce logout on confirmation.
   const answer = window.confirm('Are you sure you want to leave this page? You will be logged out for security.');
   if (answer) {
-    handleLogout();
-    next({ name: 'login' });
+    handleLogout(); // Log the user out
+    next({ name: 'login' }); // Redirect to login page
   } else {
-    next(false); 
+    next(false); // Cancel the navigation
   }
 });
-// --- 👆 END OF EXIT GUARD ---
 
+// --- LOGOUT FUNCTION ---
+
+/**
+ * Handles the user logout process by calling the Supabase signOut API.
+ */
 const handleLogout = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    showLogoutConfirm.value = false; // Close the modal
-    router.push({ name: 'login' }); // Redirect
+    
+    showLogoutConfirm.value = false; // Close modal (if open)
+    router.push({ name: 'login' }); // Redirect to login
   } catch (error) {
     alert(error.message);
   }

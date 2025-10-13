@@ -25,7 +25,7 @@ for (const path in imageContext) {
 
 <style scoped>
 .scroller-container {
-  /* This mask creates the fade-out effect on the left and right edges */
+  /* Creates the fade-out effect on the left and right edges */
   -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
   mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
   overflow: hidden;
@@ -33,26 +33,26 @@ for (const path in imageContext) {
 
 .scroller-track {
   display: flex;
-  gap: 1.5rem; /* Space between images */
+  gap: 1.5rem; /* Create space between images */
   width: max-content;
-  /* The animation that moves the track */
+  /* Animation that moves the track */
   animation: scroll 60s linear infinite;
 }
 
-/* Pause the animation when the user hovers over the container */
+/* Pause Animation: When the user hovers over the container */
 .scroller-container:hover .scroller-track {
   animation-play-state: paused;
 }
 
 .scroller-item {
-  height: 250px; /* Consistent height for all images */
+  height: 250px; 
   width: auto; /* Allow width to adjust based on aspect ratio */
   object-fit: contain; /* Ensures the whole image is visible without stretching */
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
 }
 
-/* Optional: a subtle zoom effect on individual image hover */
+/* Zoom effect on individual image hover */
 .scroller-item:hover {
     transform: scale(1.05);
     cursor: pointer;

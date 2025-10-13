@@ -86,31 +86,41 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { supabase } from '../server/supabase';
-import { useRouter } from 'vue-router';
+// --- IMPORTS & SETUP ---
+import { ref, onMounted } from 'vue'; // Core Vue functions for state and lifecycle
+import { supabase } from '../server/supabase'; // Supabase client for data fetching
+import { useRouter } from 'vue-router'; // Vue Router for navigation
 
+// Initialize the router
 const router = useRouter();
 
-const orders = ref([]);
-const isLoading = ref(true);
-const statusHierarchy = ['Payment Process', 'Payment Success', 'Order Processed', 'Shipped', 'Delivered'];
+// --- REACTIVE STATE ---
+const orders = ref([]); // Array to store the list of the current user's orders
+const isLoading = ref(true); // Boolean to manage the loading state while fetching data
+// Defines the sequence and valid names for the order status steps
+const statusHierarchy = ['Payment Process', 'Payment Success', 'Order Processed', 'Shipped', 'Delivered']; 
 
+// --- DATABASE FUNCTION ---
+/**
+ * Fetches all orders belonging to the currently logged-in user.
+ * Orders the results by newest first.
+ */
 const fetchOrders = async () => {
   isLoading.value = true;
   try {
-    // Get the current user to fetch only their orders
+    // Get the current user's session data
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        orders.value = [];
+        orders.value = []; // Clear orders if no user is logged in
         return;
     }
 
+    // Fetch orders associated with the user's ID
     const { data, error } = await supabase
-      .from('orders') // Reading from the new 'orders' table
+      .from('orders')
       .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }); // Show newest first
+      .eq('user_id', user.id) // Filter orders by the current user
+      .order('created_at', { ascending: false }); // Display newest orders first
     
     if (error) throw error;
     orders.value = data;
@@ -121,35 +131,53 @@ const fetchOrders = async () => {
   }
 };
 
+// --- ORDER TRACKING UI LOGIC (Computed Classes) ---
+/**
+ * Determines the CSS class for a specific step in the tracking hierarchy.
+ * @param {string} orderStatus - The current status of the order (e.g., 'Shipped').
+ * @param {string} stepName - The name of the step to check (e.g., 'Order Processed').
+ * @returns {string} - The appropriate CSS class ('step completed', 'step active', or 'step').
+ */
 const getStepClass = (orderStatus, stepName) => {
   const orderIndex = statusHierarchy.indexOf(orderStatus);
   const stepIndex = statusHierarchy.indexOf(stepName);
   
   if (stepIndex < orderIndex) {
-    return 'step completed';
+    return 'step completed'; // Step is already passed
   } else if (stepIndex === orderIndex) {
-    return 'step active';
+    return 'step active'; // Step is the current status
   } else {
-    return 'step';
+    return 'step'; // Step is yet to come
   }
 };
 
+/**
+ * Determines the CSS class for the connector line between steps.
+ * @param {string} orderStatus - The current status of the order.
+ * @param {string} stepName - The name of the preceding step whose connector is being checked.
+ * @returns {string} - The appropriate CSS class ('connector completed' or 'connector').
+ */
 const getConnectorClass = (orderStatus, stepName) => {
   const orderIndex = statusHierarchy.indexOf(orderStatus);
   const stepIndex = statusHierarchy.indexOf(stepName);
   
   if (stepIndex < orderIndex) {
-    return 'connector completed';
+    return 'connector completed'; // Connector should be colored as complete
   } else {
-    return 'connector';
+    return 'connector'; // Connector is grey/default
   }
 };
 
-// ADDED FUNCTION
+// --- NAVIGATION FUNCTION ---
+/**
+ * Navigates the user back to the main 'ordering system' page.
+ */
 const goToOrderingSystem = () => {
   router.push({ name: 'ordering system' });
 };
+// --- LIFECYCLE HOOKS ---
 
+// Call fetchOrders immediately when the component loads
 onMounted(fetchOrders);
 </script>
 

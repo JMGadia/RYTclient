@@ -180,72 +180,85 @@
 </template>
 
 <script setup>
+/* ============================================================
+   Customer Product Listing Page
+   Features:
+   - Exit Guard (Warn before leaving page)
+   - Product Fetching & Filtering
+   - Cart Management
+   - Responsive Mobile Menu
+   - Category Filtering
+============================================================ */
+
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
-import { useCart } from '../composables/useCart'; // Import the new cart composable
+import { useCart } from '../composables/useCart';
 import { supabase } from '../server/supabase';
-import AdScroller from '../components/AdScroller.vue';
+import AdScroller from '../components/AdScroller.vue'; // Optional component for ads
 
-// --- 👇 THIS IS THE EXIT GUARD ---
-// Add the 'async' keyword here
+/* ============================================================
+   ROUTE GUARD
+   Warns user before leaving pages that may cause logout/session end
+============================================================ */
 onBeforeRouteLeave(async (to, from, next) => {
   const safeRoutes = ['profile', 'order tracking', 'cart'];
 
+  // Allow navigation for safe routes
   if (safeRoutes.includes(to.name)) {
     next();
     return;
   }
 
-  const answer = window.confirm('Are you sure you want to leave this page? You will be logged out for security.');
+  const answer = window.confirm(
+    'Are you sure you want to leave this page? You will be logged out for security.'
+  );
+
   if (answer) {
     await supabase.auth.signOut();
-    // 1. Tell the router to STOP its current navigation attempt.
-    next(false); 
-    // 2. Force a full page reload to the login page.
-    window.location.href = '/login'; 
+    next(false); // Cancel current navigation
+    window.location.href = '/login'; // Force redirect to login page
   } else {
-    next(false);
+    next(false); // Cancel navigation
   }
 });
-// --- 👆 END OF EXIT GUARD ---
 
-// --- Logic for cart ---
-const { addToCart } = useCart();
-const handleAddToCart = (product) => {
-  addToCart(product);
-  router.push({ name: 'cart' });
-};
-
-// --- Logic for navigation and UI state ---
+/* ============================================================
+   ROUTER & UI STATE
+============================================================ */
 const router = useRouter();
-const isMobileMenuOpen = ref(false);
-const selectedCategory = ref('All');
+const isMobileMenuOpen = ref(false); // Controls mobile menu visibility
+const selectedCategory = ref('All'); // Default category filter
 
+// Navigate to a route and close the mobile menu
 const navigateAndCloseMenu = (routeName) => {
   isMobileMenuOpen.value = false;
   router.push({ name: routeName });
 };
 
+// Select a product category for filtering
 const selectCategory = (category) => {
   selectedCategory.value = category;
 };
 
-// --- Logic for fetching and displaying products ---
+/* ============================================================
+   PRODUCT DATA FETCHING
+============================================================ */
 const allProducts = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
+// Filtered products based on selected category
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === 'All') {
-    return allProducts.value;
-  }
+  if (selectedCategory.value === 'All') return allProducts.value;
   return allProducts.value.filter(product => product.product_type === selectedCategory.value);
 });
 
+// Fetch products on component mount
 onMounted(async () => {
   loading.value = true;
   error.value = null;
+
   try {
     const { data, error: fetchError } = await getProducts();
     if (fetchError) throw fetchError;
@@ -253,7 +266,7 @@ onMounted(async () => {
     if (data) {
       allProducts.value = data.map(product => ({
         ...product,
-        image_url: getProductImageURL(product.image_url)
+        image_url: getProductImageURL(product.image_url) // Full image URL
       }));
     }
   } catch (err) {
@@ -263,6 +276,17 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+/* ============================================================
+   CART MANAGEMENT
+============================================================ */
+const { addToCart } = useCart();
+
+// Add selected product to cart and redirect to cart page
+const handleAddToCart = (product) => {
+  addToCart(product);
+  router.push({ name: 'cart' });
+};
 </script>
 
 <style scoped>

@@ -30,7 +30,7 @@ export default async function handler(request, response) {
     const rekognitionResponse = await rekognitionClient.send(command);
     const faceDetails = rekognitionResponse.FaceDetails;
 
-    // --- START OF FIX ---
+    // --- START OF Implement ---
 
     // Step 1: Check if any face was detected at all
     if (!faceDetails || faceDetails.length === 0) {
@@ -58,7 +58,7 @@ export default async function handler(request, response) {
         return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
     }
     
-    // --- END OF FIX ---
+    // --- END OF IMPLEMENT ---
 
     return response.status(200).json({ success: true, message: 'Face verified successfully.' });
 

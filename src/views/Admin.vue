@@ -338,131 +338,181 @@
 </template>
 
 <script>
+/* ============================================================
+   Admin Dashboard Vue Component
+   Features:
+   - User Profile Management
+   - Stock In / Stock Out Handling
+   - Barcode Generation & Scanning (Quagga2 & JsBarcode)
+   - Dashboard Statistics & Recent Activities
+   - Responsive UI and Sidebar Navigation
+============================================================ */
+
 import { supabase } from '../server/supabase';
 import { nextTick } from 'vue';
 import JsBarcode from 'jsbarcode';
-import Quagga from '@ericblade/quagga2'; // ✅ Corrected Import for Quagga2\
+import Quagga from '@ericblade/quagga2'; // Barcode scanning library
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
 const router = useRouter();
 
 export default {
-  
+  name: 'AdminDashboard',
+
+  /* ============================================================
+     ROUTE GUARD
+     Warns user before leaving admin routes (e.g., via browser back button)
+  ============================================================ */
   beforeRouteLeave(to, from, next) {
-    // Define the routes the admin is allowed to go to without a warning.
     const allowedExitRoutes = ['login', 'signup'];
 
-    // If the destination is one of our allowed pages, let the navigation happen.
     if (allowedExitRoutes.includes(to.name)) {
-      next(); // Proceed without the pop-up
+      next(); // Allowed route, no warning
       return;
     }
 
-    // If it's NOT an allowed route (like the browser back button), show the warning.
-    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
+    const answer = window.confirm(
+      'Are you sure you want to leave? This will end your session for security.'
+    );
+
     if (answer) {
-      // Use the hard redirect method to prevent UI glitches
       supabase.auth.signOut().then(() => {
         next(false);
         window.location.href = '/login';
       });
     } else {
-      next(false); // Cancel the navigation and stay on the page
+      next(false); // Cancel navigation
     }
   },
 
-  name: 'AdminDashboard',
+  /* ============================================================
+     DATA PROPERTIES
+  ============================================================ */
   data() {
     return {
+      // --- UI State ---
       isCollapsed: false,
       isSidebarVisible: false,
       isMobile: false,
       adminMenuOpen: false,
       desktopAdminDropdownOpen: false,
-      showLogoutModal: false, 
+      showLogoutModal: false,
       showProfileModal: false,
       showBarcodeModal: false,
-      showScanModal: false, 
-      isStockOutLoading: false, 
-      itemToPrint: null,
-      orderToFulfill: null, 
-      isProductScanned: false, 
-      scanStatusMessage: 'Awaiting camera initialization...', 
-      currentView: 'Dashboard', 
+      showScanModal: false,
+
+      // --- Loading / Scan State ---
+      isStockOutLoading: false,
+      isProductScanned: false,
+      scanStatusMessage: 'Awaiting camera initialization...',
+
+      // --- Dashboard / Views ---
+      currentView: 'Dashboard',
       totalProductsCount: 0,
       stockInTodayCount: 0,
       stockOutTodayCount: 0,
       recentActivities: [],
       availableProducts: [],
-      activeOrders: [], 
+      activeOrders: [],
       menuItems: [
         { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { icon: 'fas fa-boxes', label: 'Stock In' },
         { icon: 'fas fa-truck-loading', label: 'Stock Out' }
       ],
-      currentUser: { username: 'Loading...', email: 'loading@app.com', id: null }, 
+
+      // --- User Info ---
+      currentUser: { username: 'Loading...', email: 'loading@app.com', id: null },
       editableUser: { username: 'Loading...' },
+
+      // --- Stock In Form ---
       stockIn: {
         productName: '',
         size: '',
         quantity: 1,
         supplier: '',
-        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))
+          .toISOString()
+          .slice(0, 16)
       },
       stockInHistory: [],
+      itemToPrint: null,
+      orderToFulfill: null
     };
   },
+
+  /* ============================================================
+     METHODS
+  ============================================================ */
   methods: {
-    // ----------------------------------------
-    // ✅ NEW QUAGGA/SCANNING IMPLEMENTATION
-    // ----------------------------------------
 
-   // Inside Admin.vue script methods:
-
-initQuagga() {
-    if (typeof Quagga === 'undefined' || !Quagga.init) {
+    /* ============================
+       --- QUAGGA BARCODE SCANNER ---
+       ============================ */
+    initQuagga() {
+      if (typeof Quagga === 'undefined' || !Quagga.init) {
         this.scanStatusMessage = 'Error: Barcode scanner library not loaded.';
         return;
-    }
+      }
 
-    // Configuration to start the camera stream and prepare for decoding
-    Quagga.init({
-              inputStream: {
-                  name: "Live",
-                  type: "LiveStream",
-                  // ✅ FIX 1: Target the container ID for more stable rendering
-                  target: document.querySelector('#scanner-container'), 
-                  constraints: {
-                      width: 600, 
-                      height: 320,
-                      facingMode: "environment" // Use rear camera
-                  },
-              },
-              decoder: {
-                  readers: ["code_128_reader", "ean_reader", "upc_reader", "code_39_reader"]
-              },
-              // IMPORTANT: The patchSize and halfSample settings often fix black screen issues
-              locator: {
-                  patchSize: "medium", 
-                  halfSample: true
-              },
-              locate: true, // Enable localization to show the barcode box
-          }, (err) => {
-              if (err) {
-                  console.error("Quagga initialization error:", err);
-                  this.scanStatusMessage = 'ERROR: Could not access camera. Check permissions/console.';
-                  return;
-              }
-              // If initialization succeeds, start the stream and update status
-              Quagga.start();
-              this.scanStatusMessage = 'Camera ready. Press "Capture Barcode" when centered.';
-          });
-      },
-    
-    // ----------------------------------------
-    // ✅ END NEW QUAGGA/SCANNING IMPLEMENTATION
-    // ----------------------------------------
-    
+      Quagga.init({
+        inputStream: {
+          name: 'Live',
+          type: 'LiveStream',
+          target: document.querySelector('#scanner-container'),
+          constraints: { width: 600, height: 320, facingMode: 'environment' }
+        },
+        decoder: { readers: ['code_128_reader', 'ean_reader', 'upc_reader', 'code_39_reader'] },
+        locator: { patchSize: 'medium', halfSample: true },
+        locate: true
+      }, (err) => {
+        if (err) {
+          console.error('Quagga initialization error:', err);
+          this.scanStatusMessage = 'ERROR: Could not access camera.';
+          return;
+        }
+        Quagga.start();
+        this.scanStatusMessage = 'Camera ready. Press "Capture Barcode" when centered.';
+      });
+    },
+
+    stopQuagga() {
+      if (Quagga && Quagga.stop) Quagga.stop();
+    },
+
+    startScanForOrder(order) {
+      this.orderToFulfill = order;
+      this.isProductScanned = false;
+      this.scanStatusMessage = 'Awaiting camera initialization...';
+      this.showScanModal = true;
+
+      nextTick(() => this.initQuagga());
+    },
+
+    handleBarcodeScanned(scannedCode) {
+      if (!this.orderToFulfill) return;
+
+      if (scannedCode === this.orderToFulfill.product_id) {
+        this.isProductScanned = true;
+        this.scanStatusMessage = `✅ Barcode matched! Product ID: ${scannedCode}. Ready to confirm.`;
+      } else {
+        this.isProductScanned = false;
+        this.scanStatusMessage = '⚠️ Barcode mismatch. Please capture the correct item.';
+      }
+
+      this.stopQuagga();
+      this.showScanModal = false;
+    },
+
+    closeScanModal() {
+      this.stopQuagga();
+      this.showScanModal = false;
+      this.orderToFulfill = null;
+      this.isProductScanned = false;
+    },
+
+    /* ============================
+       --- USER PROFILE METHODS ---
+       ============================ */
     async fetchCurrentUserProfile() {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -489,7 +539,7 @@ initQuagga() {
         this.editableUser.username = 'Admin User';
       }
     },
-    
+
     async saveProfile() {
       try {
         const { error: updateProfileError } = await supabase
@@ -498,7 +548,7 @@ initQuagga() {
           .eq('id', this.currentUser.id);
 
         if (updateProfileError) throw updateProfileError;
-        
+
         this.currentUser.username = this.editableUser.username;
         this.showProfileModal = false;
         alert('Profile updated successfully!');
@@ -507,35 +557,46 @@ initQuagga() {
         alert('Failed to save profile changes. Error: ' + error.message);
       }
     },
+
     cancelProfileEdit() {
       this.editableUser.username = this.currentUser.username;
       this.showProfileModal = false;
     },
 
+    /* ============================
+       --- DASHBOARD & DATA FETCHING ---
+       ============================ */
     async fetchInitialData() {
-      this.fetchCurrentUserProfile(); 
-
+      this.fetchCurrentUserProfile();
       const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size');
-      if (productsError) console.error('Error fetching products for dropdown:', productsError);
+      if (productsError) console.error('Error fetching products:', productsError);
       else this.availableProducts = products;
-      
+
       this.fetchDashboardData();
       this.fetchStockInHistory();
-      this.fetchProcessedOrders(); 
+      this.fetchProcessedOrders();
     },
 
     async fetchDashboardData() {
       const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
       this.totalProductsCount = productsCount;
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const { count: stockInCount } = await supabase.from('stock_in').select('*', { count: 'exact', head: true }).gte('date_and_time', today.toISOString()).lt('date_and_time', tomorrow.toISOString());
+
+      const { count: stockInCount } = await supabase
+        .from('stock_in')
+        .select('*', { count: 'exact', head: true })
+        .gte('date_and_time', today.toISOString())
+        .lt('date_and_time', tomorrow.toISOString());
       this.stockInTodayCount = stockInCount;
 
-      const { data: activities } = await supabase.from('stock_in').select('*').order('date_and_time', { ascending: false }).limit(4);
+      const { data: activities } = await supabase.from('stock_in')
+        .select('*')
+        .order('date_and_time', { ascending: false })
+        .limit(4);
       this.recentActivities = activities;
     },
 
@@ -544,127 +605,91 @@ initQuagga() {
       if (error) console.error('Error fetching stock in history:', error);
       else this.stockInHistory = data;
     },
-    
+
     async fetchProcessedOrders() {
-        this.isStockOutLoading = true;
-        try {
-            const { data, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('status', 'Order Processed')
-                .order('created_at', { ascending: true }); 
-            
-            if (error) throw error;
-            this.activeOrders = data;
-            
-        } catch (error) {
-            console.error('Error fetching processed orders:', error.message);
-            this.activeOrders = [];
-        } finally {
-            this.isStockOutLoading = false;
-        }
+      this.isStockOutLoading = true;
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('status', 'Order Processed')
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        this.activeOrders = data;
+      } catch (error) {
+        console.error('Error fetching processed orders:', error.message);
+        this.activeOrders = [];
+      } finally {
+        this.isStockOutLoading = false;
+      }
     },
 
-    startScanForOrder(order) {
-        this.orderToFulfill = order;
-        this.isProductScanned = false;
-        this.scanStatusMessage = 'Awaiting camera initialization...';
-        this.showScanModal = true;
-        
-        nextTick(() => {
-            this.initQuagga(); 
-        });
-    },
-
-    handleBarcodeScanned(scannedCode) {
-        if (!this.orderToFulfill) return;
-
-        if (scannedCode === this.orderToFulfill.product_id) {
-            this.isProductScanned = true;
-            this.scanStatusMessage = `✅ Barcode matched! Product ID: ${scannedCode}. Ready to confirm.`;
-        } else {
-            this.isProductScanned = false;
-            this.scanStatusMessage = '⚠️ Barcode mismatch. Please capture the correct item.';
-        }
-        // Stop the scan modal to show the confirmation modal
-        this.stopQuagga(); 
-        this.showScanModal = false;
-    },
-
+    /* ============================
+       --- STOCK OUT METHODS ---
+       ============================ */
     async updateStockOut() {
-        if (!this.orderToFulfill || !this.isProductScanned) {
-            alert('Cannot confirm shipment: Scan required or order data missing.');
-            return;
+      if (!this.orderToFulfill || !this.isProductScanned) {
+        alert('Cannot confirm shipment: Scan required or order data missing.');
+        return;
+      }
+
+      const orderId = this.orderToFulfill.order_id;
+      const productId = this.orderToFulfill.product_id;
+      const quantityToShip = this.orderToFulfill.quantity;
+
+      try {
+        // 1. Update Product Quantity
+        const { data: currentProduct, error: findError } = await supabase.from('products')
+          .select('quantity').eq('id', productId).single();
+        if (findError) throw new Error('Could not retrieve current product stock.');
+
+        const newQuantity = currentProduct.quantity - quantityToShip;
+        if (newQuantity < 0) {
+          alert('Error: Not enough stock to fulfill this order.');
+          return;
         }
 
-        const orderId = this.orderToFulfill.order_id;
-        const productId = this.orderToFulfill.product_id;
-        const quantityToShip = this.orderToFulfill.quantity;
+        let newStatus = '';
+        if (newQuantity >= 12) newStatus = 'In Stock';
+        else if (newQuantity >= 1) newStatus = 'Low Stock';
+        else newStatus = 'Out of Stock';
 
-        try {
-            // 1. Update Product Quantity (Stock Out)
-            const { data: currentProduct, error: findError } = await supabase.from('products').select('quantity').eq('id', productId).single();
-            if(findError) throw new Error('Could not retrieve current product stock.');
-            
-            const newQuantity = currentProduct.quantity - quantityToShip;
-            if (newQuantity < 0) {
-                 alert('Error: Not enough stock to fulfill this order.');
-                 return;
-            }
-            
-            let newStatus = '';
-            if (newQuantity >= 12) newStatus = 'In Stock';
-            else if (newQuantity >= 1) newStatus = 'Low Stock';
-            else newStatus = 'Out of Stock';
+        const { error: updateProductError } = await supabase.from('products')
+          .update({ quantity: newQuantity, status: newStatus })
+          .eq('id', productId);
+        if (updateProductError) throw updateProductError;
 
-            const { error: updateProductError } = await supabase.from('products').update({
-                quantity: newQuantity, status: newStatus
-            }).eq('id', productId);
-            if (updateProductError) throw updateProductError;
+        // 2. Update Order Status
+        const { error: updateOrderError } = await supabase.from('orders')
+          .update({ status: 'Shipped', date_shipped: new Date().toISOString() })
+          .eq('order_id', orderId);
+        if (updateOrderError) throw updateOrderError;
 
+        // 3. Log Stock Out Transaction
+        const { error: logError } = await supabase.from('stock_out').insert({
+          order_id: orderId,
+          product_id: productId,
+          product_name: this.orderToFulfill.product_name,
+          quantity: quantityToShip,
+          date_and_time: new Date().toISOString()
+        });
+        if (logError) console.warn('Warning: Failed to log stock-out transaction.', logError);
 
-            // 2. Update Order Status
-            const { error: updateOrderError } = await supabase
-                .from('orders')
-                .update({ 
-                    status: 'Shipped', 
-                    date_shipped: new Date().toISOString() 
-                })
-                .eq('order_id', orderId);
-            
-            if (updateOrderError) throw updateOrderError;
+        alert(`✅ Order #${orderId.slice(0, 8)} successfully shipped! Stock updated.`);
+        this.closeScanModal();
+        this.fetchProcessedOrders();
+        this.fetchDashboardData();
 
-            
-            // 3. Log Stock Out Transaction 
-            const { error: logError } = await supabase.from('stock_out').insert({
-                order_id: orderId,
-                product_id: productId,
-                product_name: this.orderToFulfill.product_name,
-                quantity: quantityToShip,
-                date_and_time: new Date().toISOString(),
-            });
-            if (logError) console.warn('Warning: Order shipped, but failed to log stock-out transaction.', logError);
-
-
-            alert(`✅ Order #${orderId.slice(0, 8)} successfully shipped! Stock updated.`);
-            this.closeScanModal();
-            this.fetchProcessedOrders(); 
-            this.fetchDashboardData(); 
-            
-        } catch (error) {
-            console.error('Stock Out/Shipping Error:', error.message);
-            alert('⚠️ Failed to confirm shipment: ' + error.message);
-        }
+      } catch (error) {
+        console.error('Stock Out/Shipping Error:', error.message);
+        alert('⚠️ Failed to confirm shipment: ' + error.message);
+      }
     },
 
-    closeScanModal() {
-        this.stopQuagga();
-        this.showScanModal = false;
-        this.orderToFulfill = null;
-        this.isProductScanned = false;
-    },
-
-    // --- STOCK IN LOGIC ---
+    /* ============================
+       --- STOCK IN METHODS ---
+       ============================ */
     async addStockIn() {
       if (!this.stockIn.productName) {
         alert('Please select a product from the dropdown.');
@@ -672,50 +697,46 @@ initQuagga() {
       }
 
       const product = this.availableProducts.find(p => p.brand === this.stockIn.productName);
-      if (!product) {
-        alert('Could not find selected product.');
-        return;
-      }
+      if (!product) { alert('Could not find selected product.'); return; }
 
-      const { data: currentProduct, error: findError } = await supabase.from('products').select('quantity').eq('id', product.id).single();
-      if(findError) {
-        alert('Could not retrieve current stock quantity. Aborting update.');
-        return;
-      }
-      
+      const { data: currentProduct, error: findError } = await supabase.from('products')
+        .select('quantity').eq('id', product.id).single();
+      if (findError) { alert('Could not retrieve current stock.'); return; }
+
       const newQuantity = currentProduct.quantity + this.stockIn.quantity;
       let newStatus = '';
       if (newQuantity >= 12) newStatus = 'In Stock';
       else if (newQuantity >= 1) newStatus = 'Low Stock';
       else newStatus = 'Out of Stock';
 
-      const { error: updateError } = await supabase.from('products').update({
-        size: this.stockIn.size, quantity: newQuantity, status: newStatus
-      }).eq('id', product.id);
-      if (updateError) {
-        alert('Error updating product: ' + updateError.message);
-        return;
-      }
-      
-      const barcodeBase = `${this.stockIn.productName.slice(0,4).toUpperCase()}-${Date.now()}`;
+      const { error: updateError } = await supabase.from('products')
+        .update({ size: this.stockIn.size, quantity: newQuantity, status: newStatus })
+        .eq('id', product.id);
+      if (updateError) { alert('Error updating product: ' + updateError.message); return; }
+
+      const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
       const { error: logError } = await supabase.from('stock_in').insert({
-        barcode_id: barcodeBase, product_name: this.stockIn.productName, size: this.stockIn.size,
-        quantity: this.stockIn.quantity, supplier: this.stockIn.supplier, date_and_time: this.stockIn.dateTime,
+        barcode_id: barcodeBase,
+        product_name: this.stockIn.productName,
+        size: this.stockIn.size,
+        quantity: this.stockIn.quantity,
+        supplier: this.stockIn.supplier,
+        date_and_time: this.stockIn.dateTime
       });
-      if (logError) {
-        alert('Warning: Product stock updated, but failed to log the transaction. Error: ' + logError.message);
-      }
+      if (logError) alert('Warning: Failed to log transaction. ' + logError.message);
 
       this.itemToPrint = { barcodeBase, productName: this.stockIn.productName, size: this.stockIn.size, quantity: this.stockIn.quantity };
       this.openBarcodePrintModal();
+
+      // Reset stockIn form
       this.stockIn = {
         productName: '', size: '', quantity: 1, supplier: '',
         dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
       };
+
       this.fetchInitialData();
     },
 
-    // --- UTILITY METHODS ---
     printLabel() {
       const { productName, size, quantity, barcodeBase } = this.itemToPrint;
       if (!quantity || quantity < 1) return;
@@ -724,13 +745,17 @@ initQuagga() {
       printWindow.document.write('<html><head><title>Print Labels</title>');
       printWindow.document.write('<style>@media print{@page{size:auto;margin:0.1in}body{margin:0}.label{page-break-after:always;text-align:center;font-family:sans-serif}.product-name{font-size:1.1em;font-weight:700;margin-bottom:5px}svg{margin:0 auto}.size,.barcode-id{margin-top:5px}}</style>');
       printWindow.document.write('</head><body>');
+
       for (let i = 1; i <= quantity; i++) {
         const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
         const svgId = `barcode-${i}`;
         printWindow.document.body.innerHTML += `<div class="label"><p class="product-name">${productName}</p><svg id="${svgId}"></svg><p class="size">SIZE: ${size}</p><p class="barcode-id">ID: ${uniqueBarcodeId}</p></div>`;
       }
+
+      printWindow.document.write('</body></html>');
       printWindow.document.close();
-      printWindow.onload = function() {
+
+      printWindow.onload = function () {
         for (let i = 1; i <= quantity; i++) {
           const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
           const svgId = `barcode-${i}`;
@@ -742,19 +767,22 @@ initQuagga() {
         printWindow.focus();
         printWindow.print();
       };
+
       this.closeBarcodePrintModal();
     },
+
     openBarcodePrintModal() { this.showBarcodeModal = true; },
     closeBarcodePrintModal() { this.showBarcodeModal = false; this.itemToPrint = null; },
-    
-    // --- UI/NAVIGATION METHODS ---
+
+    /* ============================
+       --- UI & NAVIGATION METHODS ---
+       ============================ */
     selectView(label) {
       this.currentView = label;
-      if (label === 'Stock Out') {
-        this.fetchProcessedOrders(); 
-      }
+      if (label === 'Stock Out') this.fetchProcessedOrders();
       if (this.isMobile) this.closeSidebar();
     },
+
     checkMobile() { this.isMobile = window.innerWidth < 992; },
     toggleSidebar() {
       if (this.isMobile) this.isSidebarVisible = !this.isSidebarVisible;
@@ -762,45 +790,40 @@ initQuagga() {
     },
     closeSidebar() { this.isSidebarVisible = false; this.adminMenuOpen = false; },
     toggleAdminMenu() { this.adminMenuOpen = !this.adminMenuOpen; },
-    toggleDesktopAdminMenu() {
-      this.desktopAdminDropdownOpen = !this.desktopAdminDropdownOpen;
-    },
+    toggleDesktopAdminMenu() { this.desktopAdminDropdownOpen = !this.desktopAdminDropdownOpen; },
+
     logout() { this.showLogoutModal = true; },
+
     async confirmLogout() {
-  console.log('Attempting to log out...');
-  this.showLogoutModal = false;
+      this.showLogoutModal = false;
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) { alert(`Logout failed: ${error.message}`); return; }
 
-  try {
-    const { error } = await supabase.auth.signOut();
+        await this.$router.push('/');
+        window.location.reload();
+      } catch (e) {
+        console.error('Unexpected logout error:', e);
+        alert('An unexpected error occurred. Check console.');
+      }
+    },
 
-    if (error) {
-      // This will tell us if Supabase itself is returning an error
-      console.error('Supabase sign out error:', error);
-      alert(`Logout failed: ${error.message}`);
-      return; // Stop the function here if there's an error
-    }
-
-    console.log('Logout successful, redirecting to /');
-    // Forcing a full page reload can sometimes help clear session state
-    await this.$router.push('/');
-    window.location.reload();
-
-  } catch (e) {
-    console.error('An unexpected error occurred during logout:', e);
-    alert('An unexpected error occurred. Please check the console.');
-  }
-},
-    cancelLogout() { this.showLogoutModal = false; },
+    cancelLogout() { this.showLogoutModal = false; }
   },
+
+  /* ============================================================
+     LIFECYCLE HOOKS
+  ============================================================ */
   mounted() {
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     this.fetchInitialData();
   },
+
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile);
-    this.stopQuagga(); 
-  },
+    this.stopQuagga();
+  }
 };
 </script>
 

@@ -1,18 +1,6 @@
 <template>
   <div class="address-book-page">
     <div class="container py-5">
-      </div>
-
-    <div class="modal-backdrop" v-if="showModal"></div>
-    <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
-      </div>
-
-    <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
-      <i class="fas fa-shopping-bag"></i>
-    </button>
-  </div>
-  <div class="address-book-page">
-    <div class="container py-5">
       <div class="d-flex justify-content-between align-items-center mb-5">
         <h2 class="fw-bold section-title text-center mb-0">Book Order Address</h2>
         <button class="btn btn-primary rounded-pill px-4" @click="openAddModal">
@@ -96,52 +84,103 @@
         </div>
       </div>
     </div>
+    <div class="address-book-page">
+    <div class="container py-5">
+      </div>
+
+    <div class="modal-backdrop" v-if="showModal"></div>
+    <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
+      </div>
+
+    <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
+      <i class="fas fa-shopping-bag"></i>
+    </button>
+  </div>
   </div>
 </template>
 
 <script setup>
+// --- IMPORTS ---
 import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
-// ADDED FUNCTION
+// --- SETUP ---
+// Initialize the router for navigation
+const router = useRouter();
+
+// --- STATE MANAGEMENT (Reactive Variables) ---
+const addresses = ref([]); // Array to store the list of fetched user addresses
+const isLoading = ref(true); // Boolean to show a loading state while fetching addresses
+const isSaving = ref(false); // Boolean to show a loading/saving state for address create/update operations
+const showModal = ref(false); // Boolean to control the visibility of the Add/Edit Address modal
+const isEditing = ref(false); // Boolean to determine if the modal is for editing (true) or adding (false)
+const currentAddress = ref({ // Object to hold the data of the address being added or edited
+  id: null,
+  name: '',
+  phone: '',
+  full_address: ''
+});
+const user = ref(null); // Object to store the currently authenticated user's data
+// Tracks the ID of the address currently being set as default to show a loading state on its button
+const isSettingDefault = ref(null); 
+
+// --- NAVIGATION & UTILITY FUNCTIONS ---
+
+/**
+ * Navigates the user to the 'ordering system' page.
+ */
 const goToOrderingSystem = () => {
   router.push({ name: 'ordering system' });
 };
 
-// --- STATE ---
-const router = useRouter();
-const addresses = ref([]);
-const isLoading = ref(true);
-const isSaving = ref(false);
-const showModal = ref(false);
-const isEditing = ref(false);
-const currentAddress = ref({ id: null, name: '', phone: '', full_address: '' });
-const user = ref(null);
-const isSettingDefault = ref(null); // New state for tracking the loading default button
+// --- MODAL CONTROL FUNCTIONS ---
 
-// --- MODAL CONTROLS ---
+/**
+ * Opens the modal for adding a new address.
+ * Resets the currentAddress and sets isEditing to false.
+ */
 const openAddModal = () => {
   isEditing.value = false;
   currentAddress.value = { id: null, name: '', phone: '', full_address: '' };
   showModal.value = true;
 };
 
+/**
+ * Opens the modal for editing an existing address.
+ * Populates currentAddress with the data of the passed-in address object.
+ * @param {Object} address - The address object to be edited.
+ */
 const openEditModal = (address) => {
   isEditing.value = true;
-  currentAddress.value = { ...address };
+  // Use spread to create a copy, avoiding direct mutation of the array item
+  currentAddress.value = { ...address }; 
   showModal.value = true;
 };
 
+/**
+ * Closes the Add/Edit Address modal.
+ */
 const closeModal = () => {
   showModal.value = false;
 };
 
-// --- DATABASE FUNCTIONS ---
+// --- DATABASE INTERACTION FUNCTIONS ---
+
+/**
+ * Fetches all addresses for the current user from the 'addresses' table.
+ * Orders them with the default address first, then by creation date.
+ */
 const fetchAddresses = async () => {
   isLoading.value = true;
   try {
-    const { data, error } = await supabase.from('addresses').select('*').order('is_default', { ascending: false }).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      // Ensure the default address is shown first
+      .order('is_default', { ascending: false }) 
+      .order('created_at', { ascending: false }); // Then by newest first
+    
     if (error) throw error;
     addresses.value = data;
   } catch (error) {
@@ -151,26 +190,36 @@ const fetchAddresses = async () => {
   }
 };
 
+/**
+ * Handles the saving (either creation or update) of an address.
+ * Determines action based on the value of isEditing.
+ */
 const handleSaveAddress = async () => {
   isSaving.value = true;
   try {
+    // Data payload for the database operation
     const addressData = {
       name: currentAddress.value.name,
       phone: currentAddress.value.phone,
       full_address: currentAddress.value.full_address,
-      user_id: user.value.id
+      user_id: user.value.id // Link the address to the logged-in user
     };
 
     if (isEditing.value) {
-      const { error } = await supabase.from('addresses').update(addressData).eq('id', currentAddress.value.id);
+      // Update existing address
+      const { error } = await supabase
+        .from('addresses')
+        .update(addressData)
+        .eq('id', currentAddress.value.id);
       if (error) throw error;
     } else {
+      // Insert new address
       const { error } = await supabase.from('addresses').insert([addressData]);
       if (error) throw error;
     }
     
-    closeModal();
-    await fetchAddresses();
+    closeModal(); // Close the modal on success
+    await fetchAddresses(); // Refresh the list of addresses
   } catch (error) {
     console.error('Error saving address:', error.message);
   } finally {
@@ -178,46 +227,63 @@ const handleSaveAddress = async () => {
   }
 };
 
+/**
+ * Deletes a specified address after a confirmation prompt.
+ * @param {number} addressId - The ID of the address to delete.
+ */
 const handleDeleteAddress = async (addressId) => {
   if (window.confirm('Are you sure you want to delete this address?')) {
     try {
-      const { error } = await supabase.from('addresses').delete().eq('id', addressId);
+      const { error } = await supabase
+        .from('addresses')
+        .delete()
+        .eq('id', addressId);
       if (error) throw error;
-      await fetchAddresses();
+      await fetchAddresses(); // Refresh the list after deletion
     } catch (error) {
       console.error('Error deleting address:', error.message);
     }
   }
 };
 
-// --- UPDATED FUNCTION ---
+/**
+ * Calls a stored procedure (RPC) to set a specific address as the default 
+ * and unsets the previous default address.
+ * On success, redirects the user to the payment system.
+ * @param {number} addressId - The ID of the address to set as default.
+ */
 const handleSetDefault = async (addressId) => {
-  isSettingDefault.value = addressId; // Set loading state for the specific button
+  isSettingDefault.value = addressId; // Start loading state for the specific button
   try {
+    // Call the Supabase function (RPC)
     const { error } = await supabase.rpc('set_default_address', {
       address_id_to_set: addressId
     });
 
     if (error) {
-      // This makes sure the error is caught by the catch block below
       throw error;
     }
     
-    // On success, redirect to the payment system
+    // On successful update, proceed to the payment system
     router.push({ name: 'payment system' });
 
   } catch (error) {
     console.error('Error setting default address:', error.message);
-    // You can add a user-facing notification here (e.g., a toast or alert)
     alert('Failed to set default address. Check the console for more details.');
   } finally {
-    isSettingDefault.value = null; // Reset loading state regardless of outcome
+    isSettingDefault.value = null; // Reset loading state
   }
 };
 
+// --- LIFECYCLE HOOKS ---
+
+// Executed when the component is mounted to the DOM
 onMounted(async () => {
+  // 1. Get the current authenticated user's session data
   const { data } = await supabase.auth.getUser();
   user.value = data.user;
+  
+  // 2. Fetch the user's addresses
   await fetchAddresses();
 });
 </script>

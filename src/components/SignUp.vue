@@ -133,63 +133,76 @@
 </template>
 
 <script setup>
-import { ref, reactive, onUnmounted, computed } from 'vue' 
-import { useRouter } from 'vue-router'
-import { supabase } from '../server/supabase'
+// --- IMPORTS & SETUP ---
+import { ref, reactive, onUnmounted, computed } from 'vue' // Core Vue functions for state, reactivity, and cleanup
+import { useRouter } from 'vue-router' // Vue Router hook for navigation
+import { supabase } from '../server/supabase' // Supabase client for authentication and database calls
 
+// Initialize the router
 const router = useRouter()
 
+// --- REACTIVE FORM STATE ---
+
+// Data binding for the sign-up form inputs
 const form = reactive({
   username: '',
   email: '',
   password: '',
-  facialRecognition: false
+  facialRecognition: false // Checkbox state for enabling face verification
 })
 
+// State for validation errors
 const errors = reactive({
   username: '',
   email: '',
   password: ''
 })
 
-const isLoading = ref(false)
-const showCameraModal = ref(false)
-const videoRef = ref(null)
-let stream = null;
+// UI state management
+const isLoading = ref(false) // Global loading indicator
+const showCameraModal = ref(false) // Controls visibility of the facial recognition modal
+const videoRef = ref(null) // Reference to the HTML <video> element
+let stream = null; // Holds the MediaStream object from the camera
 
-// --- START OF NEW CODE ---
-// To track which camera to use: 'user' for front, 'environment' for back
-const facingMode = ref('user'); 
-// To control if the flip button should be visible
-const hasMultipleCameras = ref(false); 
-// --- END OF NEW CODE ---
+// Facial recognition control state
+const facingMode = ref('user'); // Tracks the current camera direction ('user' or 'environment')
+const hasMultipleCameras = ref(false); // Controls the visibility of the "Flip Camera" button
 
-// --- ⬇️ Password Visibility Logic ---
+// --- PASSWORD VISIBILITY LOGIC ---
+
 const isPasswordVisible = ref(false)
 
+// Computed property to switch the password input type
 const passwordFieldType = computed(() => {
   return isPasswordVisible.value ? 'text' : 'password'
 })
 
+// Computed property to switch the eye icon
 const passwordIcon = computed(() => {
   return isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png'
 })
 
+/**
+ * Toggles the state of password visibility.
+ */
 const togglePasswordVisibility = () => {
   isPasswordVisible.value = !isPasswordVisible.value
 }
-// --- ⬆️ END OF PASSWORD VISIBILITY LOGIC ---
 
-// --- onMounted HOOK IS REMOVED as requested to allow Sign Up page to always load ---
+// --- CAMERA CONTROL FUNCTIONS ---
 
+/**
+ * Initiates the camera stream using the currently selected `facingMode`.
+ * Stops any existing stream before starting a new one.
+ */
 const startCamera = async () => {
- // Always stop the old stream before starting a new one. This is key for flipping.
+ // Stop the previous stream to release the camera resource
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
   }
 
   try {
-    // MODIFIED: Use the facingMode ref to choose the camera
+    // Constraints object to select the camera based on `facingMode`
     const constraints = {
       video: { facingMode: facingMode.value },
       audio: false
@@ -205,16 +218,17 @@ const startCamera = async () => {
   }
 }
 
-// --- START OF NEW CODE ---
-// This new function will be called by our "Flip Camera" button
+/**
+ * Toggles the camera between 'user' (front) and 'environment' (back) and restarts the stream.
+ */
 const flipCamera = async () => {
-  // Toggle between front and back camera
   facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
-  // Restart the camera stream with the new setting
-  await startCamera();
+  await startCamera(); // Restart the camera with the new facing mode
 }
-// --- END OF NEW CODE ---
 
+/**
+ * Stops the camera stream and closes the modal.
+ */
 const closeCamera = () => {
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
@@ -223,10 +237,16 @@ const closeCamera = () => {
   isLoading.value = false;
 }
 
+/**
+ * Captures an image from the video stream and sends it for facial verification.
+ * Proceeds to Supabase sign-up on successful verification.
+ */
 const captureAndVerify = async () => {
   if (!videoRef.value) return;
 
   isLoading.value = true;
+  
+  // Capture image from video stream into a base64 string
   const canvas = document.createElement('canvas');
   canvas.width = videoRef.value.videoWidth;
   canvas.height = videoRef.value.videoHeight;
@@ -234,9 +254,10 @@ const captureAndVerify = async () => {
   context.drawImage(videoRef.value, 0, 0, canvas.width, canvas.height);
   const imageBase64 = canvas.toDataURL('image/jpeg');
   
-  closeCamera();
+  closeCamera(); // Close camera immediately after capture
 
   try {
+    // Send image to external API for face verification
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/verify-face`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,21 +270,26 @@ const captureAndVerify = async () => {
     }
 
     console.log('Face verification successful!');
-    await proceedWithSupabaseSignUp();
+    await proceedWithSupabaseSignUp(); // Proceed to create the user account
 
   } catch (error) {
     console.error('Face verification failed:', error.message);
     alert(`Face verification failed: ${error.message}`);
   } finally {
+    // Only reset global loading if the camera modal isn't still being shown (shouldn't happen here)
     if(showCameraModal.value === false) { 
       isLoading.value = false;
     }
   }
 }
 
+/**
+ * Registers the user with Supabase after successful verification.
+ */
 const proceedWithSupabaseSignUp = async () => {
   isLoading.value = true;
   try {
+    // Create the user account with email, password, and additional data (username)
     const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -276,10 +302,12 @@ const proceedWithSupabaseSignUp = async () => {
 
     if (error) throw error;
     
+    // Success feedback and redirect
     alert('Account created! Please check your email for a verification link.');
     router.push({ name: 'login' });
 
   } catch (error) {
+    // Custom error handling for existing users
     if (error.message.includes('User already registered') || error.message.includes('duplicate key value violates unique constraint')) {
         errors.email = 'User Account Already Exist';
     } else {
@@ -291,22 +319,31 @@ const proceedWithSupabaseSignUp = async () => {
   }
 };
 
+/**
+ * Basic email format validation utility.
+ * @param {string} email - The email string to test.
+ * @returns {boolean} - True if the email format is valid.
+ */
 const isValidEmail = (email) => {
-  // This regex checks for a basic email structure (e.g., something@something.com)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
-// --- ⬇️ handleSignUp function with FUNCTION CALL for email existence check ---
+/**
+ * Main function to handle form submission.
+ * Validates fields, checks for existing user, and initiates the face verification flow.
+ */
 const handleSignUp = async () => {
+    // Reset errors
     errors.username = ''
     errors.email = ''
     errors.password = ''
 
     let hasError = false;
+    
+    // Validation checks
     if (!form.username.trim()) { errors.username = 'Username is required'; hasError = true; }
     
-    // --- START OF FIX ---
     if (!form.email.trim()) {
         errors.email = 'Email is required';
         hasError = true;
@@ -314,24 +351,21 @@ const handleSignUp = async () => {
         errors.email = 'Please enter a valid email address';
         hasError = true;
     }
-    // --- END OF FIX ---
 
     if (form.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
 
-    // <<< START OF FIX
-    // Check if the facial recognition checkbox is ticked
+    // Check for mandatory facial recognition
     if (!form.facialRecognition) {
-        alert('You must enable facial recognition and agree to the terms to proceed.');
-        hasError = true;
+      alert('You must enable facial recognition and agree to the terms to proceed.');
+      hasError = true;
     }
-    // <<< END OF FIX
 
     if (hasError) return;
 
     isLoading.value = true;
     
     try {
-        // ... rest of the function (database check, etc.)
+        // Pre-sign-up check: use a Supabase RPC to check if a user with this email already exists
         const { data: exists, error: checkError } = await supabase.rpc('user_profile_exists_by_email', {
             p_email: form.email.trim()
         });
@@ -351,30 +385,29 @@ const handleSignUp = async () => {
         return;
     }
     
-    // The rest of your logic remains the same.
-    // Because of the 'return' above, this part will only run if the box is checked.
+    // Logic to initiate camera/face verification
     if (form.facialRecognition) {
-       // --- START OF NEW CODE ---
-        // Check for available video devices before opening the modal
+        // Enumerate devices to check if the flip button should be visible
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             hasMultipleCameras.value = videoDevices.length > 1;
         } catch (err) {
             console.error("Could not enumerate devices:", err);
-            // Default to not showing the button if there's an error
             hasMultipleCameras.value = false;
         }
-        // --- END OF NEW CODE ---
 
         showCameraModal.value = true;
-        startCamera(); // This will start the camera for the first time
-        } else {
-            await proceedWithSupabaseSignUp();
-        }
+        startCamera(); // Starts the default (front) camera
+    } else {
+        // Fallback (though the checkbox is mandatory, this keeps the logic clean)
+        await proceedWithSupabaseSignUp();
+    }
 }
-// --- ⬆️ END OF handleSignUp function ---
 
+// --- LIFECYCLE HOOKS ---
+
+// Ensure the camera stream is stopped when the component is destroyed
 onUnmounted(() => {
   if (stream) {
     stream.getTracks().forEach(track => track.stop());

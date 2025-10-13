@@ -1,18 +1,29 @@
 <script setup>
+/* ============================================================
+   App Entry Component
+   Responsibilities:
+   - Fetch user's cart on mount
+   - Display Vercel Speed Insights
+   - Render routed components
+============================================================ */
+
 import { onMounted } from 'vue';
 import { SpeedInsights } from '@vercel/speed-insights/vue';
-import { useCart } from './composables/useCart'; // Adjust path if your composables folder is elsewhere
+import { useCart } from './composables/useCart'; // Adjust path as needed
 
-// Get the fetchCart function from our composable
+// --- CART COMPOSABLE ---
+// Fetch the user's cart from the database
 const { fetchCart } = useCart();
 
-// When the application component is mounted, fetch the cart from the database
 onMounted(() => {
   fetchCart();
 });
 </script>
 
 <template>
+  <!-- Performance Metrics -->
   <speed-insights />
+
+  <!-- Routed Pages -->
   <router-view />
 </template>

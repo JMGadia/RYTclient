@@ -6,13 +6,13 @@
         <i class="fas fa-check text-white"></i>
       </div>
 
-      <h3 class="card-title text-success mb-3">Authentication Successful!</h3>
+      <h3 class="card-title text-success mb-3">Authentication Confirm!</h3>
       <p class="card-text text-muted mb-4">
-        You have successfully logged in to your account. You will now be redirected to the dashboard.
+        Your email has been successfully confirmed. You will now be redirected to set a new password.
       </p>
 
-      <RouterLink to="/super-admin" class="btn btn-success btn-lg w-100">
-        Go to Dashboard
+      <RouterLink to="/Update-Password" class="btn btn-success btn-lg w-100">
+        Update Password
       </RouterLink>
 
       <p v-if="redirecting" class="mt-3 small text-secondary">
@@ -23,55 +23,65 @@
   </div>
 </template>
 
-// Success.vue - Modify the script section
-
 <script>
+// This is a Vue 2/3 Options API component (not <script setup>) used as an intermediate
+// success screen after a Super Admin successfully logs in for the *first time*.
+
 export default {
+  // --- COMPONENT STATE (Data) ---
   data() {
     return {
-      redirectRoute: '/super-admin', 
-      countdown: 3, // Initial countdown time
-      timer: null,
-      redirecting: true, // Show the countdown message
-      // Add a property to check if this is the initial login flow
-      isFirstLogin: false,
+      // CHANGE: Target route for redirection is now Update-Password
+      redirectRoute: '/Update-Password', 
+      countdown: 3, 
+      timer: null, 
+      redirecting: true, 
+      // isFirstLogin is no longer strictly necessary for this use case, but kept for context/original flow
+      isFirstLogin: false, 
     };
   },
   
+  // --- LIFECYCLE HOOKS ---
+
+  /**
+   * Executed when the component is first mounted to the DOM.
+   * Checks for the 'first login' flag and either starts the countdown or redirects immediately.
+   */
   mounted() {
-    // Check local storage for a flag. If it exists, this is a re-login.
-    this.isFirstLogin = !localStorage.getItem('superAdmin_hasLoggedIn');
-    
-    if (this.isFirstLogin) {
-      // Set the flag in local storage to mark subsequent logins as re-logins
-      localStorage.setItem('superAdmin_hasLoggedIn', 'true');
-      
-      // Proceed with the visual success page and countdown
-      this.startCountdown();
-    } else {
-      // This is a re-login: immediately skip to the dashboard
-      this.redirecting = false;
-      this.redirectToDashboard();
-    }
+    this.startCountdown();
   },
   
+  /**
+   * Executed just before the component is destroyed.
+   * Clears the countdown timer to prevent memory leaks and unexpected behavior.
+   */
   beforeUnmount() {
-    // Clear the timer when the component is destroyed
     clearTimeout(this.timer);
   },
   
+  // --- COMPONENT METHODS ---
+  
   methods: {
+    /**
+     * Recursively calls itself every second to decrement the countdown timer.
+     * Initiates redirection when the countdown reaches zero.
+     */
     startCountdown() {
       if (this.countdown > 0) {
+        // Set a timer for 1 second and call this method again
         this.timer = setTimeout(() => {
           this.countdown--;
           this.startCountdown();
         }, 1000);
       } else {
+        // Countdown finished, initiate final redirect
         this.redirectToDashboard();
       }
     },
     
+    /**
+     * Pushes the user to the target dashboard route using Vue Router.
+     */
     redirectToDashboard() {
       if (this.$router) {
         this.$router.push(this.redirectRoute); // Redirects to /super-admin

@@ -115,7 +115,7 @@ router.beforeEach(async (to, from, next) => {
   const authRequiredRoutes = [
     'super admin', 'admin', 'ordering system', 'profile', 
     'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImortProduct',
-    'update password', 'payment system', 'success', 'forgot password'
+    'update password', 'payment system', 'success'
   ]; //
 
   // Rule 1: If the user is trying to access a protected page BUT is NOT logged in...

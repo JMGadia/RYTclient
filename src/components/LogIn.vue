@@ -130,49 +130,77 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { supabase } from '../server/supabase'
+// --- IMPORTS & SETUP ---
+import { reactive, ref, computed } from 'vue' // Core Vue functions for state and reactivity
+import { useRouter } from 'vue-router' // Vue Router hook for navigation
+import { supabase } from '../server/supabase' // Supabase client for authentication and database calls
 
+// Initialize the router
 const router = useRouter()
 
+// --- REACTIVE STATE ---
+
+// Reactive object for binding to the login form inputs
 const loginForm = reactive({
   email: '',
   password: ''
 })
 
+// Reactive object to store and display validation errors
 const errors = reactive({
   email: '',
   password: ''
 })
 
+// Loading state for the login button
 const isLoading = ref(false)
 
-// --- Password Visibility Logic ---
+// --- PASSWORD VISIBILITY LOGIC ---
+
+// State to track if the password input should be visible
 const isPasswordVisible = ref(false)
 
+// Computed property to dynamically set the input type ('text' or 'password')
 const passwordFieldType = computed(() => {
   return isPasswordVisible.value ? 'text' : 'password'
 })
 
+// Computed property to dynamically set the icon image path
 const passwordIcon = computed(() => {
   return isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png'
 })
 
+/**
+ * Toggles the visibility state of the password field.
+ */
 const togglePasswordVisibility = () => {
   isPasswordVisible.value = !isPasswordVisible.value
 }
-// --- END OF LOGIC ---
 
+// --- NAVIGATION FUNCTIONS ---
+
+/**
+ * Navigates the user to the 'forgot-password' page.
+ */
 const goToForgotPassword = () => {
   router.push({ name: 'forgot-password' });
 };
 
-// --- ⬇️ handleLogin function with role-based redirection logic (Objective 2) ---
+// --- MAIN LOGIN FUNCTION ---
+
+/**
+ * Handles the user login process:
+ * 1. Validates input fields.
+ * 2. Signs the user in using Supabase.
+ * 3. Fetches the user's role from the 'profiles' table.
+ * 4. Redirects the user to the appropriate dashboard based on their role.
+ */
 const handleLogin = async () => {
+  // Reset previous errors
   errors.email = ''
   errors.password = ''
 
+  // Input Validation
   if (!loginForm.email.trim()) {
     errors.email = 'Email is required'
     return
@@ -184,7 +212,7 @@ const handleLogin = async () => {
 
   isLoading.value = true
   try {
-    // 1. Sign in the user and get their session data
+    // Step 1: Sign in the user with email and password
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: loginForm.email,
       password: loginForm.password,
@@ -193,7 +221,7 @@ const handleLogin = async () => {
     if (authError) throw authError
     if (!authData.user) throw new Error("User not found after login.");
 
-    // 2. Fetch the user's profile to check their role
+    // Step 2: Fetch the user's role from the linked profile table
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('role')
@@ -202,28 +230,26 @@ const handleLogin = async () => {
 
     if (profileError) throw profileError
     
-    // 3. Redirect based on the role
+    // Step 3: Redirect based on the determined role
     const role = profileData?.role;
 
     if (role === 'Super Admin') {
-      // Redirect to Super Admin dashboard
       router.push({ name: 'super admin' }) 
     } else if (role === 'Admin') {
-      // Redirect to Admin dashboard
       router.push({ name: 'admin' }) 
     } else {
-      // Default redirect for 'User' or other roles
+      // Default route for regular users
       router.push({ name: 'ordering system' }) 
     }
 
   } catch (error) {
     console.error('Login failed:', error.message)
+    // Display a generic error message to the user
     alert('Login failed. Please check your credentials and try again.')
   } finally {
-    isLoading.value = false
+    isLoading.value = false // Reset loading state
   }
 }
-// --- ⬆️ END OF handleLogin function ---
 </script>
 
 <style scoped>

@@ -148,51 +148,81 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { supabase } from '../server/supabase';
-import { useRouter } from 'vue-router';
-// 1. Import the cart functionality
-import { useCart } from '../composables/useCart';
+// --- IMPORTS & SETUP ---
+import { ref, computed, onMounted } from 'vue'; // Core Vue functions for state, reactivity, and lifecycle
+import { supabase } from '../server/supabase'; // Supabase client for database operations
+import { useRouter } from 'vue-router'; // Vue Router for navigation
+import { useCart } from '../composables/useCart'; // Custom composable for cart state management
 
+// Initialize the router
 const router = useRouter();
 
-// 2. Get live cart data and functions from the composable
+// Get reactive cart data (cart items, total price) and control functions
 const { cart, cartTotal, clearCart, fetchCart } = useCart();
 
-const customerType = ref(null);
-const selectedPaymentMethod = ref(null);
-const gcashNumber = ref('');
-const paymentProofFile = ref(null);
-const isProcessing = ref(false);
-const serviceFee = ref(500); // This can remain as a static fee
+// --- REACTIVE STATE ---
+const customerType = ref(null); // Tracks if the customer is 'New' or 'Returning' (used for UI steps)
+const selectedPaymentMethod = ref(null); // Tracks the chosen payment method
+const gcashNumber = ref(''); // Input for GCash number (if applicable)
+const paymentProofFile = ref(null); // Holds the uploaded proof of payment file
+const isProcessing = ref(false); // Manages the loading state during order submission
+const serviceFee = ref(500); // Fixed service/shipping fee
 
-// 3. Make computed properties dynamic and safe
+// --- COMPUTED PROPERTIES ---
+/**
+ * Calculates the final total amount including the cart subtotal and the fixed service fee.
+ */
 const grandTotal = computed(() => {
-  // Use cartTotal if it's a number, otherwise default to 0
+  // Ensure cartTotal is treated as a number
   const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
   return total + serviceFee.value;
 });
 
+
+// Calculates the required partial payment amount (25% of the subtotal).
 const partialPayment = computed(() => {
   const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
-  return total / 4; // 25% of subtotal
+  return total / 4; 
 });
 
+// --- UI CONTROL FUNCTIONS ---
+/**
+ * Sets the customer type for UI flow and resets payment method selection.
+ * @param {string} type - 'New' or 'Returning'
+ */
 const setCustomerType = (type) => {
   customerType.value = type;
-  selectedPaymentMethod.value = null;
+  selectedPaymentMethod.value = null; // Reset payment choice when type changes
 };
 
+/**
+ * Handles the file input change to store the proof of payment file.
+ * @param {Event} event - The native change event from the file input.
+ */
 const handleFileUpload = (event) => {
   paymentProofFile.value = event.target.files[0];
 };
 
+/**
+ * Navigates the user to the address book/selection page.
+ */
 const goToAddressBook = () => {
   router.push({ name: 'BookOrderAddress' });
 };
 
-// 4. Completely rewrite handleSubmit for multi-item orders
+// --- MAIN ORDER SUBMISSION FUNCTION ---
+/**
+ * Places the multi-item order by performing a series of database operations:
+ * 1. Validates payment selection and cart contents.
+ * 2. Fetches user and default shipping address.
+ * 3. Creates a new entry in the 'orders' table (main order header).
+ * 4. Inserts all cart items into the 'order_items' table (line items).
+ * 5. Decrements the stock count for each ordered product.
+ * 6. Clears the user's cart.
+ * 7. Redirects to the order tracking page.
+ */
 const handleSubmit = async () => {
+  // Initial validation checks
   if (!selectedPaymentMethod.value || cart.value.length === 0) {
     alert('Please select a payment method or add items to your cart.');
     return;
@@ -200,7 +230,7 @@ const handleSubmit = async () => {
   isProcessing.value = true;
 
   try {
-    // Get user and default address
+    // 1. Authentication and Default Address Check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('You must be logged in to place an order.');
 
@@ -212,7 +242,7 @@ const handleSubmit = async () => {
       .single();
     if (!addressData) throw new Error('Please set a default address before ordering.');
 
-    // Create the main order entry in the 'orders' table
+    // 2. Create Main Order Entry
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -221,13 +251,13 @@ const handleSubmit = async () => {
         shipping_address: addressData.full_address,
         contact: addressData.phone,
         total_price: grandTotal.value,
-        status: 'Order Processed',
+        status: 'Order Processed', // Initial status
       })
-      .select()
+      .select('order_id') // Select the newly created order ID
       .single();
     if (orderError) throw orderError;
 
-    // Prepare all items from the cart for the 'order_items' table
+    // 3. Prepare and Insert Order Items
     const orderItems = cart.value.map(item => ({
       order_id: newOrder.order_id,
       product_id: item.id,
@@ -235,11 +265,10 @@ const handleSubmit = async () => {
       price_at_purchase: item.price,
     }));
 
-    // Insert all items into the 'order_items' table
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
 
-    // Decrement stock for each product
+    // 4. Decrement Stock
     for (const item of cart.value) {
       const { error: stockUpdateError } = await supabase.rpc('decrement_stock', {
         product_id_to_update: item.id,
@@ -248,10 +277,10 @@ const handleSubmit = async () => {
       if (stockUpdateError) console.warn(`Could not update stock for product ${item.id}:`, stockUpdateError.message);
     }
     
-    // Clear the user's cart
+    // 5. Clear the User's Cart in the database
     await clearCart(); 
     
-    // Success
+    // 6. Success Feedback and Redirection
     alert('✅ Order placed successfully! Redirecting to order tracking...');
     router.push('/order-tracking');
 
@@ -263,7 +292,8 @@ const handleSubmit = async () => {
   }
 };
 
-// 5. Fetch cart data as soon as the component loads
+// --- LIFECYCLE HOOKS ---
+// Ensure cart data is fetched immediately when the payment page loads
 onMounted(() => {
   fetchCart();
 });

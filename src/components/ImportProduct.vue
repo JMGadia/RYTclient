@@ -72,23 +72,38 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { uploadProductImage, createProduct } from '../services/apiService';
+// --- IMPORTS & SETUP ---
+import { ref } from 'vue'; // Core Vue function for reactive state
+import { useRouter } from 'vue-router'; // Vue Router for navigation
+// API service functions for image upload and product creation
+import { uploadProductImage, createProduct } from '../services/apiService'; 
 
+// Initialize the router
 const router = useRouter();
 
+// --- PRODUCT DATA STATE ---
+
+// Reactive object to hold the data for the new product being created
 const product = ref({
   brand: '',
   size: '',
   product_type: '',
   car_brand: '',
   price: null,
-  status: 'In Stock',
-  image_url: null
+  status: 'In Stock', // Default status for a new product
+  image_url: null // Stores the final cloud path/URL of the uploaded image
 });
 
-// Data for the categorized size dropdown
+// --- UI AND UTILITY STATE ---
+
+// State variables related to image handling and form submission
+const selectedFile = ref(null); // Holds the actual File object selected by the user
+const imageUrl = ref(''); // Local URL to display the selected image preview
+const isSubmitting = ref(false); // Boolean to prevent multiple form submissions
+
+// --- DROPDOWN OPTIONS DATA ---
+
+// Structured data for a categorized tire size selector
 const tireSizeOptions = ref([
   {
     label: 'Passenger Car & Crossover',
@@ -170,46 +185,60 @@ const tireSizeOptions = ref([
   }
 ]);
 
-// --- FIX: DEFINE MISSING VARIABLES HERE ---
-const selectedFile = ref(null);
-const imageUrl = ref(''); // This was missing, causing a console warning
-const isSubmitting = ref(false); // This was missing, causing a console warning
-
+// Options for the car brand dropdown
 const carBrandOptions = ref([
   'Toyota', 'Mitsubishi', 'Ford', 'Nissan', 'Suzuki',
   'Honda', 'Isuzu', 'Hyundai', 'Kia'
 ]);
 
+// Options for the product type dropdown
 const productTypeOptions = ref(['Tires', 'Non-Tires']);
 
 
-// --- Component Functions ---
+// --- COMPONENT FUNCTIONS ---
+
+/**
+ * Handles the selection of a new image file for the product.
+ * Stores the file and generates a local URL for previewing the image.
+ * @param {Event} event - The native change event from the file input.
+ */
 const handleImageUpload = (event) => {
   selectedFile.value = event.target.files[0];
   if (selectedFile.value) {
+    // Creates a temporary local URL for immediate image preview
     imageUrl.value = URL.createObjectURL(selectedFile.value);
   }
 };
 
+/**
+ * Handles the final submission of the product creation form.
+ * 1. Uploads the image (if selected).
+ * 2. Creates the product record in the database.
+ * 3. Navigates to the admin dashboard on success.
+ */
 const submitProduct = async () => {
-  if (isSubmitting.value) return;
+  if (isSubmitting.value) return; // Prevent double submission
   isSubmitting.value = true;
 
   try {
+    // Step 1: Upload image if a file is selected
     if (selectedFile.value) {
       const imagePath = await uploadProductImage(selectedFile.value);
-      product.value.image_url = imagePath;
+      // Store the returned image path/URL on the product object
+      product.value.image_url = imagePath; 
     }
     
+    // Step 2: Create the product record in the database
     await createProduct(product.value);
 
+    // Success feedback and redirection
     alert('Product added to catalog successfully!');
     router.push('/super-admin');
 
   } catch (error) {
-    alert(`Error: ${error.message}`);
+    alert(`Error: Failed to add product. ${error.message}`);
   } finally {
-    isSubmitting.value = false;
+    isSubmitting.value = false; // Reset submission state
   }
 };
 </script>
