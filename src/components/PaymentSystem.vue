@@ -1,6 +1,14 @@
 <template>
   <div class="payment-page-background">
     <div class="container py-5">
+      </div>
+
+    <button @click="goToAddressBook" class="fab" title="Change Address">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+  </div>
+  <div class="payment-page-background">
+    <div class="container py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
           <div class="card shadow-lg border-0 rounded-4">
@@ -34,19 +42,22 @@
                 <div class="mb-4">
                   <h5 class="fw-semibold">Order Summary</h5>
                   <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                      Blacklion Tyre (x2)
-                      <span class="fw-medium">₱{{ originalPrice.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</span>
+                    <li v-for="item in cart" :key="item.id" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                      {{ item.brand }} (x{{ item.quantity }})
+                      <span class="fw-medium">₱{{ (item.price * item.quantity).toLocaleString('en-US', {minimumFractionDigits: 2}) }}</span>
                     </li>
+
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                       Service Fee
                       <span class="fw-medium">₱{{ serviceFee.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</span>
                     </li>
+
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-top pt-3">
                       <strong class="h5">Total</strong>
-                      <strong class="h5 text-primary">₱{{ totalPrice.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
+                      <strong class="h5 text-primary">₱{{ grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
-                     <li class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
+
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
                       <strong class="h6">Required Partial Payment</strong>
                       <strong class="h6">₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
@@ -133,174 +144,157 @@
       </div>
     </div>
   </div>
+  
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { supabase } from '../server/supabase'; // adjust path if needed
+import { ref, computed, onMounted } from 'vue';
+import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
+// 1. Import the cart functionality
+import { useCart } from '../composables/useCart';
 
 const router = useRouter();
 
-const customerType = ref(null); // 'Regular' or 'B2B'
+// 2. Get live cart data and functions from the composable
+const { cart, cartTotal, clearCart, fetchCart } = useCart();
+
+const customerType = ref(null);
 const selectedPaymentMethod = ref(null);
 const gcashNumber = ref('');
 const paymentProofFile = ref(null);
+const isProcessing = ref(false);
+const serviceFee = ref(500); // This can remain as a static fee
 
-// Sample pricing
-const originalPrice = ref(4500);
-const serviceFee = ref(500);
+// 3. Make computed properties dynamic and safe
+const grandTotal = computed(() => {
+  // Use cartTotal if it's a number, otherwise default to 0
+  const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
+  return total + serviceFee.value;
+});
 
-// Computed properties for dynamic values
-const totalPrice = computed(() => originalPrice.value + serviceFee.value);
-const partialPayment = computed(() => originalPrice.value / 4); // 25%
+const partialPayment = computed(() => {
+  const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
+  return total / 4; // 25% of subtotal
+});
 
 const setCustomerType = (type) => {
   customerType.value = type;
-  selectedPaymentMethod.value = null; // Reset payment method on type change
+  selectedPaymentMethod.value = null;
 };
 
 const handleFileUpload = (event) => {
   paymentProofFile.value = event.target.files[0];
 };
 
+const goToAddressBook = () => {
+  router.push({ name: 'BookOrderAddress' });
+};
+
+// 4. Completely rewrite handleSubmit for multi-item orders
 const handleSubmit = async () => {
-  if (!selectedPaymentMethod.value) {
-    alert('Please select a payment method.');
+  if (!selectedPaymentMethod.value || cart.value.length === 0) {
+    alert('Please select a payment method or add items to your cart.');
     return;
   }
-
-  // --- Product Information Defaults (Using 'Blacklion' which exists in your DB) ---
-  const QUERY_PRODUCT_NAME = 'Blacklion'; 
-  const DEFAULT_PRODUCT_QUANTITY = 2;
-  
-  let dynamicProductId = null;
-  let dynamicProductName = QUERY_PRODUCT_NAME;
-  let dynamicProductSize = 'N/A';
-  let dynamicProductQuantity = DEFAULT_PRODUCT_QUANTITY;
-  let currentStock = 0; // Initialize stock to 0
+  isProcessing.value = true;
 
   try {
-    // 1. Get the logged-in user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
+    // Get user and default address
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('You must be logged in to place an order.');
 
-    if (!user) {
-      alert('You must be logged in to place an order.');
-      return;
-    }
-
-    // 2. Fetch the required product information
-    const { data: productData, error: productError } = await supabase
-        .from('products')
-        .select('id, brand, size, quantity') // <-- Include quantity
-        .ilike('brand', `%${QUERY_PRODUCT_NAME}%`) 
-        .limit(1)
-        .single();
-    
-    // We only throw error if it's a critical DB error, not 'no rows found'
-    if (productError && productError.code !== 'PGRST116') {
-        throw productError;
-    }
-
-    if (productData) {
-        dynamicProductId = productData.id;
-        dynamicProductName = productData.brand; 
-        dynamicProductSize = productData.size;
-        currentStock = productData.quantity; // Assign fetched stock
-    } else {
-        // Product not found: set fields to NULL/defaults
-        dynamicProductId = null; 
-        dynamicProductName = 'Generic Tyre'; 
-        dynamicProductSize = 'N/A';
-        console.warn(`Product '${QUERY_PRODUCT_NAME}' not found. Order proceeding with placeholder data.`);
-    }
-
-    // 3. Get the default address
-    const { data: addressData, error: addressError } = await supabase
+    const { data: addressData } = await supabase
       .from('addresses')
       .select('full_address, name, phone')
       .eq('user_id', user.id)
       .eq('is_default', true)
       .single();
+    if (!addressData) throw new Error('Please set a default address before ordering.');
 
-    if (addressError && addressError.code !== 'PGRST116') {
-        throw addressError;
-    }
-
-    if (!addressData) {
-        alert('⚠️ Please set a default address before placing an order.');
-        return;
-    }
-    
-    // 4. CHECK INVENTORY: Allow the order to proceed even if stock is low or product is missing.
-    // Only warn the admin/user about potential issues.
-    if (!dynamicProductId) {
-        alert('⚠️ Warning: Product data is missing. Placing order, but inventory update will be skipped.');
-    } else if (currentStock < dynamicProductQuantity) {
-        alert(`⚠️ Warning: Only ${currentStock} item(s) in stock. Placing order, but this may create negative inventory.`);
-    }
-
-    // 5. Prepare and Insert order into 'orders' table
-    const orderData = {
-      user_id: user.id, 
-      product_id: dynamicProductId, 
-      product_name: dynamicProductName, 
-      quantity: dynamicProductQuantity, 
-      size: dynamicProductSize, 
-      total_price: totalPrice.value, 
-      username: addressData.name, 
-      shipping_address: addressData.full_address, 
-      contact: addressData.phone, 
-      status: 'Order Processed', 
-    };
-
-    const { error: insertError } = await supabase
+    // Create the main order entry in the 'orders' table
+    const { data: newOrder, error: orderError } = await supabase
       .from('orders')
-      .insert([orderData]);
+      .insert({
+        user_id: user.id,
+        username: addressData.name,
+        shipping_address: addressData.full_address,
+        contact: addressData.phone,
+        total_price: grandTotal.value,
+        status: 'Order Processed',
+      })
+      .select()
+      .single();
+    if (orderError) throw orderError;
 
-    if (insertError) throw insertError;
+    // Prepare all items from the cart for the 'order_items' table
+    const orderItems = cart.value.map(item => ({
+      order_id: newOrder.order_id,
+      product_id: item.id,
+      quantity: item.quantity,
+      price_at_purchase: item.price,
+    }));
 
-    // --- NEW LOGIC: INVENTORY AND CART CLEARANCE ---
-    
-    // 6. Decrement Product Stock & Clear Cart (Only if product was found)
-    if (dynamicProductId) {
-        const newStock = currentStock - dynamicProductQuantity;
-        
-        // Update Products Table
-        const { error: stockUpdateError } = await supabase
-          .from('products')
-          .update({ quantity: newStock })
-          .eq('id', dynamicProductId);
-          
-        if (stockUpdateError) throw stockUpdateError;
+    // Insert all items into the 'order_items' table
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+    if (itemsError) throw itemsError;
+
+    // Decrement stock for each product
+    for (const item of cart.value) {
+      const { error: stockUpdateError } = await supabase.rpc('decrement_stock', {
+        product_id_to_update: item.id,
+        quantity_to_decrement: item.quantity,
+      });
+      if (stockUpdateError) console.warn(`Could not update stock for product ${item.id}:`, stockUpdateError.message);
     }
     
-    // Clear User's Cart in 'on_cart' table (Always try to clear the cart)
-    const { error: cartClearError } = await supabase
-      .from('on_cart')
-      .delete()
-      .eq('user_id', user.id);
-      
-    if (cartClearError) {
-        console.warn('Order placed, but failed to clear cart:', cartClearError.message);
-    }
+    // Clear the user's cart
+    await clearCart(); 
     
-    // --- TRANSACTION END ---
-
-    // 7. Success — alert and redirect
+    // Success
     alert('✅ Order placed successfully! Redirecting to order tracking...');
     router.push('/order-tracking');
 
   } catch (err) {
     console.error('Order error:', err.message);
     alert('⚠️ Failed to place order: ' + err.message);
+  } finally {
+    isProcessing.value = false;
   }
 };
+
+// 5. Fetch cart data as soon as the component loads
+onMounted(() => {
+  fetchCart();
+});
 </script>
 
-
 <style scoped>
+
+/* ADDED STYLES FOR FAB */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #6c757d; /* A neutral color for 'back' */
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s ease-in-out;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+}
 .payment-page-background {
   background-color: #f4f7f9;
   font-family: 'Segoe UI', sans-serif;

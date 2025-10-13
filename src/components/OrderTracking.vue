@@ -1,4 +1,5 @@
 <template>
+   
   <div class="order-tracking-page">
     <div class="container py-5">
       <h2 class="fw-bold mb-5 section-title text-center">Your Order History</h2>
@@ -28,15 +29,17 @@
           </div>
           <div class="card-body p-4">
             <div class="row mb-4">
-                <div class="col-md-6">
-                    <h6 class="fw-bold">Product Details</h6>
-                    <p class="mb-1">{{ order.product_name }} ({{ order.size }})</p>
-                    <p class="mb-0 text-muted">Quantity: {{ order.quantity }}</p>
-                </div>
-                <div class="col-md-6 mt-3 mt-md-0">
-                    <h6 class="fw-bold">Shipping Address</h6>
-                    <p class="mb-0 text-muted">{{ order.shipping_address }}</p>
-                </div>
+               <div class="col-md-6">
+                  <h6 class="fw-bold">Items in this Order</h6>
+                  <ul class="list-unstyled">
+                    <li v-for="item in order.order_items" :key="item.id" class="mb-2">
+                        <p class="mb-0 fw-medium">{{ item.products.brand }} ({{ item.products.size }})</p>
+                        <p class="mb-0 text-muted small">
+                          Quantity: {{ item.quantity }} @ ₱{{ item.price_at_purchase.toLocaleString() }} each
+                        </p>
+                    </li>
+                  </ul>
+              </div>
             </div>
 
             <h6 class="fw-bold mb-4">Status: <span class="text-primary">{{ order.status }}</span></h6>
@@ -72,11 +75,22 @@
       </div>
     </div>
   </div>
+  <div class="order-tracking-page">
+    <div class="container py-5">
+      </div>
+
+    <button @click="goToOrderingSystem" class="fab" title="Shop More">
+      <i class="fas fa-shopping-bag"></i>
+    </button>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const orders = ref([]);
 const isLoading = ref(true);
@@ -131,11 +145,40 @@ const getConnectorClass = (orderStatus, stepName) => {
   }
 };
 
+// ADDED FUNCTION
+const goToOrderingSystem = () => {
+  router.push({ name: 'ordering system' });
+};
+
 onMounted(fetchOrders);
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400&display=swap');
+/* ADDED STYLES FOR FAB */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s ease-in-out;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+}
 .order-tracking-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: 100vh; }
 .section-title { font-family: 'Poppins', sans-serif; }
 .order-card { border: none; }

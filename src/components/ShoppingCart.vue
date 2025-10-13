@@ -78,6 +78,14 @@
       </div>
     </div>
   </div>
+  <div class="shopping-cart-page">
+    <div class="container py-5">
+      </div>
+
+    <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
+      <i class="fas fa-shopping-bag"></i>
+    </button>
+  </div>
 </template>
 
 <script setup>
@@ -93,6 +101,11 @@ const shippingFee = "Free Shipping"; // Example shipping fee
 const grandTotal = computed(() => {
   return cartTotal.value;
 });
+
+// ADDED FUNCTION
+const goToOrderingSystem = () => {
+  router.push({ name: 'ordering system' });
+};
 
 // The only function that needs to be created
 const proceedToAddress = () => {
@@ -131,5 +144,30 @@ const proceedToAddress = () => {
   font-weight: 500;
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
+}
+
+/* ADDED STYLES FOR FAB */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s ease-in-out;
+}
+
+.fab:hover {
+  transform: scale(1.1);
 }
 </style>

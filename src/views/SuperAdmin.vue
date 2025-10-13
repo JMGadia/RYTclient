@@ -22,7 +22,7 @@
           <i class="fas fa-user-circle me-2"></i>Super Admin
         </a>
         <div class="collapse" id="sidebarProfileCollapse">
-          <a href="#" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5">
+          <a href="#" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5" data-bs-toggle="modal" data-bs-target="#superAdminProfileModal">
             Profile
           </a>
           <a
@@ -1083,7 +1083,8 @@ const salesData = ref({
       },
     ],
   },
-},);
+},
+);
 const orders = ref([
   { id: 101, customer: 'John Doe', date: '2025-10-10', amount: 1250, status: 'Completed' },
   { id: 102, customer: 'Jane Smith', date: '2025-10-10', amount: 800, status: 'Pending' },

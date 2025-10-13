@@ -18,22 +18,25 @@ export function useCart() {
 
     loading.value = true;
     try {
-      // This query gets the quantity from 'on_cart' and all product details from 'products'
+      // FIX HERE: We must explicitly name the relationship after dropping the ambiguous ones.
+      // We use the constraint name that was KEPT: 'on_cart_product_id_fkey'.
+      // Syntax: column_name:constraint_name(columns)
       const { data, error } = await supabase
         .from('on_cart')
-        .select('quantity, products(*)') // This joins the tables
+        .select('quantity, product_id:on_cart_product_id_fkey(*)') 
         .eq('user_id', user.id);
 
       if (error) throw error;
       
       // The data from Supabase needs to be formatted to match our UI's expectations
       cart.value = data.map(item => ({
-        ...item.products, // Spread all product details (id, brand, price, etc.)
-        image_url: getProductImageURL(item.products.image_url), // Build the full image URL
+        // Note: The product details will now be nested under the 'product_id' key
+        ...item.product_id, // Spread all product details (id, brand, price, etc.)
+        image_url: getProductImageURL(item.product_id.image_url), // Build the full image URL
         quantity: item.quantity // Add the quantity from the on_cart table
       }));
     } catch (error) {
-      console.error('Error fetching cart:', error.message);
+      console.error('Error fetching cart (Check relationship name):', error.message);
     } finally {
       loading.value = false;
     }
@@ -42,7 +45,11 @@ export function useCart() {
   // --- ADD TO CART ---
   const addToCart = async (product) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert('Please log in to add items to your cart.');
+    if (!user) {
+      console.warn('Please log in to add items to your cart.');
+      // In a real application, replace this with a custom modal or toast notification
+      return;
+    }
 
     const existingItem = cart.value.find(item => item.id === product.id);
 

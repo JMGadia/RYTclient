@@ -1,6 +1,18 @@
 <template>
   <div class="address-book-page">
     <div class="container py-5">
+      </div>
+
+    <div class="modal-backdrop" v-if="showModal"></div>
+    <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
+      </div>
+
+    <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
+      <i class="fas fa-shopping-bag"></i>
+    </button>
+  </div>
+  <div class="address-book-page">
+    <div class="container py-5">
       <div class="d-flex justify-content-between align-items-center mb-5">
         <h2 class="fw-bold section-title text-center mb-0">Book Order Address</h2>
         <button class="btn btn-primary rounded-pill px-4" @click="openAddModal">
@@ -91,6 +103,11 @@
 import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
+
+// ADDED FUNCTION
+const goToOrderingSystem = () => {
+  router.push({ name: 'ordering system' });
+};
 
 // --- STATE ---
 const router = useRouter();
@@ -207,6 +224,30 @@ onMounted(async () => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400&display=swap');
+/* ADDED STYLES FOR FAB */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s ease-in-out;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+}
 .address-book-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: 100vh; }
 .section-title, .modal-title { font-family: 'Poppins', sans-serif; }
 .card { border: none; }
