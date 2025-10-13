@@ -165,7 +165,7 @@ const togglePasswordVisibility = () => {
 // --- END OF LOGIC ---
 
 const goToForgotPassword = () => {
-  router.push({ name: 'forgot password' });
+  router.push({ name: 'forgot-password' });
 };
 
 // --- ⬇️ handleLogin function with role-based redirection logic (Objective 2) ---
