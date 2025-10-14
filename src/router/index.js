@@ -105,34 +105,43 @@ const router = createRouter({
     ],
 });
 
-// --- 👇 THIS IS THE NAVIGATION GUARD ---
+// index.js - Updated Navigation Guard
+
 router.beforeEach(async (to, from, next) => {
-  // Get the current user session
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
-  // Define which pages require a user to be logged in
+  // Define routes that are part of the *password reset flow* and must be accessed
+  const authFlowRoutes = ['forgot-password', 'success', 'update password'];
+
+  // Define the core protected routes (dashboards, profile, etc.)
   const authRequiredRoutes = [
     'super admin', 'admin', 'ordering system', 'profile', 
-    'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImortProduct',
-    'update password', 'payment system', 'success'
-  ]; //
+    'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImportProduct',
+    'payment system'
+  ]; 
+  
+  // Rule 1: EXPLICITLY allow access for the password reset/update flow pages.
+  // This must be the highest priority to prevent the Supabase redirect from being intercepted.
+  if (authFlowRoutes.includes(to.name)) {
+    return next();
+  }
 
-  // Rule 1: If the user is trying to access a protected page BUT is NOT logged in...
+  // Rule 2: If the user is already logged in BUT tries to access the signup or login page...
+  // The 'success' and 'update password' pages are no longer here, so this rule is clean.
+  if (['signup', 'login'].includes(to.name) && user) {
+    // Redirect logged-in users to a default dashboard.
+    return next({ name: 'ordering system' });
+  }
+
+  // Rule 3: If the user is trying to access a protected page BUT is NOT logged in...
   if (authRequiredRoutes.includes(to.name) && !user) {
     // ...redirect them to the login page.
-    next({ name: 'login' }); //
+    return next({ name: 'login' });
   }
-  // Rule 2: If the user is already logged in BUT tries to access the signup or login page...
-  else if (['signup', 'login'].includes(to.name) && user) {
-    // ...redirect them to their main dashboard instead.
-    next({ name: 'ordering system' }); //
-  }
-  // Rule 3: Otherwise, let them go to the page they requested.
-  else {
-    next();
-  }
+  
+  // Rule 4: If no other rule applies, proceed.
+  return next();
 });
-// --- 👆 END OF NAVIGATION GUARD ---
 
 export default router;
