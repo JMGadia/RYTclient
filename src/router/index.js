@@ -9,138 +9,139 @@ const getUser = async () => {
 }
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: [
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
 
-        {
-            path: "/",
-            name: "signup",
-            component: SuperSignUp,
-        },
+    {
+      path: "/",
+      name: "signup",
+      component: SuperSignUp,
+    },
 
-        {
-            path: '/super-admin',
-            name: 'super admin',
-            component: () => import('../views/SuperAdmin.vue')
-        },
+    {
+      path: '/super-admin',
+      name: 'super admin',
+      component: () => import('../views/SuperAdmin.vue')
+    },
 
-        {
-            path: '/admin',
-            name: 'admin',
-            component: () => import('../views/Admin.vue')
-        },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/Admin.vue')
+    },
 
-        {
-            path: '/Ordering-system',
-            name: 'ordering system',
-            component: () => import('../views/OrderingSystem.vue')
-        },
+    {
+      path: '/Ordering-system',
+      name: 'ordering system',
+      component: () => import('../views/OrderingSystem.vue')
+    },
 
-        {
-            path: '/login',
-            name: 'login',
-            component: () => import('../components/LogIn.vue')
-        },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../components/LogIn.vue')
+    },
 
-        {
-            path: '/forgot-password',
-            name: 'forgot-password',
-            component: () => import('../components/ForgotPassword.vue')
-        },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../components/ForgotPassword.vue')
+    },
 
-        {
-            path: '/success',
-            name: 'success',
-            component: () => import('../components/Success.vue')
-        },
+    {
+      path: '/success',
+      name: 'success',
+      component: () => import('../components/Success.vue')
+    },
 
-        {
-            path: '/Payment-system',
-            name: 'payment system',
-            component: () => import('../components/PaymentSystem.vue')
-        },
+    {
+      path: '/Payment-system',
+      name: 'payment system',
+      component: () => import('../components/PaymentSystem.vue')
+    },
 
-        {
-            path: '/Update-Password',
-            name: 'update password',
-            component: () => import('../components/UpdatePassword.vue')
-        },
+    {
+      path: '/Update-Password',
+      name: 'update password',
+      component: () => import('../components/UpdatePassword.vue')
+    },
 
-        {
-            path: '/profile',
-            name: 'profile',
-            component: () => import('../components/UserProfile.vue')
-        },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../components/UserProfile.vue')
+    },
 
-        {
-            path: '/order-tracking',
-            name: 'order tracking',
-            component: () => import('../components/OrderTracking.vue')
-        },
+    {
+      path: '/order-tracking',
+      name: 'order tracking',
+      component: () => import('../components/OrderTracking.vue')
+    },
 
-        {
-            path: '/cart',
-            name: 'cart',
-            component: () => import('../components/ShoppingCart.vue')
-        },
+    {
+      path: '/cart',
+      name: 'cart',
+      component: () => import('../components/ShoppingCart.vue')
+    },
 
-        {
-            path: '/address-book',
-            name: 'BookOrderAddress',
-            component: () => import('../components/BookOrderAddress.vue')
-        },
+    {
+      path: '/address-book',
+      name: 'BookOrderAddress',
+      component: () => import('../components/BookOrderAddress.vue')
+    },
 
-        {
-            path: '/order-history',
-            name: 'OrderHistory',
-            component: () => import('../components/OrderHistory.vue')
-        },
+    {
+      path: '/order-history',
+      name: 'OrderHistory',
+      component: () => import('../components/OrderHistory.vue')
+    },
 
-        {
-            path: '/import-product',
-            name: 'ImportProduct',
-            component: () => import('../components/ImportProduct.vue')
-        }
-        
-    ],
+    {
+      path: '/import-product',
+      name: 'ImportProduct',
+      component: () => import('../components/ImportProduct.vue')
+    }
+  ],
 });
 
-// index.js - Updated Navigation Guard
-
+// ✅ UPDATED NAVIGATION GUARD
 router.beforeEach(async (to, from, next) => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
-  // Define routes that are part of the *password reset flow* and must be accessed
+  // ✅ --- FIX START ---
+  // If the URL includes Supabase recovery query params, skip guards and redirect to /update-password
+  if (window.location.href.includes('type=recovery')) {
+    console.log('Detected Supabase recovery link — forcing redirect to /update-password');
+    return next({ name: 'update password' });
+  }
+  // ✅ --- FIX END ---
+
+  // Routes part of password reset flow
   const authFlowRoutes = ['forgot-password', 'success', 'update password'];
 
-  // Define the core protected routes (dashboards, profile, etc.)
+  // Protected routes
   const authRequiredRoutes = [
     'super admin', 'admin', 'ordering system', 'profile', 
     'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImportProduct',
     'payment system'
   ]; 
-  
-  // Rule 1: EXPLICITLY allow access for the password reset/update flow pages.
-  // This must be the highest priority to prevent the Supabase redirect from being intercepted.
+
+  // Allow password reset flow pages
   if (authFlowRoutes.includes(to.name)) {
     return next();
   }
 
-  // Rule 2: If the user is already logged in BUT tries to access the signup or login page...
-  // The 'success' and 'update password' pages are no longer here, so this rule is clean.
+  // Redirect logged-in users away from signup/login
   if (['signup', 'login'].includes(to.name) && user) {
-    // Redirect logged-in users to a default dashboard.
     return next({ name: 'ordering system' });
   }
 
-  // Rule 3: If the user is trying to access a protected page BUT is NOT logged in...
+  // Redirect unauthenticated users trying to access protected pages
   if (authRequiredRoutes.includes(to.name) && !user) {
-    // ...redirect them to the login page.
     return next({ name: 'login' });
   }
-  
-  // Rule 4: If no other rule applies, proceed.
+
   return next();
 });
 

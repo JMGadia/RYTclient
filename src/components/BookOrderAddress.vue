@@ -13,7 +13,7 @@
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-      
+
       <div v-else class="row">
         <div class="col-md-6 mb-4" v-for="address in addresses" :key="address.id">
           <div class="card shadow-sm h-100 address-card" :class="{ 'default-address': address.is_default }">
@@ -28,7 +28,12 @@
               </div>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-              <button v-if="!address.is_default" class="btn btn-sm btn-link text-success" @click="handleSetDefault(address.id)" :disabled="isSettingDefault === address.id">
+              <button
+                v-if="!address.is_default"
+                class="btn btn-sm btn-link text-success"
+                @click="handleSetDefault(address.id)"
+                :disabled="isSettingDefault === address.id"
+              >
                 <span v-if="isSettingDefault === address.id" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <span v-else>Set as Default</span>
               </button>
@@ -41,15 +46,16 @@
         </div>
 
         <div v-if="!isLoading && addresses.length === 0" class="col-12">
-            <div class="text-center p-5 bg-light rounded">
-                <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
-                <h4 class="fw-bold">No Addresses Found</h4>
-                <p class="text-muted">Add a new address to get started.</p>
-            </div>
+          <div class="text-center p-5 bg-light rounded">
+            <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+            <h4 class="fw-bold">No Addresses Found</h4>
+            <p class="text-muted">Add a new address to get started.</p>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Modal -->
     <div class="modal-backdrop" v-if="showModal"></div>
     <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
       <div class="modal-dialog modal-dialog-centered">
@@ -62,11 +68,11 @@
             <form @submit.prevent="handleSaveAddress">
               <div class="mb-3">
                 <label for="name" class="form-label">Recipient Name</label>
-                <input type="text" class="form-control" id="name" v-model="currentAddress.name" required>
+                <input type="text" class="form-control" id="name" v-model="currentAddress.name" required />
               </div>
               <div class="mb-3">
                 <label for="phone" class="form-label">Phone Number</label>
-                <input type="tel" class="form-control" id="phone" v-model="currentAddress.phone" required>
+                <input type="tel" class="form-control" id="phone" v-model="currentAddress.phone" required />
               </div>
               <div class="mb-3">
                 <label for="full_address" class="form-label">Full Address</label>
@@ -84,20 +90,14 @@
         </div>
       </div>
     </div>
-    <div class="address-book-page">
-    <div class="container py-5">
-      </div>
 
-    <div class="modal-backdrop" v-if="showModal"></div>
-    <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
-      </div>
-
+    <!-- Floating Button -->
     <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
       <i class="fas fa-shopping-bag"></i>
     </button>
   </div>
-  </div>
 </template>
+
 
 <script setup>
 // --- IMPORTS ---
