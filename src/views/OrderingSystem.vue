@@ -150,7 +150,7 @@
               </li>
               <li>
                 <i class="fas fa-file-contract me-2"></i>
-                <a href="#" class="footer-link">Privacy Policy</a>
+                <a href="https://www.freeprivacypolicy.com/live/5c820c67-e042-4384-891e-c3ecacc2fe7c" class="footer-link">Privacy Policy</a>
               </li>
             </ul>
           </div>

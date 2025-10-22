@@ -3,7 +3,6 @@
    App Entry Component
    Responsibilities:
    - Fetch user's cart on mount
-   - Handle Supabase password recovery redirect
    - Display Vercel Speed Insights
    - Render routed components
 ============================================================ */
@@ -12,18 +11,19 @@ import { onMounted } from 'vue';
 import { SpeedInsights } from '@vercel/speed-insights/vue';
 import { useCart } from './composables/useCart';
 import { supabase } from './server/supabase';
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'; // Although imported, not used in the simplified onMounted
 
 // --- SETUP ---
 const { fetchCart } = useCart();
-const router = useRouter();
+// const router = useRouter(); // No longer needed if not used in onMounted
 
 // --- ON MOUNT ---
 onMounted(() => {
   // Fetch user's cart
   fetchCart();
 
-  // ✅ Listen for Supabase password recovery event
+  // ❌ REMOVE: The logic is now handled correctly in the router/index.js beforeEach guard.
+  /*
   supabase.auth.onAuthStateChange((event, session) => {
     console.log('Auth event detected:', event);
 
@@ -32,13 +32,12 @@ onMounted(() => {
       router.push({ name: 'update password' });
     }
   });
+  */
 });
 </script>
 
 <template>
-  <!-- Performance Metrics -->
   <speed-insights />
 
-  <!-- Routed Pages -->
   <router-view />
 </template>

@@ -122,9 +122,10 @@ const handlePasswordReset = async () => {
   isSuccess.value = false;
 
   try {
-    // Construct the full redirect URL, including the hash (#) for Vue Router
-    // This URL is where the user will be sent after clicking the link in the email.
-    const redirectTo = `${window.location.origin}/`;
+    // 💥 CRITICAL FIX: Change redirectTo to the base URL (or /login). 
+    // The router guard will catch the recovery token on the landing page.
+    const redirectTo = `${window.location.origin}/`; 
+    // const redirectTo = `${window.location.origin}/login`; // Also safe
 
     // Call Supabase API to send the password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {

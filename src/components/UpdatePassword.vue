@@ -166,6 +166,7 @@ const handleUpdatePassword = async () => {
   isSuccess.value = false;
 
   // --- Input Validation ---
+  // ... (validation code remains the same)
   if (!form.password || !form.confirmPassword) {
     message.value = 'Please fill in both password fields.';
     return;
@@ -183,16 +184,22 @@ const handleUpdatePassword = async () => {
   isLoading.value = true;
 
   try {
-    // Update the user's password using the session implicitly handled by Supabase
+    // 1. Update the user's password using the temporary session
     const { error } = await supabase.auth.updateUser({
       password: form.password,
     });
     
     if (error) throw error;
     
-    // Success state
+    // 2. CRITICAL FIX: Sign the user out to clear the temporary token and force a new login.
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+        console.warn('Warning: Could not clear session after password update.', signOutError);
+    }
+    
+    // 3. Success state
     isSuccess.value = true;
-    message.value = 'Your password has been updated successfully!';
+    message.value = 'Your password has been updated successfully! Please proceed to log in with your new password.';
 
   } catch (error) {
     // Error state
