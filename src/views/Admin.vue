@@ -572,7 +572,7 @@ export default {
             this.scanStatusMessage = `Scanning: ${raw} — trying base: ${baseCode}`;
 
             try {
-                // ✅ Step 1: Lookup item in stock_in
+                // ✅ Step 1: Lookup item in stock_in (Validation only, no update needed here)
                 const { data: item, error } = await supabase
                     .from('stock_in')
                     .select('barcode_id, product_name, size, quantity')
@@ -587,37 +587,14 @@ export default {
                     return;
                 }
 
-                // ✅ Step 2: Validate product fields
-                if (!item.product_name || !item.size) {
-                    alert('⚠️ Product record incomplete for barcode: ' + item.barcode_id);
-                    return;
-                }
-
-                // ✅ Step 3: Handle quantity
-                const currentQty = Number(item.quantity) || 0;
-                if (currentQty <= 0) {
-                    alert(`⚠️ Out of stock!\n\nProduct: ${item.product_name}\nSize: ${item.size}`);
-                    return;
-                }
-
-                const newQty = Math.max(currentQty - 1, 0);
-
-                const { error: updateError } = await supabase
-                    .from('stock_in')
-                    .update({ quantity: newQty })
-                    .eq('barcode_id', item.barcode_id);
-
-                if (updateError) throw updateError;
-
-                // ✅ Step 4: Update UI
-                this.stockInHistory = this.stockInHistory.map(row =>
-                    row.barcode_id === item.barcode_id ? { ...row, quantity: newQty } : row
-                );
+                // --- NOTE: NO STOCK DECREMENT IN STOCK_IN HERE ---
+                // The stock update for the product is handled by the payment system.
+                // The stock_in table is often used for barcode printing/tracking specific lots.
 
                 // FIX: Stop scanner and set flag to show confirmation modal, AND CLOSE SCAN MODAL
                 this.stopQuagga(); 
                 this.isProductScanned = true;
-                this.scanStatusMessage = `✅ ${item.product_name} scanned successfully. Ready for shipment confirmation.`;
+                this.scanStatusMessage = `✅ ${item.product_name} validated successfully. Ready for shipment confirmation.`;
                 
                 // CRUCIAL FIX: Hide the current modal to allow the confirmation modal to show
                 this.showScanModal = false; 
@@ -813,7 +790,7 @@ export default {
 
             // --- TRANSACTION START ---
             try {
-                // 1. Process all order items for stock update and sales calculation
+                // 1. Calculate sales and prepare log data (STOCK UPDATE LOGIC REMOVED)
                 for (const item of items) {
                     const { product_id, quantity, price_at_purchase } = item;
                     const saleAmount = quantity * price_at_purchase;
@@ -828,34 +805,6 @@ export default {
                     currentTrend.count += quantity;
                     productTrendMap.set(productName, currentTrend);
                     
-                    // a. Fetch current stock
-                    const { data: currentProduct, error: prodErr } = await supabase
-                        .from('products')
-                        .select('quantity')
-                        .eq('id', product_id)
-                        .single();
-
-                    if (prodErr || !currentProduct) throw new Error(`Could not retrieve stock for product ${product_id}.`);
-
-                    // b. Check and calculate new stock
-                    const newQuantity = currentProduct.quantity - quantity;
-                    if (newQuantity < 0) {
-                        alert(`Error: Not enough stock to fulfill order item ${productName}.`);
-                        return;
-                    }
-
-                    let newStatus = '';
-                    if (newQuantity >= 12) newStatus = 'In Stock';
-                    else if (newQuantity >= 1) newStatus = 'Low Stock';
-                    else newStatus = 'Out of Stock';
-
-                    // c. Update product stock and status
-                    const { error: updateProductError } = await supabase
-                        .from('products')
-                        .update({ quantity: newQuantity, status: newStatus })
-                        .eq('id', product_id);
-                    if (updateProductError) throw updateProductError;
-
                     // d. Log stock out entry
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
@@ -894,11 +843,10 @@ export default {
                 // FINAL FIX: Clear state, which closes the modal
                 this.isProductScanned = false;
                 this.showScanModal = false;
-                this.orderToFulfill.status = 'Shipped'; // Manually update the local status of the order card
-                this.isProcessingScan = false; 
-
-                // We don't need a full fetch here, but we should update the local array to reflect the change.
-                // However, doing a full fetch is safer for consistent data:
+                this.orderToFulfill = null;
+                this.isProcessingScan = false; // Release debounce flag
+                
+                // Refresh list to update the card's button status
                 this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
