@@ -318,7 +318,18 @@
                 <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
             </div>
             <div class="card-body">
-              <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+              <p class="text-center fw-bold mb-3">
+                  Scan Progress: {{ totalItemsScanned }} / {{ totalItemsToScan }} item(s)
+              </p>
+              <ul class="list-unstyled text-start small mb-4">
+                <li v-for="item in scannedItemsList" :key="item.name" class="d-flex justify-content-between">
+                    <span>
+                        <i :class="['fas me-2', item.isComplete ? 'fa-check-circle text-success' : 'fa-times-circle text-danger']"></i>
+                        {{ item.name }}
+                    </span>
+                    <span :class="{'text-success': item.isComplete}">{{ item.scanned }} / {{ item.required }}</span>
+                </li>
+              </ul>
               
               <div id="scanner-container" class="mb-3">
                 <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
@@ -329,7 +340,11 @@
                 <button class="btn btn-secondary" @click="closeScanModal">
                     <i class="fas fa-times me-2"></i> Cancel Scan
                 </button>
-                <button class="btn btn-warning" @click="captureBarcode" :disabled="isProductScanned">
+                <button 
+                    class="btn btn-warning" 
+                    @click="captureBarcode" 
+                    :disabled="isProductScanned || totalItemsScanned >= totalItemsToScan"
+                >
                     <i class="fas fa-camera me-2"></i> Capture Barcode
                 </button>
               </div>
@@ -342,8 +357,8 @@
                 <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
             </div>
             <div class="card-body text-center">
-                <p class="lead">Barcode successfully matched!</p>
-                <p>Ready to ship **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+                <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
+                <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
                     <button class="btn btn-success" @click="updateStockOut">
@@ -426,6 +441,7 @@ export default {
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false, 
+            orderItemsScanned: {}, // FIX: Object to track scanned quantities per product_id
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -433,7 +449,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [], // Used to map product IDs to names/sizes
+            availableProducts: [], // Used to map product IDs to names/sizes/barcodes
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -459,6 +475,38 @@ export default {
             itemToPrint: null,
             orderToFulfill: null
         };
+    },
+
+    /* ============================================================
+      COMPUTED PROPERTIES (FIX)
+    ============================================================ */
+    computed: {
+        totalItemsToScan() {
+            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return 0;
+            // Calculates the total required quantity across all line items
+            return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
+        },
+        totalItemsScanned() {
+            // Sums the values in the tracker object
+            return Object.values(this.orderItemsScanned).reduce((total, count) => total + count, 0);
+        },
+        scannedItemsList() {
+            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return [];
+
+            // Provides a list of required vs scanned status for display in the modal
+            return this.orderToFulfill.order_items.map(item => {
+                const productName = item.products ? item.products.brand : 'Unknown Product';
+                const required = item.quantity;
+                const scanned = this.orderItemsScanned[item.product_id] || 0;
+                
+                return {
+                    name: productName,
+                    required: required,
+                    scanned: scanned,
+                    isComplete: scanned >= required
+                };
+            });
+        }
     },
 
     /* ============================================================
@@ -502,7 +550,6 @@ export default {
                 this.scanStatusMessage = "Camera ready. Align barcode clearly in view.";
 
                 Quagga.onDetected((result) => {
-                    // FIX: Check debounce flag before processing
                     if (this.isProcessingScan) return; 
                     
                     const code = result.codeResult.code;
@@ -526,102 +573,80 @@ export default {
 
 
         startScanForOrder(order) {
-            // FIX: If the order is already Shipped, do nothing.
             if (order.status === 'Shipped') return; 
             
             this.orderToFulfill = order;
-            this.isProductScanned = false;
+            this.isProductScanned = false; 
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
+            this.orderItemsScanned = {}; // FIX: Initialize tracker
+
+            // Initialize tracker based on required quantity from the order
+            order.order_items.forEach(item => {
+                this.$set(this.orderItemsScanned, item.product_id, 0);
+            });
 
             nextTick(() => this.initQuagga());
         },
 
 
         async handleBarcodeScanned(scannedCode) {
-            // FIX: Debounce logic check
             if (this.isProcessingScan) return;
-            this.isProcessingScan = true; // Block further scans immediately
+            this.isProcessingScan = true; 
 
-            if (!scannedCode) {
-                this.scanStatusMessage = 'No barcode captured.';
-                this.isProcessingScan = false; // Release flag if error
+            // Release debounce flag after a short delay
+            setTimeout(() => { this.isProcessingScan = false; }, 1000); 
+
+            if (!this.orderToFulfill) return; 
+
+            // Attempt to find the product associated with the scanned barcode
+            const scannedProduct = this.availableProducts.find(p => p.barcode === scannedCode || p.id === scannedCode);
+            let currentScannedProductId = scannedProduct ? scannedProduct.id : null;
+            
+            // Check if the scanned product is part of the current order
+            let matchedOrderItem = this.orderToFulfill.order_items.find(item => item.product_id === currentScannedProductId);
+
+            if (!matchedOrderItem) {
+                this.scanStatusMessage = `❌ Scanned item does not belong to Order #${this.orderToFulfill.order_id.slice(0, 8)}.`;
                 return;
             }
             
-            // Re-enable scanning flag after a short delay in case of errors
-            setTimeout(() => { this.isProcessingScan = false; }, 1000); 
+            const currentScannedCount = this.orderItemsScanned[currentScannedProductId] || 0;
+            const requiredCount = matchedOrderItem.quantity;
 
-            // ✅ Normalize scanned value
-            let raw = String(scannedCode).trim().replace(/\s+/g, '');
-            const rawUpper = raw.toUpperCase();
-
-            // ⚙️ If numeric-only (UPC/EAN), it's not one of your generated codes
-            if (/^\d+$/.test(rawUpper)) {
-                this.scanStatusMessage = `⚠️ Barcode [${rawUpper}] looks like a UPC/EAN, not your system code.`;
-                alert(`⚠️ Invalid barcode format detected.\n\nDetected: ${rawUpper}\nYour system uses codes like ADVE-1234567890`);
-                return;
+            if (currentScannedCount >= requiredCount) {
+                 this.scanStatusMessage = `⚠️ All ${requiredCount} units of ${scannedProduct.brand} have already been scanned.`;
+                 return;
             }
+            
+            // --- CORE MULTI-ITEM LOGIC FIX ---
+            // 1. Increment the local scanned count for the specific product ID
+            this.$set(this.orderItemsScanned, currentScannedProductId, currentScannedCount + 1);
 
-            // ✅ Extract base code (PREFIX-<timestamp>)
-            let baseCode = rawUpper;
-            const parts = rawUpper.split('-');
-            if (parts.length >= 2) baseCode = parts.slice(0, 2).join('-');
-            console.log('🔎 Scanned raw:', raw, '| Base:', baseCode);
+            // 2. Update status message
+            const itemsLeft = this.totalItemsToScan - this.totalItemsScanned;
+            this.scanStatusMessage = `✅ Scanned ${scannedProduct.brand}. ${itemsLeft} item(s) remaining.`;
 
-            this.scanStatusMessage = `Scanning: ${raw} — trying base: ${baseCode}`;
+            // 3. Check if all items are scanned
+            const allItemsScanned = this.scannedItemsList.every(item => item.isComplete);
 
-            try {
-                // ✅ Step 1: Lookup item in stock_in (Validation only, no update needed here)
-                const { data: item, error } = await supabase
-                    .from('stock_in')
-                    .select('barcode_id, product_name, size, quantity')
-                    .ilike('barcode_id', `%${baseCode}%`)
-                    .maybeSingle();
-
-                if (error) throw error;
-
-                if (!item) {
-                    this.scanStatusMessage = '❌ Barcode not found in stock.';
-                    alert(`❌ Barcode not found in stock.\n\nScanned: ${raw}\nTried: ${baseCode}`);
-                    return;
-                }
-
-                // --- NOTE: NO STOCK DECREMENT IN STOCK_IN HERE ---
-                // The stock update for the product is handled by the payment system.
-                // The stock_in table is often used for barcode printing/tracking specific lots.
-
-                // FIX: Stop scanner and set flag to show confirmation modal, AND CLOSE SCAN MODAL
+            if (allItemsScanned) {
                 this.stopQuagga(); 
-                this.isProductScanned = true;
-                this.scanStatusMessage = `✅ ${item.product_name} validated successfully. Ready for shipment confirmation.`;
-                
-                // CRUCIAL FIX: Hide the current modal to allow the confirmation modal to show
-                this.showScanModal = false; 
-                
-            } catch (err) {
-                console.error('Scan error:', err);
-                alert('⚠️ Failed to process scan: ' + (err.message || err));
-            } finally {
-                // In case of error during the DB update, release the flag
-                if (!this.isProductScanned) {
-                    this.isProcessingScan = false;
-                }
+                this.isProductScanned = true; 
+                this.showScanModal = false; // Hide scanner modal
             }
         },
 
 
         closeScanModal() {
-            // Stops Quagga regardless of whether scanning was successful
             this.stopQuagga(); 
             this.showScanModal = false;
-            // Only clear orderToFulfill if scanning wasn't successful (or if confirmed)
             if (!this.isProductScanned) { 
                 this.orderToFulfill = null;
             }
-            // Ensure the confirmation flag is cleared if cancelled from the scanner modal
             this.isProductScanned = false; 
-            this.isProcessingScan = false; // Release debounce flag on cancel
+            this.isProcessingScan = false; 
+            this.orderItemsScanned = {}; // Clear tracker on close/cancel
         },
         captureBarcode() {
             if (!this.lastDetectedCode) {
@@ -689,8 +714,8 @@ export default {
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
-            // Fetch product price, size, and brand for mapping in order views
-            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price');
+            // Fetch product price, size, brand, AND barcode for mapping
+            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, barcode');
             if (productsError) console.error('Error fetching products:', productsError);
             else this.availableProducts = products;
 
@@ -731,7 +756,6 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // FIX: Fetch BOTH 'Order Processed' and 'Shipped' orders.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -740,7 +764,7 @@ export default {
                             product_id, 
                             quantity, 
                             price_at_purchase,
-                            products!inner(brand, size) 
+                            products!inner(id, brand, size) 
                         )
                     `)
                     .in('status', ['Order Processed', 'Shipped']) 
@@ -758,14 +782,11 @@ export default {
 
         /**
          * Helper method to format product details for display on the order card.
-         * @param {Array} items - The order_items array from an order object.
-         * @returns {string} Formatted string of product names and sizes.
          */
         getOrderProductDetails(items) {
             if (!items || items.length === 0) return 'No items found.';
 
             return items.map(item => {
-                // Check for the nested 'products' object structure
                 const brand = item.products ? item.products.brand : 'Unknown Product';
                 const size = item.products ? item.products.size : 'N/A';
                 
@@ -782,6 +803,15 @@ export default {
                 return;
             }
 
+            // Final safety check based on local scan tracker
+            if (this.totalItemsScanned < this.totalItemsToScan) {
+                 alert('Error: Not all items have been scanned. Cannot ship.');
+                 // Reopen scan modal for correction
+                 this.showScanModal = true; 
+                 this.isProductScanned = false;
+                 return;
+            }
+            
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items;
             let totalSalesAmount = 0;
@@ -819,7 +849,6 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    // STATUS CHANGE: The order is now 'Shipped' (ready for delivery)
                     .update({ status: 'Shipped' }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
@@ -840,13 +869,12 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // FINAL FIX: Clear state, which closes the modal
+                // Clear state, which closes the modal
                 this.isProductScanned = false;
                 this.showScanModal = false;
                 this.orderToFulfill = null;
-                this.isProcessingScan = false; // Release debounce flag
+                this.isProcessingScan = false;
                 
-                // Refresh list to update the card's button status
                 this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
@@ -981,7 +1009,6 @@ export default {
         logout() { this.showLogoutModal = true; },
 
         async confirmLogout() {
-            this.showLogoutModal = false;
             try {
                 const { error } = await supabase.auth.signOut();
                 if (error) { alert(`Logout failed: ${error.message}`); return; }

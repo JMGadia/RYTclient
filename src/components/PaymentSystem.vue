@@ -113,6 +113,11 @@
                     To confirm your order, please send the partial payment of <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong> to the following GCash number: 
                     <strong>0912-345-6789 (RYT-Tyre Inc.)</strong>
                   </p>
+                  
+                  <div class="text-center my-3">
+                      <img src="/src/assets/QR-GCash.jpg" alt="GCash QR Code" style="width: 200px; height: auto; border: 1px solid #ccc; padding: 5px;">
+                  </div>
+                  
                   <div class="mb-3">
                     <label for="gcashNumber" class="form-label fw-semibold">Your GCash Number</label>
                     <input type="tel" class="form-control" id="gcashNumber" v-model="gcashNumber" placeholder="e.g., 09XX-XXX-XXXX">
@@ -161,65 +166,44 @@ const router = useRouter();
 const { cart, cartTotal, clearCart, fetchCart } = useCart();
 
 // --- REACTIVE STATE ---
-const customerType = ref(null); // Tracks if the customer is 'New' or 'Returning' (used for UI steps)
-const selectedPaymentMethod = ref(null); // Tracks the chosen payment method
-const gcashNumber = ref(''); // Input for GCash number (if applicable)
-const paymentProofFile = ref(null); // Holds the uploaded proof of payment file
-const isProcessing = ref(false); // Manages the loading state during order submission
-const serviceFee = ref(500); // Fixed service/shipping fee
+const customerType = ref(null); 
+const selectedPaymentMethod = ref(null); 
+const gcashNumber = ref(''); 
+const paymentProofFile = ref(null); 
+const isProcessing = ref(false); 
+const serviceFee = ref(0); 
 
 // --- COMPUTED PROPERTIES ---
-/**
- * Calculates the final total amount including the cart subtotal and the fixed service fee.
- */
 const grandTotal = computed(() => {
-  // Ensure cartTotal is treated as a number
   const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
   return total + serviceFee.value;
 });
 
-
-// Calculates the required partial payment amount (25% of the subtotal).
 const partialPayment = computed(() => {
   const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
   return total / 4; 
 });
 
 // --- UI CONTROL FUNCTIONS ---
-/**
- * Sets the customer type for UI flow and resets payment method selection.
- * @param {string} type - 'New' or 'Returning'
- */
 const setCustomerType = (type) => {
   customerType.value = type;
-  selectedPaymentMethod.value = null; // Reset payment choice when type changes
+  selectedPaymentMethod.value = null; 
 };
 
 /**
- * Handles the file input change to store the proof of payment file.
- * @param {Event} event - The native change event from the file input.
+ * Handles the file input change to store the proof of payment file object.
  */
 const handleFileUpload = (event) => {
   paymentProofFile.value = event.target.files[0];
 };
 
-/**
- * Navigates the user to the address book/selection page.
- */
 const goToAddressBook = () => {
   router.push({ name: 'BookOrderAddress' });
 };
 
 // --- MAIN ORDER SUBMISSION FUNCTION ---
 /**
- * Places the multi-item order by performing a series of database operations:
- * 1. Validates payment selection and cart contents.
- * 2. Fetches user and default shipping address.
- * 3. Creates a new entry in the 'orders' table (main order header).
- * 4. Inserts all cart items into the 'order_items' table (line items).
- * 5. Decrements the stock count for each ordered product.
- * 6. Clears the user's cart.
- * 7. Redirects to the order tracking page.
+ * Places the multi-item order, including uploading the payment proof to Supabase Storage.
  */
 const handleSubmit = async () => {
   // Initial validation checks
@@ -227,10 +211,17 @@ const handleSubmit = async () => {
     alert('Please select a payment method or add items to your cart.');
     return;
   }
+
+  // Mandatory check for file upload if using GCash/COD
+  if ((selectedPaymentMethod.value === 'gcash' || selectedPaymentMethod.value === 'cod') && !paymentProofFile.value) {
+    alert('Please upload your proof of payment.');
+    return;
+  }
+  
   isProcessing.value = true;
+  let paymentProofUrl = null;
 
   try {
-    // 1. Authentication and Default Address Check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('You must be logged in to place an order.');
 
@@ -242,19 +233,47 @@ const handleSubmit = async () => {
       .single();
     if (!addressData) throw new Error('Please set a default address before ordering.');
 
+    // 1. UPLOAD PAYMENT PROOF TO SUPABASE STORAGE
+    if (paymentProofFile.value) {
+        const fileExt = paymentProofFile.value.name.split('.').pop();
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        // Use the 'partialpay_proof' bucket
+        const { error: uploadError } = await supabase.storage
+            .from('partialpay_proof') 
+            .upload(filePath, paymentProofFile.value, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) throw new Error(`File upload failed: ${uploadError.message}`);
+
+        // Get the public URL for the uploaded file
+        const { data: { publicUrl } } = supabase.storage
+            .from('partialpay_proof')
+            .getPublicUrl(filePath);
+
+        paymentProofUrl = publicUrl;
+    }
+
     // 2. Create Main Order Entry
-    const { data: newOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert({
+    const orderData = {
         user_id: user.id,
         username: addressData.name,
         shipping_address: addressData.full_address,
         contact: addressData.phone,
         total_price: grandTotal.value,
-        status: 'Order Processed', // Initial status
-      })
-      .select('order_id') // Select the newly created order ID
+        status: 'Order Processed',
+        // FIX: Insert the payment proof URL into the new column
+        payment_proof_url: paymentProofUrl 
+    };
+
+    const { data: newOrder, error: orderError } = await supabase
+      .from('orders')
+      .insert(orderData)
+      .select('order_id')
       .single();
+      
     if (orderError) throw orderError;
 
     // 3. Prepare and Insert Order Items
@@ -268,7 +287,7 @@ const handleSubmit = async () => {
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
 
-    // 4. Decrement Stock
+    // 4. Decrement Stock (using RPC)
     for (const item of cart.value) {
       const { error: stockUpdateError } = await supabase.rpc('decrement_stock', {
         product_id_to_update: item.id,
@@ -277,7 +296,7 @@ const handleSubmit = async () => {
       if (stockUpdateError) console.warn(`Could not update stock for product ${item.id}:`, stockUpdateError.message);
     }
     
-    // 5. Clear the User's Cart in the database
+    // 5. Clear the User's Cart
     await clearCart(); 
     
     // 6. Success Feedback and Redirection
@@ -293,7 +312,6 @@ const handleSubmit = async () => {
 };
 
 // --- LIFECYCLE HOOKS ---
-// Ensure cart data is fetched immediately when the payment page loads
 onMounted(() => {
   fetchCart();
 });
