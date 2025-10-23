@@ -851,8 +851,8 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    // STATUS CHANGE: The order is now 'Shipped' (ready for delivery)
-                    .update({ status: 'Shipped', date_shipped: new Date().toISOString() }) 
+                    // FIX: Removed date_shipped as it does not exist in the table.
+                    .update({ status: 'Shipped' }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
