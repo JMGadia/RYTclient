@@ -242,7 +242,7 @@
                   <button 
                       class="btn w-100 mt-2" 
                       :class="order.status === 'Shipped' ? 'btn-success' : 'btn-primary'"
-                      @click="startScanForOrder(order)"
+                      @click="order.status === 'Order Processed' ? startScanForOrder(order) : null"
                       :disabled="order.status === 'Shipped'"
                   >
                     <i 
@@ -420,11 +420,11 @@ export default {
             showLogoutModal: false,
             showProfileModal: false,
             showBarcodeModal: false,
-            showScanModal: false,
+            showScanModal: false, // Scanner modal visibility
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
-            isProductScanned: false,
+            isProductScanned: false, // Flag to show confirmation modal
             scanStatusMessage: 'Awaiting camera initialization...',
 
             // --- Dashboard / Views ---
@@ -600,10 +600,13 @@ export default {
                     row.barcode_id === item.barcode_id ? { ...row, quantity: newQty } : row
                 );
 
-                // FIX: Stop scanner and set flag to show confirmation modal
+                // FIX: Stop scanner and set flag to show confirmation modal, AND CLOSE SCAN MODAL
                 this.stopQuagga(); 
                 this.isProductScanned = true;
                 this.scanStatusMessage = `✅ ${item.product_name} scanned successfully. Ready for shipment confirmation.`;
+                
+                // CRUCIAL FIX: Hide the current modal to allow the confirmation modal to show
+                this.showScanModal = false; 
                 
             } catch (err) {
                 console.error('Scan error:', err);
@@ -620,6 +623,8 @@ export default {
             if (!this.isProductScanned) { 
                 this.orderToFulfill = null;
             }
+            // Ensure the confirmation flag is cleared if cancelled from the scanner modal
+            this.isProductScanned = false; 
         },
         captureBarcode() {
             if (!this.lastDetectedCode) {
@@ -729,7 +734,7 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // FIX: Only fetch orders that are awaiting scanning/fulfillment.
+                // Fetch only orders that are awaiting scanning/fulfillment.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -741,7 +746,7 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    .eq('status', 'Order Processed') // <--- RESTRICTED TO ONLY 'Order Processed'
+                    .eq('status', 'Order Processed') 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -775,13 +780,14 @@ export default {
           --- STOCK OUT METHODS ---
           ============================ */
         async updateStockOut() {
-            if (!this.orderToFulfill || !this.isProductScanned) {
-                alert('Cannot confirm shipment: Scan required or order data missing.');
+            // No need to check isProductScanned here as the button itself is conditional
+            if (!this.orderToFulfill) {
+                alert('Order data missing. Please re-select the order.');
                 return;
             }
 
             const orderId = this.orderToFulfill.order_id;
-            const items = this.orderToFulfill.order_items; // Get line items for the order
+            const items = this.orderToFulfill.order_items;
             let totalSalesAmount = 0;
             let totalOrdersCount = 1; 
             const productTrendMap = new Map(); 
@@ -816,7 +822,7 @@ export default {
                     const newQuantity = currentProduct.quantity - quantity;
                     if (newQuantity < 0) {
                         alert(`Error: Not enough stock to fulfill order item ${productName}.`);
-                        return; // Halt the transaction
+                        return;
                     }
 
                     let newStatus = '';
@@ -867,11 +873,12 @@ export default {
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
                 // Clear modal state and refresh order list (the order disappears from 'Order Processed' list)
-                this.closeScanModal();
+                // We rely on fetchProcessedOrders to refresh the list and remove the order, 
+                // which automatically closes the confirmation modal as activeOrders changes.
                 this.isProductScanned = false;
                 this.orderToFulfill = null;
                 
-                this.fetchProcessedOrders();
+                this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
             } catch (error) {
