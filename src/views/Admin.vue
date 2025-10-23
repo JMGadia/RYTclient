@@ -210,28 +210,47 @@
 
           <div v-else class="row">
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
-              <div class="card h-100 shadow-sm border-warning">
-                <div class="card-header bg-warning text-dark fw-bold">
+              <div 
+                class="card h-100 shadow-sm border-warning"
+                :class="{'border-success': order.status === 'Shipped'}"
+              >
+                <div 
+                  class="card-header fw-bold"
+                  :class="{'bg-warning text-dark': order.status === 'Order Processed', 'bg-success text-white': order.status === 'Shipped'}"
+                >
                   Order #{{ order.order_id.slice(0, 8) }}
                 </div>
                 <div class="card-body">
-                  <h5 class="card-title fw-bold text-primary">{{ order.product_name }} (x{{ order.quantity }})</h5>
+                  <h5 class="card-title fw-bold text-primary mb-3">
+                    <i class="fas fa-box me-2"></i> 
+                    {{ getOrderProductDetails(order.order_items) }}
+                  </h5>
                   <p class="card-text mb-1">
-                    <i class="fas fa-user me-2 text-muted"></i>{{ order.username }}
+                    <i class="fas fa-user me-2 text-muted"></i>
+                    <strong>{{ order.username || 'Name Missing' }}</strong>
                   </p>
-                  <p class="card-text mb-1 small text-muted">
+                  <p class="card-text mb-1">
+                    <i class="fas fa-phone me-2 text-muted"></i>
+                    {{ order.contact || 'Phone Missing' }}
+                  </p>
+                  <p class="card-text mb-2 small text-muted">
                     <i class="fas fa-map-marker-alt me-2"></i>
                     {{ order.shipping_address ? order.shipping_address.substring(0, 40) : 'Address Missing' }}
                     <span v-if="order.shipping_address && order.shipping_address.length > 40">...</span>
                   </p>
-                  <p class="card-text mb-2">
-                    <i class="fas fa-tag me-2 text-muted"></i>Size: {{ order.size }}
-                  </p>
-                  <button class="btn btn-primary w-100 mt-2" 
-                          @click="startScanForOrder(order)">
-                    <i class="fas fa-barcode me-2"></i>Take Order & Scan
+                  
+                  <button 
+                      class="btn w-100 mt-2" 
+                      :class="order.status === 'Shipped' ? 'btn-success' : 'btn-primary'"
+                      @click="startScanForOrder(order)"
+                      :disabled="order.status === 'Shipped'"
+                  >
+                    <i 
+                        :class="order.status === 'Shipped' ? 'fas fa-check-circle' : 'fas fa-truck me-2'"
+                    ></i>
+                    {{ order.status === 'Shipped' ? 'Ready for Delivery' : 'To Deliver' }}
                   </button>
-                </div>
+                  </div>
               </div>
             </div>
           </div>
@@ -299,7 +318,7 @@
                 <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
             </div>
             <div class="card-body">
-              <p class="text-center text-muted">Scan **{{ orderToFulfill.product_name }} (x{{ orderToFulfill.quantity }})** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+              <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
               
               <div id="scanner-container" class="mb-3">
                 <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
@@ -324,11 +343,11 @@
             </div>
             <div class="card-body text-center">
                 <p class="lead">Barcode successfully matched!</p>
-                <p>Ready to ship **{{ orderToFulfill.product_name }} (x{{ orderToFulfill.quantity }})** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+                <p>Ready to ship **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
                     <button class="btn btn-success" @click="updateStockOut">
-                        <i class="fas fa-shipping-fast me-2"></i> Confirm Shipment
+                        <i class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
                     </button>
                 </div>
             </div>
@@ -414,7 +433,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [],
+            availableProducts: [], // Used to map product IDs to names/sizes
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -582,11 +601,14 @@ export default {
                 );
 
                 this.stopQuagga();
+                
+                // IMPORTANT: When a product is successfully scanned, update the order status to 'Shipped'
+                // We use the `updateStockOut` logic to handle the final status change to 'Shipped' 
+                // and sales reporting AFTER all checks pass. The button confirms this final state.
                 this.isProductScanned = true;
-                this.scanStatusMessage = `✅ ${item.product_name} updated. Remaining: ${newQty}`;
-                alert(
-                    `✅ Scanned Successfully!\n\nProduct: ${item.product_name}\nSize: ${item.size}\nRemaining: ${newQty}`
-                );
+                this.scanStatusMessage = `✅ ${item.product_name} scanned successfully. Ready for shipment confirmation.`;
+                
+                // Alert removed here to streamline the scanning process leading to the confirmation modal
             } catch (err) {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
@@ -597,12 +619,15 @@ export default {
         closeScanModal() {
             this.stopQuagga();
             this.showScanModal = false;
-            this.orderToFulfill = null;
+            // Only clear orderToFulfill if scanning wasn't successful (or if confirmed)
+            if (!this.isProductScanned) {
+                this.orderToFulfill = null;
+            }
             this.isProductScanned = false;
         },
         captureBarcode() {
             if (!this.lastDetectedCode) {
-                alert('Barcode Note detected Please Try Again!');
+                alert('Barcode Not detected. Please Try Again!');
                 return;
             }
             this.handleBarcodeScanned(this.lastDetectedCode);
@@ -666,6 +691,7 @@ export default {
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
+            // Fetch product price, size, and brand for mapping in order views
             const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price');
             if (productsError) console.error('Error fetching products:', productsError);
             else this.availableProducts = products;
@@ -707,9 +733,18 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
+                // Fetch product details nested within order_items to display product name/size
                 const { data, error } = await supabase
                     .from('orders')
-                    .select('*, order_items(product_id, quantity, price_at_purchase)') // Fetch related order items
+                    .select(`
+                        *, 
+                        order_items (
+                            product_id, 
+                            quantity, 
+                            price_at_purchase,
+                            products!inner(brand, size) 
+                        )
+                    `)
                     .eq('status', 'Order Processed')
                     .order('created_at', { ascending: true });
 
@@ -721,6 +756,23 @@ export default {
             } finally {
                 this.isStockOutLoading = false;
             }
+        },
+
+        /**
+         * Helper method to format product details for display on the order card.
+         * @param {Array} items - The order_items array from an order object.
+         * @returns {string} Formatted string of product names and sizes.
+         */
+        getOrderProductDetails(items) {
+            if (!items || items.length === 0) return 'No items found.';
+
+            return items.map(item => {
+                // Check for the nested 'products' object structure
+                const brand = item.products ? item.products.brand : 'Unknown Product';
+                const size = item.products ? item.products.size : 'N/A';
+                
+                return `${brand} (${size}) x${item.quantity}`;
+            }).join(', ');
         },
 
         /* ============================
@@ -735,6 +787,7 @@ export default {
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items; // Get line items for the order
             let totalSalesAmount = 0;
+            let totalOrdersCount = 1; // Since this function runs per confirmed order
             const productTrendMap = new Map(); // Map to track product sales for product trend data
 
             // --- TRANSACTION START ---
@@ -747,14 +800,15 @@ export default {
 
                     // Update product trend map
                     const product = this.availableProducts.find(p => p.id === product_id);
-                    if (product) {
-                        const currentTrend = productTrendMap.get(product.brand) || { sales: 0, count: 0 };
-                        currentTrend.sales += saleAmount;
-                        currentTrend.count += quantity;
-                        productTrendMap.set(product.brand, currentTrend);
-                    }
+                    const productName = product ? product.brand : `Product ID: ${product_id}`;
                     
-                    // a. Fetch current stock
+                    const currentTrend = productTrendMap.get(productName) || { sales: 0, count: 0 };
+                    currentTrend.sales += saleAmount;
+                    currentTrend.count += quantity;
+                    productTrendMap.set(productName, currentTrend);
+                    
+                    // a. Fetch current stock (skipped/handled by scanner if using one-by-one scanning flow, 
+                    // but kept here for bulk stock update in case of multi-item order fulfillment)
                     const { data: currentProduct, error: prodErr } = await supabase
                         .from('products')
                         .select('quantity')
@@ -766,7 +820,7 @@ export default {
                     // b. Check and calculate new stock
                     const newQuantity = currentProduct.quantity - quantity;
                     if (newQuantity < 0) {
-                        alert(`Error: Not enough stock to fulfill order item ${product.brand}.`);
+                        alert(`Error: Not enough stock to fulfill order item ${productName}.`);
                         return; // Halt the transaction
                     }
 
@@ -786,7 +840,7 @@ export default {
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
                         product_id: product_id,
-                        product_name: product ? product.brand : 'Unknown Product',
+                        product_name: productName,
                         quantity: quantity,
                         date_and_time: new Date().toISOString()
                     });
@@ -796,7 +850,8 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    .update({ status: 'Shipped', date_shipped: new Date().toISOString() })
+                    // STATUS CHANGE: The order is now ready for delivery
+                    .update({ status: 'Shipped', date_shipped: new Date().toISOString() }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
@@ -805,17 +860,18 @@ export default {
 
                 const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
                     p_sales_amount: totalSalesAmount,
-                    p_product_trend_data: productTrendData // Pass the JSON string to the RPC
+                    p_total_orders: totalOrdersCount,
+                    p_product_trend_data: productTrendData
                 });
                 
                 if (salesReportError) {
-                    // Log but do not fail the shipment if reporting fails
                     console.error("Failed to update daily sales report:", salesReportError.message);
                 }
 
-
                 // --- TRANSACTION SUCCESS ---
-                alert(`✅ Order #${orderId.slice(0, 8)} shipped — stock and sales report updated.`);
+                alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
+                
+                // Reset states and refresh orders
                 this.isProductScanned = false;
                 this.orderToFulfill = null;
                 this.fetchProcessedOrders();
