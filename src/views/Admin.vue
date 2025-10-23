@@ -420,11 +420,11 @@ export default {
             showLogoutModal: false,
             showProfileModal: false,
             showBarcodeModal: false,
-            showScanModal: false, // Scanner modal visibility
+            showScanModal: false,
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
-            isProductScanned: false, // Flag to show confirmation modal
+            isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
 
             // --- Dashboard / Views ---
@@ -780,7 +780,7 @@ export default {
           --- STOCK OUT METHODS ---
           ============================ */
         async updateStockOut() {
-            // No need to check isProductScanned here as the button itself is conditional
+            // Note: isProductScanned is true here, guaranteeing a successful scan occurred.
             if (!this.orderToFulfill) {
                 alert('Order data missing. Please re-select the order.');
                 return;
@@ -872,10 +872,9 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // Clear modal state and refresh order list (the order disappears from 'Order Processed' list)
-                // We rely on fetchProcessedOrders to refresh the list and remove the order, 
-                // which automatically closes the confirmation modal as activeOrders changes.
+                // Clear state, which closes the modal
                 this.isProductScanned = false;
+                this.showScanModal = false;
                 this.orderToFulfill = null;
                 
                 this.fetchProcessedOrders(); 
