@@ -10,7 +10,13 @@
         <form class="d-none d-md-flex mx-auto" style="max-width: 500px;" @submit.prevent>
           <div class="input-group">
             <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-            <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search for tires and parts..." aria-label="Search" />
+            <input 
+              class="form-control rounded-pill rounded-start-0 border-start-0" 
+              type="search" 
+              placeholder="Search for tires and parts..." 
+              aria-label="Search" 
+              v-model="searchQuery" 
+            />
           </div>
         </form>
 
@@ -34,10 +40,16 @@
 
     <div class="container d-md-none py-2 bg-white border-bottom">
       <form @submit.prevent>
-          <div class="input-group">
-              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-              <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search..." aria-label="Search" />
-          </div>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+          <input 
+            class="form-control rounded-pill rounded-start-0 border-start-0" 
+            type="search" 
+            placeholder="Search..." 
+            aria-label="Search" 
+            v-model="searchQuery" 
+          />
+        </div>
       </form>
     </div>
 
@@ -117,7 +129,7 @@
             </div>
           </div>
           <div v-else class="text-center py-5">
-            <p class="text-muted fs-5">No products found in this category.</p>
+            <p class="text-muted fs-5">No products found matching your search or category.</p>
           </div>
         </div>
       </section>
@@ -181,13 +193,13 @@
 
 <script setup>
 /* ============================================================
-   Customer Product Listing Page
-   Features:
-   - Exit Guard (Warn before leaving page)
-   - Product Fetching & Filtering
-   - Cart Management
-   - Responsive Mobile Menu
-   - Category Filtering
+    Customer Product Listing Page
+    Features:
+    - Exit Guard (Warn before leaving page)
+    - Product Fetching & Filtering
+    - Cart Management
+    - Responsive Mobile Menu
+    - Category Filtering
 ============================================================ */
 
 import { ref, computed, onMounted } from 'vue';
@@ -198,94 +210,116 @@ import { supabase } from '../server/supabase';
 import AdScroller from '../components/AdScroller.vue'; // Optional component for ads
 
 /* ============================================================
-   ROUTE GUARD
-   Warns user before leaving pages that may cause logout/session end
+    ROUTE GUARD
+    Warns user before leaving pages that may cause logout/session end
 ============================================================ */
 onBeforeRouteLeave(async (to, from, next) => {
-  const safeRoutes = ['profile', 'order tracking', 'cart'];
+    const safeRoutes = ['profile', 'order tracking', 'cart'];
 
-  // Allow navigation for safe routes
-  if (safeRoutes.includes(to.name)) {
-    next();
-    return;
-  }
+    // Allow navigation for safe routes
+    if (safeRoutes.includes(to.name)) {
+        next();
+        return;
+    }
 
-  const answer = window.confirm(
-    'Are you sure you want to leave this page? You will be logged out for security.'
-  );
+    const answer = window.confirm(
+        'Are you sure you want to leave this page? You will be logged out for security.'
+    );
 
-  if (answer) {
-    await supabase.auth.signOut();
-    next(false); // Cancel current navigation
-    window.location.href = '/login'; // Force redirect to login page
-  } else {
-    next(false); // Cancel navigation
-  }
+    if (answer) {
+        await supabase.auth.signOut();
+        next(false); // Cancel current navigation
+        window.location.href = '/login'; // Force redirect to login page
+    } else {
+        next(false); // Cancel navigation
+    }
 });
 
 /* ============================================================
-   ROUTER & UI STATE
+    ROUTER & UI STATE
 ============================================================ */
 const router = useRouter();
 const isMobileMenuOpen = ref(false); // Controls mobile menu visibility
 const selectedCategory = ref('All'); // Default category filter
+const searchQuery = ref(''); // FIX: Reactive state for the search bar input
 
 // Navigate to a route and close the mobile menu
 const navigateAndCloseMenu = (routeName) => {
-  isMobileMenuOpen.value = false;
-  router.push({ name: routeName });
+    isMobileMenuOpen.value = false;
+    router.push({ name: routeName });
 };
 
 // Select a product category for filtering
 const selectCategory = (category) => {
-  selectedCategory.value = category;
+    selectedCategory.value = category;
 };
 
 /* ============================================================
-   PRODUCT DATA FETCHING
+    PRODUCT DATA FETCHING
 ============================================================ */
 const allProducts = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// Filtered products based on selected category
+// Filtered products based on selected category AND search query
 const filteredProducts = computed(() => {
-  if (selectedCategory.value === 'All') return allProducts.value;
-  return allProducts.value.filter(product => product.product_type === selectedCategory.value);
+    const query = searchQuery.value.toLowerCase().trim();
+    
+    let products = allProducts.value;
+
+    // 1. Apply Category Filter
+    if (selectedCategory.value !== 'All') {
+        products = products.filter(product => product.product_type === selectedCategory.value);
+    }
+
+    // 2. Apply Search Filter
+    if (query) {
+        products = products.filter(product => {
+            // Search across multiple fields: brand, size, car_brand, and product_type
+            const brandMatch = (product.brand || '').toLowerCase().includes(query);
+            const sizeMatch = (product.size || '').toLowerCase().includes(query);
+            const typeMatch = (product.product_type || '').toLowerCase().includes(query);
+            const carBrandMatch = (product.car_brand || '').toLowerCase().includes(query);
+            
+            return brandMatch || sizeMatch || typeMatch || carBrandMatch;
+        });
+    }
+
+    return products;
 });
 
 // Fetch products on component mount
 onMounted(async () => {
-  loading.value = true;
-  error.value = null;
+    loading.value = true;
+    error.value = null;
 
-  try {
-    const { data, error: fetchError } = await getProducts();
-    if (fetchError) throw fetchError;
+    try {
+        const { data, error: fetchError } = await getProducts();
+        if (fetchError) throw fetchError;
 
-    if (data) {
-      allProducts.value = data.map(product => ({
-        ...product,
-        image_url: getProductImageURL(product.image_url) // Full image URL
-      }));
+        if (data) {
+            allProducts.value = data.map(product => ({
+                ...product,
+                image_url: getProductImageURL(product.image_url) // Full image URL
+            }));
+        }
+    } catch (err) {
+        error.value = err.message;
+        console.error("Failed to fetch products:", err);
+    } finally {
+        loading.value = false;
     }
-  } catch (err) {
-    error.value = err.message;
-    console.error("Failed to fetch products:", err);
-  } finally {
-    loading.value = false;
-  }
 });
 
 /* ============================================================
-   CART MANAGEMENT
+    CART MANAGEMENT
 ============================================================ */
 const { addToCart } = useCart();
 
 // Add selected product to cart and redirect to cart page
 const handleAddToCart = (product) => {
-  addToCart(product);
-  router.push({ name: 'cart' });
+    addToCart(product);
+    router.push({ name: 'cart' });
 };
 </script>
 
@@ -301,68 +335,68 @@ const handleAddToCart = (product) => {
 
 /* Add this new rule to style the image icons */
 .social-icon img {
-  width: 20px;  /* Adjust size as needed */
-  height: 20px; /* Adjust size as needed */
+    width: 20px; 
+    height: 20px; 
 }
 
 .ordering-page { 
-  font-family: 'Roboto', sans-serif; 
-  position: relative;
-  background-color: #0c0a24;
-  overflow-x: hidden;
+    font-family: 'Roboto', sans-serif; 
+    position: relative;
+    background-color: #0c0a24;
+    overflow-x: hidden;
 }
 
 .ordering-page::before {
-  content: '';
-  position: fixed;
-  top: -50%; left: -50%; right: -50%; bottom: -50%;
-  z-index: 0;
-  background-image: 
-    radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
-    radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
-    radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
-    radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
-  filter: blur(100px);
-  animation: auroraAnimation 20s ease-in-out infinite;
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%; right: -50%; bottom: -50%;
+    z-index: 0;
+    background-image: 
+        radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
+        radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
+        radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
+        radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
+    filter: blur(100px);
+    animation: auroraAnimation 20s ease-in-out infinite;
 }
 
 .navbar, section, footer {
-  position: relative;
-  z-index: 1;
+    position: relative;
+    z-index: 1;
 }
 
 section {
-  background-color: transparent !important;
+    background-color: transparent !important;
 }
 
 .section-title { 
-  font-family: 'Poppins', sans-serif; 
-  color: #fff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  position: relative; 
-  padding-bottom: 10px; 
+    font-family: 'Poppins', sans-serif; 
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    position: relative; 
+    padding-bottom: 10px; 
 }
 .section-title::after { 
-  content: ''; 
-  position: absolute; 
-  left: 50%; bottom: 0; 
-  transform: translateX(-50%); 
-  width: 60px; height: 3px; 
-  background-color: #0d6efd; 
-  border-radius: 2px; 
+    content: ''; 
+    position: absolute; 
+    left: 50%; bottom: 0; 
+    transform: translateX(-50%); 
+    width: 60px; height: 3px; 
+    background-color: #0d6efd; 
+    border-radius: 2px; 
 }
 
 .product-card { 
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 1rem; 
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); 
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1rem; 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); 
 }
 .card-img-container { 
-  background-color: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  height: 160px; 
+    background-color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    height: 160px; 
 }
 
 /* --- NAVBAR STYLES --- */
@@ -377,55 +411,55 @@ section {
 
 /* --- MOBILE SIDE PANEL STYLES --- */
 .mobile-side-panel {
-  position: fixed;
-  top: 80px;
-  right: 0;
-  width: auto;
-  background-color: #343a40; /* Simple solid dark color */
-  border-radius: 1rem 0 0 1rem; /* Rounded on the left side */
-  box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
-  z-index: 1050;
-  padding: 0.5rem;
-  padding-left: 2rem; /* Make space for the handle */
+    position: fixed;
+    top: 80px;
+    right: 0;
+    width: auto;
+    background-color: #343a40; /* Simple solid dark color */
+    border-radius: 1rem 0 0 1rem; /* Rounded on the left side */
+    box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    padding: 0.5rem;
+    padding-left: 2rem; /* Make space for the handle */
 }
 /* This creates the "handle" from your sketch */
 .mobile-side-panel::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 60px;
-  background-color: #343a40;
-  border-radius: 10px 0 0 10px;
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    background-color: #343a40;
+    border-radius: 10px 0 0 10px;
 }
 .panel-link {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem;
-  color: #f8f9fa;
-  text-decoration: none;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s ease;
-  white-space: nowrap; /* Prevent text from wrapping */
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    color: #f8f9fa;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+    white-space: nowrap; /* Prevent text from wrapping */
 }
 .panel-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 .panel-link img {
-  filter: invert(1);
-  margin-right: 0.75rem;
+    filter: invert(1);
+    margin-right: 0.75rem;
 }
 
 /* --- TRANSITION FOR THE PANEL --- */
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: transform 0.4s ease;
+    transition: transform 0.4s ease;
 }
 .slide-right-enter-from,
 .slide-right-leave-to {
-  transform: translateX(100%);
+    transform: translateX(100%);
 }
 
 .advertisement-banner img { width: 100%; height: auto; display: block; }
@@ -437,61 +471,61 @@ section {
 footer { background-color: rgba(12, 10, 36, 0.8) !important; backdrop-filter: blur(5px); }
 
 .btn-glass {
-  padding: 0.5rem 1.5rem;
-  font-family: 'Poppins', sans-serif;
-  border-radius: 50rem;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
+    padding: 0.5rem 1.5rem;
+    font-family: 'Poppins', sans-serif;
+    border-radius: 50rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 .btn-glass.active {
-  background: #0d6efd;
-  border-color: #0d6efd;
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    background: #0d6efd;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
 }
 
 @media (max-width: 767.98px) {
-  h3.section-title { font-size: 1.5rem; }
-  section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
-  .card-img-container { height: 120px; }
-  .product-name { font-size: 0.9rem; }
+    h3.section-title { font-size: 1.5rem; }
+    section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+    .card-img-container { height: 120px; }
+    .product-name { font-size: 0.9rem; }
 }
 
 /* --- FOOTER STYLES --- */
 .footer-section {
-  background-color: rgba(12, 10, 36, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(12, 10, 36, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-link {
-  color: #adb5bd; /* Lighter gray for better readability */
-  text-decoration: none;
-  transition: color 0.3s ease;
+    color: #adb5bd; /* Lighter gray for better readability */
+    text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-  color: #ffffff;
-  text-decoration: underline;
+    color: #ffffff;
+    text-decoration: underline;
 }
 
 .social-icon {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 1rem;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1rem;
+    transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .social-icon:hover {
-  background-color: #0d6efd; /* Primary blue on hover */
-  transform: translateY(-3px);
-  color: #fff;
+    background-color: #0d6efd; /* Primary blue on hover */
+    transform: translateY(-3px);
+    color: #fff;
 }
 </style>

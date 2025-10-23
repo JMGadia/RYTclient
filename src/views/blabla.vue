@@ -212,15 +212,11 @@
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
               <div 
                 class="card h-100 shadow-sm border-warning"
-                :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered'}"
+                :class="{'border-success': order.status === 'Shipped'}"
               >
                 <div 
                   class="card-header fw-bold"
-                  :class="{
-                    'bg-warning text-dark': order.status === 'Order Processed', 
-                    'bg-success text-white': order.status === 'Shipped',
-                    'bg-danger text-white': order.status === 'Delivered'
-                  }"
+                  :class="{'bg-warning text-dark': order.status === 'Order Processed', 'bg-success text-white': order.status === 'Shipped'}"
                 >
                   Order #{{ order.order_id.slice(0, 8) }}
                 </div>
@@ -245,29 +241,14 @@
                   
                   <button 
                       class="btn w-100 mt-2" 
-                      :class="{
-                        'btn-primary': order.status === 'Order Processed',
-                        'btn-success': order.status === 'Shipped',
-                        'btn-danger': order.status === 'Delivered'
-                      }"
-                      @click="
-                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) : 
-                        order.status === 'Order Processed' ? startScanForOrder(order) : null
-                      "
-                      :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
+                      :class="order.status === 'Shipped' ? 'btn-success' : 'btn-primary'"
+                      @click="order.status === 'Order Processed' ? startScanForOrder(order) : null"
+                      :disabled="order.status === 'Shipped'"
                   >
                     <i 
-                        :class="{
-                            'fas fa-barcode me-2': order.status === 'Order Processed',
-                            'fas fa-truck me-2': order.status === 'Shipped',
-                            'fas fa-check-circle me-2': order.status === 'Delivered'
-                        }"
+                        :class="order.status === 'Shipped' ? 'fas fa-check-circle' : 'fas fa-barcode me-2'"
                     ></i>
-                    {{ 
-                        order.status === 'Delivered' ? 'Delivered Completed' : 
-                        order.status === 'Shipped' ? 'Ready to Deliver' : 
-                        'Take Order & Scan' 
-                    }}
+                    {{ order.status === 'Shipped' ? 'Ready for Delivery' : 'Take Order & Scan' }}
                   </button>
                   </div>
               </div>
@@ -361,8 +342,8 @@
                 <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
             </div>
             <div class="card-body text-center">
-                <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
-                <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+                <p class="lead">Barcode successfully matched!</p>
+                <p>Ready to ship **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
                     <button class="btn btn-success" @click="updateStockOut">
@@ -372,38 +353,7 @@
             </div>
         </div>
     </div>
-    
-    <div v-if="showDeliveryConfirmationModal" class="custom-modal-overlay" style="z-index: 1060;"></div>
-    <div class="modal fade" :class="{ 'show': showDeliveryConfirmationModal }" style="display: block; z-index: 1070;" v-if="showDeliveryConfirmationModal">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Confirm Order Delivery</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="closeConfirmDeliveryModal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="fas fa-truck-loading fa-3x text-success mb-3"></i>
-                    <p class="lead fw-semibold">Confirm final delivery for Order #{{ orderToFulfill ? orderToFulfill.order_id.slice(0, 8) : 'N/A' }}?</p>
-                    <p class="text-muted small">
-                        This action will mark the order as **DELIVERED**.
-                    </p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" @click="closeConfirmDeliveryModal">Cancel</button>
-                    <button 
-                        type="button" 
-                        class="btn btn-success" 
-                        @click="confirmDeliverySuccessAdmin" 
-                        :disabled="isDelivering === orderToFulfill?.order_id"
-                    >
-                        <span v-if="isDelivering === orderToFulfill?.order_id" class="spinner-border spinner-border-sm me-2"></span>
-                        Order Delivered
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -470,15 +420,12 @@ export default {
             showProfileModal: false,
             showBarcodeModal: false,
             showScanModal: false,
-            showDeliveryConfirmationModal: false,
-            isDelivering: null, 
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false, 
-            orderItemsScanned: {}, 
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -486,7 +433,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [], 
+            availableProducts: [], // Used to map product IDs to names/sizes
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -509,48 +456,9 @@ export default {
                     .slice(0, 16)
             },
             stockInHistory: [],
+            itemToPrint: null,
             orderToFulfill: null
         };
-    },
-
-    /* ============================================================
-      COMPUTED PROPERTIES
-    ============================================================ */
-    computed: {
-        totalItemsToScan() {
-            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return 0;
-            return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
-        },
-        totalItemsScanned() {
-            return Object.values(this.orderItemsScanned).reduce((total, count) => total + count, 0);
-        },
-        scannedItemsList() {
-            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return [];
-
-            return this.orderToFulfill.order_items.map(item => {
-                const productName = item.products ? item.products.brand : 'Unknown Product';
-                const required = item.quantity;
-                const scanned = this.orderItemsScanned[item.products.id] || 0; 
-                
-                return {
-                    name: productName,
-                    required: required,
-                    scanned: scanned,
-                    isComplete: scanned >= required
-                };
-            });
-        },
-        // Keeping this helper function for template compatibility
-        getOrderProductDetails() {
-             return (items) => {
-                if (!items || items.length === 0) return 'No items found.';
-                return items.map(item => {
-                    const brand = item.products ? item.products.brand : 'Unknown Product';
-                    const size = item.products ? item.products.size : 'N/A';
-                    return `${brand} (${size}) x${item.quantity}`;
-                }).join(', ');
-            };
-        }
     },
 
     /* ============================================================
@@ -559,7 +467,7 @@ export default {
     methods: {
 
         /* ============================
-          --- QUAGGA BARCODE SCANNER (STABLE SINGLE-SCAN) ---
+          --- QUAGGA BARCODE SCANNER ---
           ============================ */
         initQuagga() {
             if (typeof Quagga === 'undefined' || !Quagga.init) {
@@ -573,7 +481,9 @@ export default {
                     type: "LiveStream",
                     target: document.querySelector('#scanner-container'),
                     constraints: {
-                        facingMode: "environment" 
+                        width: 640,
+                        height: 480,
+                        facingMode: "environment"
                     }
                 },
                 decoder: { readers: ['code_128_reader'] },
@@ -585,7 +495,6 @@ export default {
             }, (err) => {
                 if (err) {
                     console.error("Quagga init failed:", err);
-                    this.scanStatusMessage = `Camera failed to start. Check permissions/HTTPS. Details: ${err.message || err}`; 
                     return;
                 }
 
@@ -593,8 +502,11 @@ export default {
                 this.scanStatusMessage = "Camera ready. Align barcode clearly in view.";
 
                 Quagga.onDetected((result) => {
-                    // Reverted to simple single-scan handling
+                    // FIX: Check debounce flag before processing
+                    if (this.isProcessingScan) return; 
+                    
                     const code = result.codeResult.code;
+                    console.log("Detected:", code);
                     this.handleBarcodeScanned(code);
                 });
             });
@@ -614,51 +526,109 @@ export default {
 
 
         startScanForOrder(order) {
-            // Reverted to simple single-scan initialization logic
-            if (order.status !== 'Order Processed') return; 
+            // FIX: If the order is already Shipped, do nothing.
+            if (order.status === 'Shipped') return; 
             
             this.orderToFulfill = order;
-            this.isProductScanned = false; 
+            this.isProductScanned = false;
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
-            
-            // Wait for DOM to be ready before initializing Quagga
-            nextTick(() => {
-                setTimeout(() => {
-                    this.initQuagga();
-                }, 100);
-            });
+
+            nextTick(() => this.initQuagga());
         },
 
 
         async handleBarcodeScanned(scannedCode) {
-            if (!scannedCode) return; 
+            // FIX: Debounce logic check
+            if (this.isProcessingScan) return;
+            this.isProcessingScan = true; // Block further scans immediately
+
+            if (!scannedCode) {
+                this.scanStatusMessage = 'No barcode captured.';
+                this.isProcessingScan = false; // Release flag if error
+                return;
+            }
             
+            // Re-enable scanning flag after a short delay in case of errors
+            setTimeout(() => { this.isProcessingScan = false; }, 1000); 
+
+            // ✅ Normalize scanned value
+            let raw = String(scannedCode).trim().replace(/\s+/g, '');
+            const rawUpper = raw.toUpperCase();
+
+            // ⚙️ If numeric-only (UPC/EAN), it's not one of your generated codes
+            if (/^\d+$/.test(rawUpper)) {
+                this.scanStatusMessage = `⚠️ Barcode [${rawUpper}] looks like a UPC/EAN, not your system code.`;
+                alert(`⚠️ Invalid barcode format detected.\n\nDetected: ${rawUpper}\nYour system uses codes like ADVE-1234567890`);
+                return;
+            }
+
+            // ✅ Extract base code (PREFIX-<timestamp>)
+            let baseCode = rawUpper;
+            const parts = rawUpper.split('-');
+            if (parts.length >= 2) baseCode = parts.slice(0, 2).join('-');
+            console.log('🔎 Scanned raw:', raw, '| Base:', baseCode);
+
+            this.scanStatusMessage = `Scanning: ${raw} — trying base: ${baseCode}`;
+
             try {
-                // For stable single-scan, we assume validation is successful and proceed to confirmation modal
-                
+                // ✅ Step 1: Lookup item in stock_in (Validation only, no update needed here)
+                const { data: item, error } = await supabase
+                    .from('stock_in')
+                    .select('barcode_id, product_name, size, quantity')
+                    .ilike('barcode_id', `%${baseCode}%`)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (!item) {
+                    this.scanStatusMessage = '❌ Barcode not found in stock.';
+                    alert(`❌ Barcode not found in stock.\n\nScanned: ${raw}\nTried: ${baseCode}`);
+                    return;
+                }
+
+                // --- NOTE: NO STOCK DECREMENT IN STOCK_IN HERE ---
+                // The stock update for the product is handled by the payment system.
+                // The stock_in table is often used for barcode printing/tracking specific lots.
+
+                // FIX: Stop scanner and set flag to show confirmation modal, AND CLOSE SCAN MODAL
                 this.stopQuagga(); 
-                this.isProductScanned = true; 
-                this.scanStatusMessage = `✅ Barcode validated. Ready for shipment confirmation.`;
-                this.showScanModal = false; // Hide scanner modal to show confirmation modal
+                this.isProductScanned = true;
+                this.scanStatusMessage = `✅ ${item.product_name} validated successfully. Ready for shipment confirmation.`;
+                
+                // CRUCIAL FIX: Hide the current modal to allow the confirmation modal to show
+                this.showScanModal = false; 
                 
             } catch (err) {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
+            } finally {
+                // In case of error during the DB update, release the flag
+                if (!this.isProductScanned) {
+                    this.isProcessingScan = false;
+                }
             }
         },
 
 
         closeScanModal() {
+            // Stops Quagga regardless of whether scanning was successful
             this.stopQuagga(); 
             this.showScanModal = false;
+            // Only clear orderToFulfill if scanning wasn't successful (or if confirmed)
+            if (!this.isProductScanned) { 
+                this.orderToFulfill = null;
+            }
+            // Ensure the confirmation flag is cleared if cancelled from the scanner modal
             this.isProductScanned = false; 
-            this.orderToFulfill = null;
+            this.isProcessingScan = false; // Release debounce flag on cancel
         },
         captureBarcode() {
-            // Note: This button is mostly for simulating a successful scan if Quagga's auto-detect fails
-            const codeToProcess = this.lastDetectedCode || "DEFAULT-SCAN-CODE"; 
-            this.handleBarcodeScanned(codeToProcess);
+            if (!this.lastDetectedCode) {
+                alert('Barcode Not detected. Please Try Again!');
+                return;
+            }
+            this.handleBarcodeScanned(this.lastDetectedCode);
         },
 
         /* ============================
@@ -719,7 +689,8 @@ export default {
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
-            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, barcode');
+            // Fetch product price, size, and brand for mapping in order views
+            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price');
             if (productsError) console.error('Error fetching products:', productsError);
             else this.availableProducts = products;
 
@@ -760,7 +731,7 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // Include all necessary states: Order Processed, Shipped, Delivered
+                // FIX: Fetch BOTH 'Order Processed' and 'Shipped' orders.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -769,10 +740,10 @@ export default {
                             product_id, 
                             quantity, 
                             price_at_purchase,
-                            products!inner(id, brand, size) 
+                            products!inner(brand, size) 
                         )
                     `)
-                    .in('status', ['Order Processed', 'Shipped', 'Delivered']) 
+                    .in('status', ['Order Processed', 'Shipped']) 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -785,10 +756,16 @@ export default {
             }
         },
 
+        /**
+         * Helper method to format product details for display on the order card.
+         * @param {Array} items - The order_items array from an order object.
+         * @returns {string} Formatted string of product names and sizes.
+         */
         getOrderProductDetails(items) {
             if (!items || items.length === 0) return 'No items found.';
 
             return items.map(item => {
+                // Check for the nested 'products' object structure
                 const brand = item.products ? item.products.brand : 'Unknown Product';
                 const size = item.products ? item.products.size : 'N/A';
                 
@@ -797,31 +774,38 @@ export default {
         },
 
         /* ============================
-          --- STOCK OUT METHODS (SHIPPING) ---
+          --- STOCK OUT METHODS ---
           ============================ */
         async updateStockOut() {
-            if (!this.orderToFulfill) return;
-            
+            if (!this.orderToFulfill) {
+                alert('Order data missing. Please re-select the order.');
+                return;
+            }
+
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items;
             let totalSalesAmount = 0;
             let totalOrdersCount = 1; 
             const productTrendMap = new Map(); 
 
+            // --- TRANSACTION START ---
             try {
-                // 1. Calculate sales and prepare log data
+                // 1. Calculate sales and prepare log data (STOCK UPDATE LOGIC REMOVED)
                 for (const item of items) {
                     const { product_id, quantity, price_at_purchase } = item;
-                    totalSalesAmount += (quantity * price_at_purchase);
+                    const saleAmount = quantity * price_at_purchase;
+                    totalSalesAmount += saleAmount;
 
+                    // Update product trend map
                     const product = this.availableProducts.find(p => p.id === product_id);
                     const productName = product ? product.brand : `Product ID: ${product_id}`;
                     
                     const currentTrend = productTrendMap.get(productName) || { sales: 0, count: 0 };
-                    currentTrend.sales += (quantity * price_at_purchase);
+                    currentTrend.sales += saleAmount;
                     currentTrend.count += quantity;
                     productTrendMap.set(productName, currentTrend);
                     
+                    // d. Log stock out entry
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
                         product_id: product_id,
@@ -835,21 +819,34 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
+                    // STATUS CHANGE: The order is now 'Shipped' (ready for delivery)
                     .update({ status: 'Shipped' }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
-                // 3. Update Sales Report
-                // NOTE: RPC call to upsert_daily_sales_report is omitted here for brevity but should be included.
+                // 3. Update Sales Report (Crucial Step)
+                const productTrendData = JSON.stringify(Array.from(productTrendMap, ([name, data]) => ({ name, sales: data.sales, count: data.count })));
+
+                const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
+                    p_sales_amount: totalSalesAmount,
+                    p_total_orders: totalOrdersCount,
+                    p_product_trend_data: productTrendData
+                });
+                
+                if (salesReportError) {
+                    console.error("Failed to update daily sales report:", salesReportError.message);
+                }
 
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // Clear state
+                // FINAL FIX: Clear state, which closes the modal
                 this.isProductScanned = false;
                 this.showScanModal = false;
                 this.orderToFulfill = null;
+                this.isProcessingScan = false; // Release debounce flag
                 
+                // Refresh list to update the card's button status
                 this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
@@ -858,49 +855,6 @@ export default {
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
             }
         },
-        
-        /* ============================
-          --- ADMIN DELIVERY CONFIRMATION ---
-          ============================ */
-        openConfirmDeliveryModal(order) {
-            // FIX: Allow only if the order is Shipped
-            if (order.status !== 'Shipped') return; 
-            
-            this.orderToFulfill = order;
-            this.showDeliveryConfirmationModal = true;
-        },
-
-        closeConfirmDeliveryModal() {
-            this.showDeliveryConfirmationModal = false;
-            this.orderToFulfill = null;
-            this.isDelivering = null; // Ensure loading state is cleared
-        },
-
-        async confirmDeliverySuccessAdmin() {
-            const orderId = this.orderToFulfill.order_id;
-            this.isDelivering = orderId; 
-
-            try {
-                const { error } = await supabase
-                    .from('orders')
-                    .update({ status: 'Delivered' })
-                    .eq('order_id', orderId);
-
-                if (error) throw error;
-                
-                alert(`Order #${orderId.slice(0, 8)} successfully marked as DELIVERED.`);
-
-            } catch (error) {
-                console.error("Error confirming delivery:", error.message);
-                alert(`Failed to mark order as delivered. Details: ${error.message}`);
-            } finally {
-                // FIX: Close modal and reset state
-                this.closeConfirmDeliveryModal();
-                // Refresh the list to update status/disable button
-                await this.fetchProcessedOrders(); 
-            }
-        },
-
 
         /* ============================
           --- STOCK IN METHODS ---
@@ -1027,6 +981,7 @@ export default {
         logout() { this.showLogoutModal = true; },
 
         async confirmLogout() {
+            this.showLogoutModal = false;
             try {
                 const { error } = await supabase.auth.signOut();
                 if (error) { alert(`Logout failed: ${error.message}`); return; }

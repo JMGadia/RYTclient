@@ -75,7 +75,18 @@
                                 <div class="label">Delivered</div>
                             </div>
                         </div>
-                    </div>
+
+                        <div v-if="order.status === 'Shipped'" class="mt-4 text-center">
+                            <button 
+                                class="btn btn-lg btn-success rounded-pill px-4" 
+                                @click="handleOrderReceived(order.order_id)"
+                                :disabled="isUpdatingStatus === order.order_id"
+                            >
+                                <span v-if="isUpdatingStatus === order.order_id" class="spinner-border spinner-border-sm me-2"></span>
+                                <i v-else class="fas fa-hands me-2"></i>Order Received
+                            </button>
+                        </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -90,48 +101,6 @@
     </div>
 </template>
 
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400&display=swap');
-/* ADDED STYLES FOR FAB */
-.fab {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: #0d6efd;
-    color: white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    z-index: 1000;
-    transition: transform 0.2s ease-in-out;
-}
-
-.fab:hover {
-    transform: scale(1.1);
-}
-.order-tracking-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: 100vh; }
-.section-title { font-family: 'Poppins', sans-serif; }
-.order-card { border: none; }
-.card-header h6 { font-family: 'Poppins', sans-serif; }
-.status-tracker { display: flex; align-items: flex-start; justify-content: space-between; overflow-x: auto; padding-bottom: 1rem; }
-.step { text-align: center; min-width: 100px; flex-shrink: 0; }
-.step .icon { width: 40px; height: 40px; border-radius: 50%; background-color: #e9ecef; color: #adb5bd; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; border: 3px solid #e9ecef; }
-.step .label { margin-top: 10px; font-size: 0.85rem; font-weight: 500; color: #6c757d; }
-.step.active .icon { background-color: #e7f1ff; color: #0d6efd; border-color: #0d6efd; }
-.step.active .label { color: #0d6efd; }
-.step.completed .icon { background-color: #198754; color: #fff; border-color: #198754; }
-.step.completed .label { color: #198754; }
-.connector { flex-grow: 1; height: 4px; background-color: #e9ecef; margin-top: 18px; }
-.connector.completed { background-color: #198754; }
-</style>
-
 <script setup>
 // --- IMPORTS & SETUP ---
 import { ref, onMounted, computed } from 'vue'; // Core Vue functions for state, reactivity, and lifecycle
@@ -144,6 +113,9 @@ const router = useRouter();
 // --- REACTIVE STATE ---
 const orders = ref([]); // Array to store the list of the current user's orders
 const isLoading = ref(true); // Boolean to manage the loading state while fetching data
+// NEW: Tracks the order ID currently being updated (to show spinner)
+const isUpdatingStatus = ref(null); 
+
 // Defines the sequence and valid names for the order status steps
 const statusHierarchy = ['Payment Process', 'Payment Success', 'Order Processed', 'Shipped', 'Delivered']; 
 
@@ -186,6 +158,37 @@ const fetchOrders = async () => {
     }
 };
 
+/**
+ * Handles the customer confirming receipt of the order.
+ * Updates the order status to 'Delivered'.
+ * @param {string} orderId - The ID of the order to update.
+ */
+const handleOrderReceived = async (orderId) => {
+    if (!window.confirm('Confirming receipt will mark the order as DELIVERED. Proceed?')) {
+        return;
+    }
+
+    isUpdatingStatus.value = orderId;
+    try {
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'Delivered' })
+            .eq('order_id', orderId);
+
+        if (error) throw error;
+
+        // Success: Alert the user and refresh the list to update the tracker UI
+        alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
+        await fetchOrders(); 
+
+    } catch (error) {
+        console.error("Error confirming delivery:", error.message);
+        alert(`Failed to confirm delivery. Please try again. Details: ${error.message}`);
+    } finally {
+        isUpdatingStatus.value = null;
+    }
+};
+
 // --- ORDER TRACKING UI LOGIC (Computed Classes) ---
 
 /**
@@ -196,7 +199,7 @@ const getStatusColorClass = (status) => {
         case 'Delivered':
             return 'text-success';
         case 'Shipped':
-            return 'text-warning'; // Usually yellow/orange for in-transit
+            return 'text-warning'; // Yellow/orange for in-transit
         case 'Order Processed':
         case 'Payment Success':
             return 'text-info';
@@ -207,9 +210,6 @@ const getStatusColorClass = (status) => {
 
 /**
  * Determines the CSS class for a specific step in the tracking hierarchy.
- * @param {string} orderStatus - The current status of the order (e.g., 'Shipped').
- * @param {string} stepName - The name of the step to check (e.g., 'Order Processed').
- * @returns {string} - The appropriate CSS class ('step completed', 'step active', or 'step').
  */
 const getStepClass = (orderStatus, stepName) => {
     const orderIndex = statusHierarchy.indexOf(orderStatus);
@@ -226,9 +226,6 @@ const getStepClass = (orderStatus, stepName) => {
 
 /**
  * Determines the CSS class for the connector line between steps.
- * @param {string} orderStatus - The current status of the order.
- * @param {string} stepName - The name of the preceding step whose connector is being checked.
- * @returns {string} - The appropriate CSS class ('connector completed' or 'connector').
  */
 const getConnectorClass = (orderStatus, stepName) => {
     const orderIndex = statusHierarchy.indexOf(orderStatus);
@@ -253,3 +250,45 @@ const goToOrderingSystem = () => {
 // Call fetchOrders immediately when the component loads
 onMounted(fetchOrders);
 </script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400&display=swap');
+/* ADDED STYLES FOR FAB */
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.2s ease-in-out;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+}
+.order-tracking-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: 100vh; }
+.section-title { font-family: 'Poppins', sans-serif; }
+.order-card { border: none; }
+.card-header h6 { font-family: 'Poppins', sans-serif; }
+.status-tracker { display: flex; align-items: flex-start; justify-content: space-between; overflow-x: auto; padding-bottom: 1rem; }
+.step { text-align: center; min-width: 100px; flex-shrink: 0; }
+.step .icon { width: 40px; height: 40px; border-radius: 50%; background-color: #e9ecef; color: #adb5bd; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; border: 3px solid #e9ecef; }
+.step .label { margin-top: 10px; font-size: 0.85rem; font-weight: 500; color: #6c757d; }
+.step.active .icon { background-color: #e7f1ff; color: #0d6efd; border-color: #0d6efd; }
+.step.active .label { color: #0d6efd; }
+.step.completed .icon { background-color: #198754; color: #fff; border-color: #198754; }
+.step.completed .label { color: #198754; }
+.connector { flex-grow: 1; height: 4px; background-color: #e9ecef; margin-top: 18px; }
+.connector.completed { background-color: #198754; }
+</style>
