@@ -242,7 +242,7 @@
                   <button 
                       class="btn w-100 mt-2" 
                       :class="order.status === 'Shipped' ? 'btn-success' : 'btn-primary'"
-                      @click="order.status === 'Order Processed' ? startScanForOrder(order) : null"
+                      @click="startScanForOrder(order)"
                       :disabled="order.status === 'Shipped'"
                   >
                     <i 
@@ -729,7 +729,7 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // Fetch product details nested within order_items to display product name/size
+                // FIX: Only fetch orders that are awaiting scanning/fulfillment.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -741,10 +741,7 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    // FIX: Fetch orders with EITHER 'Order Processed' or 'Shipped' status
-                    // This allows the button logic in the template to show 'Ready for Delivery'
-                    // for orders that have already been scanned/confirmed.
-                    .in('status', ['Order Processed', 'Shipped']) 
+                    .eq('status', 'Order Processed') // <--- RESTRICTED TO ONLY 'Order Processed'
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -786,8 +783,8 @@ export default {
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items; // Get line items for the order
             let totalSalesAmount = 0;
-            let totalOrdersCount = 1; // Since this function runs per confirmed order
-            const productTrendMap = new Map(); // Map to track product sales for product trend data
+            let totalOrdersCount = 1; 
+            const productTrendMap = new Map(); 
 
             // --- TRANSACTION START ---
             try {
@@ -848,7 +845,7 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    // STATUS CHANGE: The order is now ready for delivery
+                    // STATUS CHANGE: The order is now 'Shipped' (ready for delivery)
                     .update({ status: 'Shipped', date_shipped: new Date().toISOString() }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
@@ -869,12 +866,12 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // FINAL FIX: Stop the scanner and clear modal state
-                this.closeScanModal(); // This stops Quagga
+                // Clear modal state and refresh order list (the order disappears from 'Order Processed' list)
+                this.closeScanModal();
                 this.isProductScanned = false;
                 this.orderToFulfill = null;
                 
-                this.fetchProcessedOrders(); // Refreshes the order list, which will update the button state
+                this.fetchProcessedOrders();
                 this.fetchDashboardData();
 
             } catch (error) {
