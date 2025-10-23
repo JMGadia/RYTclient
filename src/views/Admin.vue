@@ -380,7 +380,6 @@ export default {
 
     /* ============================================================
       ROUTE GUARD
-      Warns user before leaving admin routes (e.g., via browser back button)
     ============================================================ */
     beforeRouteLeave(to, from, next) {
         const allowedExitRoutes = ['login', 'signup'];
@@ -426,6 +425,7 @@ export default {
             isStockOutLoading: false,
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
+            isProcessingScan: false, // <-- FIX: NEW FLAG TO PREVENT DOUBLE SCANNING
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -433,7 +433,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [], // Used to map product IDs to names/sizes
+            availableProducts: [],
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -502,6 +502,9 @@ export default {
                 this.scanStatusMessage = "Camera ready. Align barcode clearly in view.";
 
                 Quagga.onDetected((result) => {
+                    // FIX: Check debounce flag before processing
+                    if (this.isProcessingScan) return; 
+                    
                     const code = result.codeResult.code;
                     console.log("Detected:", code);
                     this.handleBarcodeScanned(code);
@@ -523,7 +526,6 @@ export default {
 
 
         startScanForOrder(order) {
-            // FIX: If the order is already Shipped, don't open the scanner.
             if (order.status === 'Shipped') return; 
             
             this.orderToFulfill = order;
@@ -536,10 +538,18 @@ export default {
 
 
         async handleBarcodeScanned(scannedCode) {
+            // FIX: Debounce logic check
+            if (this.isProcessingScan) return;
+            this.isProcessingScan = true; // Block further scans immediately
+
             if (!scannedCode) {
                 this.scanStatusMessage = 'No barcode captured.';
+                this.isProcessingScan = false; // Release flag if error
                 return;
             }
+            
+            // Re-enable scanning flag after a short delay in case of errors
+            setTimeout(() => { this.isProcessingScan = false; }, 1000); 
 
             // ✅ Normalize scanned value
             let raw = String(scannedCode).trim().replace(/\s+/g, '');
@@ -614,6 +624,9 @@ export default {
             } catch (err) {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
+            } finally {
+                // Ensure the debounce flag is released if the logic reaches an end (except if moving to modal)
+                // We rely on the successful state/modal click to fully resolve.
             }
         },
 
@@ -628,6 +641,7 @@ export default {
             }
             // Ensure the confirmation flag is cleared if cancelled from the scanner modal
             this.isProductScanned = false; 
+            this.isProcessingScan = false; // Release debounce flag on cancel
         },
         captureBarcode() {
             if (!this.lastDetectedCode) {
@@ -737,8 +751,7 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // FIX: Fetch BOTH 'Order Processed' and 'Shipped' orders.
-                // This ensures orders that are "To Deliver" remain on the list.
+                // Fetch only orders that are awaiting scanning/fulfillment.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -750,7 +763,7 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    .in('status', ['Order Processed', 'Shipped']) 
+                    .eq('status', 'Order Processed') 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -875,12 +888,13 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // FINAL FIX: Clear state, which closes the modal
+                // Clear state, which closes the modal
                 this.isProductScanned = false;
-                this.showScanModal = false; // This line should ensure the scan modal is hidden
+                this.showScanModal = false;
                 this.orderToFulfill = null;
+                this.isProcessingScan = false; // Release debounce flag
                 
-                this.fetchProcessedOrders(); // This refreshes the list, and the button changes state
+                this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
             } catch (error) {
