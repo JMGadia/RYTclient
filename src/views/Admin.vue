@@ -425,7 +425,7 @@ export default {
             isStockOutLoading: false,
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
-            isProcessingScan: false, // <-- FIX: NEW FLAG TO PREVENT DOUBLE SCANNING
+            isProcessingScan: false, 
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -433,7 +433,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [],
+            availableProducts: [], // Used to map product IDs to names/sizes
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -526,6 +526,7 @@ export default {
 
 
         startScanForOrder(order) {
+            // FIX: If the order is already Shipped, do nothing.
             if (order.status === 'Shipped') return; 
             
             this.orderToFulfill = order;
@@ -625,8 +626,10 @@ export default {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
             } finally {
-                // Ensure the debounce flag is released if the logic reaches an end (except if moving to modal)
-                // We rely on the successful state/modal click to fully resolve.
+                // In case of error during the DB update, release the flag
+                if (!this.isProductScanned) {
+                    this.isProcessingScan = false;
+                }
             }
         },
 
@@ -751,7 +754,7 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // Fetch only orders that are awaiting scanning/fulfillment.
+                // FIX: Fetch BOTH 'Order Processed' and 'Shipped' orders.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -763,7 +766,7 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    .eq('status', 'Order Processed') 
+                    .in('status', ['Order Processed', 'Shipped']) 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -888,12 +891,14 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // Clear state, which closes the modal
+                // FINAL FIX: Clear state, which closes the modal
                 this.isProductScanned = false;
                 this.showScanModal = false;
-                this.orderToFulfill = null;
-                this.isProcessingScan = false; // Release debounce flag
-                
+                this.orderToFulfill.status = 'Shipped'; // Manually update the local status of the order card
+                this.isProcessingScan = false; 
+
+                // We don't need a full fetch here, but we should update the local array to reflect the change.
+                // However, doing a full fetch is safer for consistent data:
                 this.fetchProcessedOrders(); 
                 this.fetchDashboardData();
 
