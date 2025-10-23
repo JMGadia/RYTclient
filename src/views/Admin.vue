@@ -242,13 +242,13 @@
                   <button 
                       class="btn w-100 mt-2" 
                       :class="order.status === 'Shipped' ? 'btn-success' : 'btn-primary'"
-                      @click="startScanForOrder(order)"
+                      @click="order.status === 'Order Processed' ? startScanForOrder(order) : null"
                       :disabled="order.status === 'Shipped'"
                   >
                     <i 
-                        :class="order.status === 'Shipped' ? 'fas fa-check-circle' : 'fas fa-truck me-2'"
+                        :class="order.status === 'Shipped' ? 'fas fa-check-circle' : 'fas fa-barcode me-2'"
                     ></i>
-                    {{ order.status === 'Shipped' ? 'Ready for Delivery' : 'To Deliver' }}
+                    {{ order.status === 'Shipped' ? 'Ready for Delivery' : 'Take Order & Scan' }}
                   </button>
                   </div>
               </div>
@@ -600,15 +600,11 @@ export default {
                     row.barcode_id === item.barcode_id ? { ...row, quantity: newQty } : row
                 );
 
-                this.stopQuagga();
-                
-                // IMPORTANT: When a product is successfully scanned, update the order status to 'Shipped'
-                // We use the `updateStockOut` logic to handle the final status change to 'Shipped' 
-                // and sales reporting AFTER all checks pass. The button confirms this final state.
+                // FIX: Stop scanner and set flag to show confirmation modal
+                this.stopQuagga(); 
                 this.isProductScanned = true;
                 this.scanStatusMessage = `✅ ${item.product_name} scanned successfully. Ready for shipment confirmation.`;
                 
-                // Alert removed here to streamline the scanning process leading to the confirmation modal
             } catch (err) {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
@@ -617,13 +613,13 @@ export default {
 
 
         closeScanModal() {
-            this.stopQuagga();
+            // Stops Quagga regardless of whether scanning was successful
+            this.stopQuagga(); 
             this.showScanModal = false;
             // Only clear orderToFulfill if scanning wasn't successful (or if confirmed)
-            if (!this.isProductScanned) {
+            if (!this.isProductScanned) { 
                 this.orderToFulfill = null;
             }
-            this.isProductScanned = false;
         },
         captureBarcode() {
             if (!this.lastDetectedCode) {
@@ -745,7 +741,10 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    .eq('status', 'Order Processed')
+                    // FIX: Fetch orders with EITHER 'Order Processed' or 'Shipped' status
+                    // This allows the button logic in the template to show 'Ready for Delivery'
+                    // for orders that have already been scanned/confirmed.
+                    .in('status', ['Order Processed', 'Shipped']) 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -807,8 +806,7 @@ export default {
                     currentTrend.count += quantity;
                     productTrendMap.set(productName, currentTrend);
                     
-                    // a. Fetch current stock (skipped/handled by scanner if using one-by-one scanning flow, 
-                    // but kept here for bulk stock update in case of multi-item order fulfillment)
+                    // a. Fetch current stock
                     const { data: currentProduct, error: prodErr } = await supabase
                         .from('products')
                         .select('quantity')
@@ -871,10 +869,12 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // Reset states and refresh orders
+                // FINAL FIX: Stop the scanner and clear modal state
+                this.closeScanModal(); // This stops Quagga
                 this.isProductScanned = false;
                 this.orderToFulfill = null;
-                this.fetchProcessedOrders();
+                
+                this.fetchProcessedOrders(); // Refreshes the order list, which will update the button state
                 this.fetchDashboardData();
 
             } catch (error) {
