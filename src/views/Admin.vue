@@ -201,7 +201,7 @@
           <div v-if="activeOrders.length === 0 && !isStockOutLoading" class="card text-center p-5 bg-light">
             <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
             <h4 class="fw-bold">No Processed Orders Awaiting Shipment</h4>
-            <p class="text-muted">Orders with 'Order Processed' status will appear here.</p>
+            <p class="text-muted">Orders with 'Order Processed' or 'Shipped' status will appear here.</p>
           </div>
           
           <div v-if="isStockOutLoading" class="text-center p-5">
@@ -523,6 +523,9 @@ export default {
 
 
         startScanForOrder(order) {
+            // FIX: If the order is already Shipped, don't open the scanner.
+            if (order.status === 'Shipped') return; 
+            
             this.orderToFulfill = order;
             this.isProductScanned = false;
             this.scanStatusMessage = 'Awaiting camera initialization...';
@@ -734,7 +737,8 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // Fetch only orders that are awaiting scanning/fulfillment.
+                // FIX: Fetch BOTH 'Order Processed' and 'Shipped' orders.
+                // This ensures orders that are "To Deliver" remain on the list.
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -746,7 +750,7 @@ export default {
                             products!inner(brand, size) 
                         )
                     `)
-                    .eq('status', 'Order Processed') 
+                    .in('status', ['Order Processed', 'Shipped']) 
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -780,7 +784,6 @@ export default {
           --- STOCK OUT METHODS ---
           ============================ */
         async updateStockOut() {
-            // Note: isProductScanned is true here, guaranteeing a successful scan occurred.
             if (!this.orderToFulfill) {
                 alert('Order data missing. Please re-select the order.');
                 return;
@@ -851,7 +854,7 @@ export default {
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    // FIX: Removed date_shipped as it does not exist in the table.
+                    // STATUS CHANGE: The order is now 'Shipped' (ready for delivery)
                     .update({ status: 'Shipped' }) 
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
@@ -872,12 +875,12 @@ export default {
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
                 
-                // Clear state, which closes the modal
+                // FINAL FIX: Clear state, which closes the modal
                 this.isProductScanned = false;
-                this.showScanModal = false;
+                this.showScanModal = false; // This line should ensure the scan modal is hidden
                 this.orderToFulfill = null;
                 
-                this.fetchProcessedOrders(); 
+                this.fetchProcessedOrders(); // This refreshes the list, and the button changes state
                 this.fetchDashboardData();
 
             } catch (error) {
