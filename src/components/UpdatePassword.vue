@@ -144,6 +144,8 @@ const passwordFieldType = computed(() => isPasswordVisible.value ? 'text' : 'pas
 const passwordIcon = computed(() => isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png')
 const togglePasswordVisibility = () => { isPasswordVisible.value = !isPasswordVisible.value }
 
+// --- NAVIGATION FUNCTION ---
+const goToLogin = () => router.push({ name: 'login' });
 
 // --- MAIN UPDATE FUNCTION ---
 const handleUpdatePassword = async () => {
@@ -185,7 +187,7 @@ const handleUpdatePassword = async () => {
     
     // 3. Success state
     isSuccess.value = true;
-    message.value = 'Your password has been updated successfully! Please Go Back to the Main Page with your new password.';
+    message.value = 'Your password has been updated successfully! Please Go Back to Main Page with your new password.';
 
   } catch (error) {
     // Error state
