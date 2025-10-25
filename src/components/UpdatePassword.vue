@@ -105,111 +105,134 @@
 
 <script setup>
 // --- IMPORTS & SETUP ---
-import { ref, reactive, computed } from 'vue' // Core Vue functions for state and reactivity
-import { useRouter } from 'vue-router' // Vue Router hook for navigation
-import { supabase } from '../server/supabase' // Supabase client for authentication operations
+import { ref, reactive, computed, onMounted } from 'vue' 
+import { useRouter } from 'vue-router' 
+import { supabase } from '../server/supabase' 
 
 // Initialize the router
 const router = useRouter()
 
 // --- REACTIVE STATE ---
-
-// Reactive object for binding to the password update form inputs
 const form = reactive({
-  password: '',
-  confirmPassword: '',
+    password: '',
+    confirmPassword: '',
 })
 
-// Loading state for the submission button
 const isLoading = ref(false)
-
-// User-facing feedback message (success or error)
 const message = ref('')
-
-// Boolean to control the styling/display of the message
 const isSuccess = ref(false)
+
+// --- HELPER FUNCTION ---
+/**
+ * Extracts a parameter from the URL hash, e.g., 'access_token'
+ */
+const getHashParam = (key) => {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    return params.get(key);
+}
+
+/**
+ * Attempts to set the Supabase session using the token from the URL hash.
+ */
+const setSupabaseSessionFromHash = async () => {
+    const accessToken = getHashParam('access_token');
+    
+    if (accessToken) {
+        console.warn('Access Token found in URL. Attempting to manually set session.');
+        
+        // 🛑 CRITICAL STEP: Use the access_token to explicitly establish a session.
+        const { error } = await supabase.auth.setSession({ access_token: accessToken });
+        
+        if (error) {
+            console.error('Error manually setting session:', error.message);
+            // Show an error but let the user try the update; sometimes the subsequent
+            // update call can fix it.
+            message.value = 'Failed to process the password reset token. Please try again.';
+        } else {
+            console.log('Temporary session successfully set.');
+        }
+    }
+}
+
+// --- LIFECYCLE HOOKS ---
+onMounted(async () => {
+    // 1. Manually set the session first to ensure the token is active.
+    await setSupabaseSessionFromHash();
+
+    // 2. Clear the browser's view of a persistent session if one exists.
+    // This is still good practice to prevent dashboard redirects.
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            console.log('Persistent user detected. Forcing sign out.');
+            await supabase.auth.signOut();
+        }
+    } catch (error) {
+        // Ignore any errors here, as they usually mean no session exists.
+    }
+});
 
 // --- PASSWORD VISIBILITY LOGIC ---
 
-// State to track if the password input should be visible
 const isPasswordVisible = ref(false)
-
-// Computed property to switch the password input type
 const passwordFieldType = computed(() => isPasswordVisible.value ? 'text' : 'password')
-
-// Computed property to switch the eye icon
 const passwordIcon = computed(() => isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png')
-
-/**
- * Toggles the state of password visibility.
- */
 const togglePasswordVisibility = () => { isPasswordVisible.value = !isPasswordVisible.value }
 
 // --- NAVIGATION FUNCTION ---
-
-/**
- * Navigates the user to the login page.
- */
 const goToLogin = () => router.push({ name: 'login' });
 
 // --- MAIN UPDATE FUNCTION ---
 
-/**
- * Handles the logic for updating the user's password.
- * 1. Performs local input validation (empty fields, length, match).
- * 2. Calls the Supabase `updateUser` API, which uses the session token from the URL.
- * 3. Manages loading and feedback states.
- */
 const handleUpdatePassword = async () => {
-  // Reset message and status
-  message.value = '';
-  isSuccess.value = false;
+  // Reset message and status
+  message.value = '';
+  isSuccess.value = false;
 
-  // --- Input Validation ---
-  // ... (validation code remains the same)
-  if (!form.password || !form.confirmPassword) {
-    message.value = 'Please fill in both password fields.';
-    return;
-  }
-  if (form.password.length < 6) {
-    message.value = 'Password must be at least 6 characters long.';
-    return;
-  }
-  if (form.password !== form.confirmPassword) {
-    message.value = 'Passwords do not match.';
-    return;
-  }
-  
-  // Set loading state before API call
-  isLoading.value = true;
+  // --- Input Validation ---
+  if (!form.password || !form.confirmPassword) {
+    message.value = 'Please fill in both password fields.';
+    return;
+  }
+  if (form.password.length < 6) {
+    message.value = 'Password must be at least 6 characters long.';
+    return;
+  }
+  if (form.password !== form.confirmPassword) {
+    message.value = 'Passwords do not match.';
+    return;
+  }
+  // Set loading state before API call
+  isLoading.value = true;
 
-  try {
-    // 1. Update the user's password using the temporary session
-    const { error } = await supabase.auth.updateUser({
-      password: form.password,
-    });
-    
-    if (error) throw error;
-    
-    // 2. CRITICAL FIX: Sign the user out to clear the temporary token and force a new login.
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) {
-        console.warn('Warning: Could not clear session after password update.', signOutError);
-    }
-    
-    // 3. Success state
-    isSuccess.value = true;
-    message.value = 'Your password has been updated successfully! Please proceed to log in with your new password.';
+  try {
+    // The session should now be active due to the onMounted hook.
+    const { error } = await supabase.auth.updateUser({
+      password: form.password,
+    });
+    
+    if (error) throw error;
+    
+    // 🛑 CRITICAL FINAL STEP: Sign the user out to clear the temporary session/token.
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+        console.warn('Warning: Could not clear session after password update.', signOutError);
+    }
+    
+    // 3. Success state
+    isSuccess.value = true;
+    message.value = 'Your password has been updated successfully! Please proceed to log in with your new password.';
 
-  } catch (error) {
-    // Error state
-    isSuccess.value = false;
-    message.value = `Error: ${error.message}`;
-    console.error('Password update error:', error);
-  } finally {
-    // Always reset loading state
-    isLoading.value = false;
-  }
+  } catch (error) {
+    // Error state
+    isSuccess.value = false;
+    message.value = `Failed to update password. This usually means the reset link has expired, or the token is invalid. Error: ${error.message}`;
+    console.error('Password update error:', error);
+  } finally {
+    // Always reset loading state
+    isLoading.value = false;
+  }
 };
 </script>
 
