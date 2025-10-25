@@ -377,122 +377,120 @@
             </div>
           </div>
           <div v-else-if="activeFeature === 'orders'">
-            <h2 class="h4">Purchased Orders Overview</h2>
-            <p>Track and manage the status of all incoming customer orders. 🛒</p>
+    <h2 class="h4">Purchased Orders Overview</h2>
+    <p>Track and manage the status of all incoming customer orders. 🛒</p>
 
-            <div class="row g-4 mb-4">
-              <div class="col-lg-4 col-md-6">
-                <div
-                  class="card text-white bg-info h-100 shadow-sm border-0"
-                  :class="{ 'card-active': selectedStatus === 'All' }"
-                  @click="filterOrders('All')"
-                >
-                  <div class="card-body d-flex flex-column justify-content-between">
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div
+                class="card text-white bg-info h-100 shadow-sm border-0"
+                :class="{ 'card-active': selectedStatus === 'All' }"
+                @click="filterOrders('All')"
+            >
+                <div class="card-body d-flex flex-column justify-content-between">
                     <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Total Orders</h5>
-                        <h3 class="card-text display-6 fw-bolder">
-                          {{ totalOrders }}
-                        </h3>
-                      </div>
-                      <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+                        <div>
+                            <h5 class="card-title fw-bold">Total Orders</h5>
+                            <h3 class="card-text display-6 fw-bolder">{{ totalOrders }}</h3>
+                        </div>
+                        <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
                     </div>
-                  </div>
                 </div>
-              </div>
-              <div class="col-lg-4 col-md-6">
-                <div
-                  class="card text-white bg-warning h-100 shadow-sm border-0"
-                  :class="{ 'card-active': selectedStatus === 'Pending' }"
-                  @click="filterOrders('Pending')"
-                >
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Pending Orders</h5>
-                        <h3 class="card-text display-6 fw-bolder">
-                          {{ pendingOrdersCount }}
-                        </h3>
-                      </div>
-                      <i class="fas fa-clock fa-3x opacity-50"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-4 col-md-12">
-                <div
-                  class="card text-white bg-success h-100 shadow-sm border-0"
-                  :class="{ 'card-active': selectedStatus === 'Completed' }"
-                  @click="filterOrders('Completed')"
-                >
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Completed Orders</h5>
-                        <h3 class="card-text display-6 fw-bolder">
-                          {{ completedOrdersCount }}
-                        </h3>
-                      </div>
-                      <i class="fas fa-check-circle fa-3x opacity-50"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div
+                class="card text-white bg-warning h-100 shadow-sm border-0"
+                :class="{ 'card-active': selectedStatus === 'Pending' }"
+                @click="filterOrders('Pending')"
+            >
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title fw-bold">Pending Orders</h5>
+                            <h3 class="card-text display-6 fw-bolder">{{ pendingOrdersCount }}</h3>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div
+                class="card text-white bg-success h-100 shadow-sm border-0"
+                :class="{ 'card-active': selectedStatus === 'Completed' }"
+                @click="filterOrders('Completed')"
+            >
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title fw-bold">Completed Orders</h5>
+                            <h3 class="card-text display-6 fw-bolder">{{ completedOrdersCount }}</h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <div class="card mt-4 shadow-sm">
-              <div
-                class="card-header bg-white d-flex justify-content-between align-items-center"
-              >
-                <h5 class="mb-0 text-primary fw-bold">Recent Orders</h5>
-                <div class="d-flex align-items-center">
-                  <input
+    <div class="card mt-4 shadow-sm">
+        <div
+            class="card-header bg-white d-flex justify-content-between align-items-center"
+        >
+            <h5 class="mb-0 text-primary fw-bold">Order List ({{ selectedStatus }})</h5>
+            <div class="d-flex align-items-center">
+                <input
                     type="text"
                     class="form-control form-control-sm me-2"
                     placeholder="Search orders..."
                     v-model="searchQuery"
-                  />
-                  <button class="btn btn-sm btn-primary">
+                />
+                <button class="btn btn-sm btn-primary">
                     <i class="fas fa-search"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="row g-4">
-                  <div class="col-lg-4 col-md-6" v-for="order in filteredOrders" :key="order.id">
-                    <div class="card h-100 shadow-sm border-2" :class="getCardBorder(order.status)">
-                      <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <h6 class="card-subtitle text-muted fw-bold">Order ID: #{{ order.id }}</h6>
-                          <span class="badge" :class="getStatusBadge(order.status)">{{ order.status }}</span>
-                        </div>
-                        <h5 class="card-title">{{ order.customer }}</h5>
-                        <p class="card-text mb-1">
-                          <i class="fas fa-calendar-alt text-muted me-2"></i>
-                          <span class="fw-bold">Date:</span> {{ order.date }}
-                        </p>
-                        <p class="card-text">
-                          <i class="fas fa-peso-sign text-muted me-2"></i>
-                          <span class="fw-bold">Total:</span> ₱{{ order.amount.toLocaleString() }}
-                        </p>
-                      </div>
-                      <div class="card-footer bg-light border-top-0 d-flex justify-content-end">
-                        <button class="btn btn-sm btn-outline-primary me-2">
-                          <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" v-if="order.status === 'Pending'">
-                          <i class="fas fa-times"></i> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div v-if="filteredOrders.length === 0" class="col-12 text-center py-4 text-muted">
-                    <p>No orders found matching your criteria.</p>
-                  </div>
-                </div>
-              </div>
+                </button>
             </div>
-          </div>
+        </div>
+        <div class="card-body">
+            <div v-if="ordersLoading" class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                <p class="mt-2 text-muted">Loading orders...</p>
+            </div>
+            <div v-else-if="filteredOrders.length === 0" class="alert alert-info text-center">
+                No orders found matching your criteria.
+            </div>
+            <div class="row g-4" v-else>
+                <div class="col-lg-4 col-md-6" v-for="order in filteredOrders" :key="order.order_id">
+                    <div class="card h-100 shadow-sm border-2" :class="getCardBorder(order.cardStatus)">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="card-subtitle text-muted fw-bold">Order ID: #{{ order.order_id.slice(0, 8) }}</h6>
+                                <span class="badge" :class="getStatusBadge(order.cardStatus)">{{ order.cardStatus }}</span>
+                            </div>
+                            <h5 class="card-title">{{ order.username }}</h5>
+                            <p class="card-text mb-1">
+                                <i class="fas fa-calendar-alt text-muted me-2"></i>
+                                <span class="fw-bold">Date:</span> {{ new Date(order.created_at).toLocaleDateString() }}
+                            </p>
+                            <p class="card-text">
+                                <i class="fas fa-peso-sign text-muted me-2"></i>
+                                <span class="fw-bold">Total:</span> ₱{{ order.total_price.toLocaleString() }}
+                            </p>
+                        </div>
+                        <div class="card-footer bg-light border-top-0 d-flex justify-content-end">
+                            <button class="btn btn-sm btn-outline-primary me-2" @click="viewOrderDetails(order)">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
           <div v-else-if="activeFeature === 'user-management'">
             <h2 class="mb-4">User Management</h2>
             <div class="card shadow-sm mb-4">
@@ -596,6 +594,65 @@
       </div>
     </div>
   </div>
+</div>
+<div v-if="showOrderModal" class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Details: #{{ selectedOrderDetails.order_id.slice(0, 8) }}</h5>
+                <button type="button" class="btn-close" @click="showOrderModal = false"></button>
+            </div>
+            <div class="modal-body" v-if="selectedOrderDetails">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Order Summary</h6>
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item d-flex justify-content-between">
+                                Status: <span :class="getStatusBadge(selectedOrderDetails.cardStatus)" class="badge">{{ selectedOrderDetails.cardStatus }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                Customer: <span>{{ selectedOrderDetails.username }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                Contact: <span>{{ selectedOrderDetails.contact }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                Total Price: <span class="text-success fw-bold">₱{{ selectedOrderDetails.total_price.toFixed(2) }}</span>
+                            </li>
+                            <li class="list-group-item">
+                                Shipping Address: <br> <span>{{ selectedOrderDetails.shipping_addr }}</span>
+                            </li>
+                        </ul>
+
+                        <h6>Items Ordered</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between" v-for="item in selectedOrderDetails.order_items" :key="item.product_id">
+                                <span>{{ item.products.brand }} ({{ item.products.size }}) x{{ item.quantity }}</span>
+                                <span class="text-muted">₱{{ (item.price_at_purchase * item.quantity).toFixed(2) }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6>Payment Confirmation</h6>
+                        <div v-if="selectedOrderDetails.paymentProofUrl">
+                            <p class="text-muted small">Proof Path: {{ selectedOrderDetails.payment_proof_path }}</p>
+                            <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" class="d-block text-center">
+                                <img :src="selectedOrderDetails.paymentProofUrl" alt="Payment Proof" class="img-fluid border rounded shadow-sm" style="max-height: 300px; object-fit: contain;" />
+                                <p class="small mt-2 text-primary">Click to view full image in new tab</p>
+                            </a>
+                        </div>
+                        <div v-else class="alert alert-warning">
+                            No payment proof screenshot found for this order.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @click="showOrderModal = false">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
@@ -917,33 +974,26 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 
 // --- 👇 THIS IS THE EXIT GUARD ---
 onBeforeRouteLeave((to, from, next) => {
-    // Define the routes the admin is ALLOWED to go to without a warning.
-    // We get the names from your router/index.js file.
-    const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
+    const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
+    if (allowedExitRoutes.includes(to.name)) {
+        next();
+        return;
+    }
 
-    // If the destination is one of our allowed pages, let the navigation happen.
-    if (allowedExitRoutes.includes(to.name)) {
-        next(); // Proceed without the pop-up
-        return;
-    }
-
-    // If it's NOT an allowed route (like the browser back button), show the warning.
-    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
-    if (answer) {
-        // We don't need to call confirmLogout() here because the logout button
-        // navigates to an allowed route. This handles accidental leaves.
-        supabase.auth.signOut(); // Log the user out
-        next({ name: 'login' });  // Proceed with navigation
-    } else {
-        next(false); // Cancel the navigation and stay on the page
-    }
+    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
+    if (answer) {
+        supabase.auth.signOut();
+        next({ name: 'login' }); 
+    } else {
+        next(false);
+    }
 });
 // --- 👆 END OF EXIT GUARD ---
 
 const router = useRouter();
 
 const navigateToAddProduct = () => {
-    router.push('/import-product');
+    router.push('/import-product');
 };
 
 const superAdminProfile = ref({ username: '', email: '' });
@@ -955,76 +1005,148 @@ const stockItems = ref([]);
 const stockLoading = ref(true);
 const stockError = ref(null);
 
-// --- UPDATED FUNCTION TO FETCH LIVE DATA ---
-const fetchStockItems = async () => {
-    stockLoading.value = true;
-    stockError.value = null;
+// --- NEW STATE FOR PURCHASE ORDERS ---
+const purchaseOrders = ref([]);
+const ordersLoading = ref(false);
+const showOrderModal = ref(false);
+const selectedOrderDetails = ref(null);
+
+
+// --- NEW FUNCTION: FETCH PURCHASE ORDERS (LIVE DATA ONLY) ---
+const fetchPurchaseOrders = async () => {
+    ordersLoading.value = true;
     try {
-        // UPDATED: Query the 'products' table directly
         const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('brand', { ascending: true });
+            .from('orders')
+            .select(`
+                *,
+                order_items (
+                    product_id,
+                    quantity,
+                    price_at_purchase,
+                    products!inner(id, brand, size)
+                )
+            `)
+            .in('status', ['Order Processed', 'Shipped', 'Delivered'])
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
-        stockItems.value = data;
+
+        // Map database status to front-end card status (Pending, Shipped, Completed)
+        purchaseOrders.value = data.map(order => {
+            let cardStatus;
+            if (order.status === 'Order Processed') {
+                cardStatus = 'Pending';
+            } else if (order.status === 'Shipped') {
+                cardStatus = 'Shipped';
+            } else if (order.status === 'Delivered') {
+                cardStatus = 'Completed';
+            } else {
+                cardStatus = 'Unknown';
+            }
+
+            return {
+                ...order,
+                cardStatus: cardStatus,
+            };
+        });
+
     } catch (err) {
-        stockError.value = 'Failed to load stock items.';
-        console.error(err);
+        console.error('Error fetching purchase orders:', err);
+        purchaseOrders.value = []; // Ensure state is cleared on error
     } finally {
-        stockLoading.value = false;
+        ordersLoading.value = false;
     }
+};
+
+// --- NEW FUNCTION: VIEW ORDER DETAILS (Shows payment proof) ---
+const viewOrderDetails = (order) => {
+    let paymentProofUrl = null;
+
+    if (order.payment_proof_path) {
+        const { data } = supabase.storage
+            .from('partialpay_proof')
+            .getPublicUrl(order.payment_proof_path);
+
+        paymentProofUrl = data.publicUrl;
+    }
+
+    selectedOrderDetails.value = {
+        ...order,
+        paymentProofUrl: paymentProofUrl,
+    };
+    showOrderModal.value = true;
+};
+
+
+const fetchStockItems = async () => {
+    stockLoading.value = true;
+    stockError.value = null;
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('brand', { ascending: true });
+
+        if (error) throw error;
+        stockItems.value = data;
+    } catch (err) {
+        stockError.value = 'Failed to load stock items.';
+        console.error(err);
+    } finally {
+        stockLoading.value = false;
+    }
 };
 
 const fetchSuperAdminProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-        const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('username, email')
-            .eq('id', user.id)
-            .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('username, email')
+            .eq('id', user.id)
+            .single();
 
-        if (error) {
-            console.error('Error fetching super admin profile:', error);
-        } else if (profile) {
-            superAdminProfile.value = profile;
-        }
-    }
+        if (error) {
+            console.error('Error fetching super admin profile:', error);
+        } else if (profile) {
+            superAdminProfile.value = profile;
+        }
+    }
 };
 
-// Functions for editing the username
+// Functions for editing the username (omitted for brevity, assume they are correct)
 const startUsernameEdit = () => {
-    isEditingUsername.value = true;
-    editableUsername.value = superAdminProfile.value.username;
+    isEditingUsername.value = true;
+    editableUsername.value = superAdminProfile.value.username;
 };
 
 const cancelUsernameEdit = () => {
-    isEditingUsername.value = false;
+    isEditingUsername.value = false;
 };
 
 const saveUsername = async () => {
-    if (editableUsername.value.trim() === '') {
-        alert('Username cannot be empty.');
-        return;
-    }
-    if (editableUsername.value === superAdminProfile.value.username) {
-        isEditingUsername.value = false;
-        return;
-    }
-    try {
-        const { error } = await supabase.rpc('update_my_username', {
-            new_username_text: editableUsername.value
-        });
-        if (error) throw error;
+    if (editableUsername.value.trim() === '') {
+        alert('Username cannot be empty.');
+        return;
+    }
+    if (editableUsername.value === superAdminProfile.value.username) {
+        isEditingUsername.value = false;
+        return;
+    }
+    try {
+        const { error } = await supabase.rpc('update_my_username', {
+            new_username_text: editableUsername.value
+        });
+        if (error) throw error;
 
-        superAdminProfile.value.username = editableUsername.value;
-        alert('Username updated successfully!');
-    } catch (error) {
-        alert(`Error updating username: ${error.message}`);
-    } finally {
-        isEditingUsername.value = false;
-    }
+        superAdminProfile.value.username = editableUsername.value;
+        alert('Username updated successfully!');
+    } catch (error) {
+        alert(`Error updating username: ${error.message}`);
+    } finally {
+        isEditingUsername.value = false;
+    }
 };
 
 const activeFeature = ref('dashboard');
@@ -1034,116 +1156,63 @@ let userManagementChannel = null;
 
 const users = ref([]);
 
-// --- MODIFIED: salesData structure and initialization for live reporting ---
+// --- Sales Report Data (No dummy data, initializing empty for live data) ---
 const salesLoading = ref(true);
 const salesError = ref(null);
 
 const salesData = ref({
-    // These will be updated by fetchSalesReport
-    totalSalesToday: 0, 
-    totalOrdersToday: 0,
-
-    // Initial structure for daily/weekly trend chart (Bar Chart)
-    salesTrend: {
-        labels: [], 
-        datasets: [{
-            label: 'Daily Sales (₱)',
-            data: [],
-            backgroundColor: '#0d6efd',
-            borderColor: '#0d6efd',
-            borderWidth: 1,
-            borderRadius: 5,
-        }],
-    },
-
-    // Initial structure for monthly trend chart (Bar Chart)
-    salesTrendMonthly: {
-        labels: [], 
-        datasets: [{
-            label: 'Monthly Sales (₱)',
-            data: [],
-            backgroundColor: '#198754',
-            borderColor: '#198754',
-            borderWidth: 1,
-            borderRadius: 5,
-        }],
-    },
-
-    // Initial structure for product trend chart (Pie Chart)
-    salesByTireType: {
-        labels: [], 
-        datasets: [{
-            label: 'Sales by Tire Type',
-            data: [],
-            backgroundColor: [
-                '#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',
-            ],
-            hoverOffset: 4,
-        }],
-    },
+    totalSalesToday: 0, totalOrdersToday: 0,
+    salesTrend: { labels: [], datasets: [{ label: 'Daily Sales (₱)', data: [], backgroundColor: '#0d6efd', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 5, }], },
+    salesTrendMonthly: { labels: [], datasets: [{ label: 'Monthly Sales (₱)', data: [], backgroundColor: '#198754', borderColor: '#198754', borderWidth: 1, borderRadius: 5, }], },
+    salesByTireType: { labels: [], datasets: [{ label: 'Sales by Tire Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
 });
 
-/**
- * NEW FUNCTION: Fetches and processes sales report data from the 'sales_report' table.
- */
 const fetchSalesReport = async () => {
     salesLoading.value = true;
     salesError.value = null;
 
     try {
-        // --- 1. Fetch Daily Trend Data (Last 7 Days) ---
-        // In a real app, this would query the DB, but here we use a dummy query
-        // to maintain the expected structure while showcasing the logic.
         const { data: dailyData, error: dailyError } = await supabase
             .from('sales_report')
-            .select('report_date, sales_per_day, total_orders_per_day, product_trend_data')
+            .select('report_date, sales_per_day, total_orders_f, product_trend')
             .order('report_date', { ascending: false })
             .limit(7);
-        
-        // --- Dummy Data Fallback for demonstration ---
-        let processedDailyData = [
-            { report_date: '2025-10-17', sales_per_day: 1200, total_orders_per_day: 15 },
-            { report_date: '2025-10-18', sales_per_day: 1900, total_orders_per_day: 22 },
-            { report_date: '2025-10-19', sales_per_day: 1500, total_orders_per_day: 18 },
-            { report_date: '2025-10-20', sales_per_day: 2200, total_orders_per_day: 30 },
-            { report_date: '2025-10-21', sales_per_day: 2800, total_orders_per_day: 35 },
-            { report_date: '2025-10-22', sales_per_day: 2500, total_orders_per_day: 32 },
-            { report_date: '2025-10-23', sales_per_day: 3100, total_orders_per_day: 45, product_trend_data: {
-                 labels: ['All-Season', 'Performance', 'Off-Road', 'Winter', 'Touring', 'All-Terrain'],
-                 data: [3000, 2500, 1800, 1000, 2200, 1500]
-            }},
-        ];
-        
-        if (dailyError) {
-             console.warn('Error fetching sales_report. Using dummy data.', dailyError);
-        } else if (dailyData.length > 0) {
-            processedDailyData = dailyData;
-        }
 
-        // Process daily data
-        if (processedDailyData.length > 0) {
-            const sortedData = processedDailyData.sort((a, b) => new Date(a.report_date) - new Date(b.report_date));
+        if (dailyError) throw dailyError;
+
+        if (dailyData && dailyData.length > 0) {
+            const sortedData = dailyData.sort((a, b) => new Date(a.report_date) - new Date(b.report_date));
             const latestReport = sortedData[sortedData.length - 1];
 
             // Update Summary Cards
             salesData.value.totalSalesToday = latestReport.sales_per_day || 0;
-            salesData.value.totalOrdersToday = latestReport.total_orders_per_day || 0;
+            salesData.value.totalOrdersToday = latestReport.total_orders_f || 0;
 
             // Update Daily Trend Chart
             salesData.value.salesTrend.labels = sortedData.map(d => new Date(d.report_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
             salesData.value.salesTrend.datasets[0].data = sortedData.map(d => d.sales_per_day);
-            
+
             // Update Product Trend Chart (using latest day's JSONB data)
-            const trend = latestReport.product_trend_data;
-            if (trend && trend.labels && trend.data) {
-                salesData.value.salesByTireType.labels = trend.labels;
-                salesData.value.salesByTireType.datasets[0].data = trend.data;
+            const trendData = latestReport.product_trend;
+            if (trendData) {
+                const labels = Object.keys(trendData);
+                const data = labels.map(key => trendData[key].sales);
+                salesData.value.salesByTireType.labels = labels;
+                salesData.value.salesByTireType.datasets[0].data = data;
             }
+        } else {
+            // No data received from Supabase, clear all sales fields
+            salesData.value.totalSalesToday = 0;
+            salesData.value.totalOrdersToday = 0;
+            salesData.value.salesTrend.labels = [];
+            salesData.value.salesTrend.datasets[0].data = [];
+            salesData.value.salesByTireType.labels = [];
+            salesData.value.salesByTireType.datasets[0].data = [];
         }
-        
-        // --- 2. Monthly Trend Data (Dummy/Static for now) ---
-        salesData.value.salesTrendMonthly.labels = ['June', 'July', 'August', 'September', 'October'];
-        salesData.value.salesTrendMonthly.datasets[0].data = [150000, 190000, 175000, 220000, 280000];
+
+        // Monthly Trend (Still placeholder as this requires aggregated monthly data)
+        salesData.value.salesTrendMonthly.labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        salesData.value.salesTrendMonthly.datasets[0].data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 
     } catch (err) {
@@ -1151,75 +1220,59 @@ const fetchSalesReport = async () => {
         console.error(err);
     } finally {
         salesLoading.value = false;
-        // Re-create charts after data is updated
         if (activeFeature.value === 'sales-report' || activeFeature.value === 'dashboard') {
             nextTick(createCharts);
         }
     }
 };
 
-const orders = ref([
-    { id: 101, customer: 'John Doe', date: '2025-10-10', amount: 1250, status: 'Completed' },
-    { id: 102, customer: 'Jane Smith', date: '2025-10-10', amount: 800, status: 'Pending' },
-    { id: 103, customer: 'Bob Johnson', date: '2025-10-09', amount: 2100, status: 'Shipped' },
-]);
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
 // --- COMPUTED PROPERTIES ---
 
 const totalSalesLast30Days = computed(() => {
-    // Calculates total sales based on the daily trend data (last 7 days * approximation)
-    const dailyAverage = salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) / 7;
-    return Math.round(dailyAverage * 30);
+    const dailyAverage = salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) / 7;
+    return Math.round(dailyAverage * 30);
 });
-const newUsersCount = computed(() => {
-    return users.value.length;
-});
-// --- UPDATED COMPUTED PROPERTIES FOR SUMMARY CARDS ---
-const totalStock = computed(() => {
-    return stockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0);
-});
-const lowStockCount = computed(() => {
-    // Assuming a 'status' field exists in 'products' and can be 'Low Stock'
-    return stockItems.value.filter(item => item.status === 'Low Stock').length;
-});
-const productTypes = computed(() => {
-    // Counts the number of distinct product types or just the total products
-    return stockItems.value.length;
-});
-
+const newUsersCount = computed(() => users.value.length);
+const totalStock = computed(() => stockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0));
+const lowStockCount = computed(() => stockItems.value.filter(item => item.status === 'Low Stock').length);
+const productTypes = computed(() => stockItems.value.length);
 const totalSalesToday = computed(() => salesData.value.totalSalesToday);
 const totalOrdersToday = computed(() => salesData.value.totalOrdersToday);
-const totalOrders = computed(() => orders.value.length);
-const pendingOrdersCount = computed(() => orders.value.filter(o => o.status === 'Pending').length);
-const completedOrdersCount = computed(() => orders.value.filter(o => o.status === 'Completed').length);
+
+// --- UPDATED ORDER COUNTS ---
+const totalOrders = computed(() => purchaseOrders.value.length);
+const pendingOrdersCount = computed(() => purchaseOrders.value.filter(o => o.cardStatus === 'Pending' || o.cardStatus === 'Shipped').length);
+const completedOrdersCount = computed(() => purchaseOrders.value.filter(o => o.cardStatus === 'Completed').length);
+
 const filteredOrders = computed(() => {
-    let filtered = orders.value;
-    if (selectedStatus.value !== 'All') {
-        filtered = filtered.filter(order => order.status === selectedStatus.value);
-    }
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        filtered = filtered.filter(order =>
-            order.id.toString().includes(query) ||
-            order.customer.toLowerCase().includes(query) ||
-            order.status.toLowerCase().includes(query)
-        );
-    }
-    return filtered;
+    let filtered = purchaseOrders.value;
+    if (selectedStatus.value !== 'All') {
+        if (selectedStatus.value === 'Pending') {
+            filtered = filtered.filter(order => order.cardStatus === 'Pending' || order.cardStatus === 'Shipped');
+        } else {
+            filtered = filtered.filter(order => order.cardStatus === selectedStatus.value);
+        }
+    }
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        filtered = filtered.filter(order =>
+            order.order_id.toString().includes(query) ||
+            order.username.toLowerCase().includes(query) ||
+            order.cardStatus.toLowerCase().includes(query)
+        );
+    }
+    return filtered;
 });
 
 const sortedUsers = computed(() => {
-    return [...users.value].sort((a, b) => {
-        if (a.role === 'Admin' && b.role !== 'Admin') {
-            return -1;
-        }
-        if (a.role !== 'Admin' && b.role === 'Admin') {
-            return 1;
-        }
-        return (a.username || '').localeCompare(b.username || '');
-    });
+    return [...users.value].sort((a, b) => {
+        if (a.role === 'Admin' && b.role !== 'Admin') return -1;
+        if (a.role !== 'Admin' && b.role === 'Admin') return 1;
+        return (a.username || '').localeCompare(b.username || '');
+    });
 });
 
 let salesTrendChart = null;
@@ -1227,164 +1280,176 @@ let salesByTireTypeChart = null;
 let salesTrendMonthlyChart = null;
 
 const createCharts = () => {
-    // Destroy existing charts to prevent memory leaks and chart stacking
-    if (salesTrendChart) salesTrendChart.destroy();
-    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
-    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    // Destroy existing charts to prevent memory leaks and chart stacking
+    if (salesTrendChart) salesTrendChart.destroy();
+    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
-    const salesTrendCtx = document.getElementById('salesTrendChart');
-    if (salesTrendCtx) {
-        salesTrendChart = new Chart(salesTrendCtx, {
-            type: 'bar',
-            data: salesData.value.salesTrend,
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
-        });
-    }
-    
-    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
-    if (salesByTireTypeCtx) {
-        salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
-    }
+    const salesTrendCtx = document.getElementById('salesTrendChart');
+    if (salesTrendCtx) {
+        salesTrendChart = new Chart(salesTrendCtx, {
+            type: 'bar',
+            data: salesData.value.salesTrend,
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
+        });
+    }
+    
+    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
+    if (salesByTireTypeCtx) {
+        salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
+    }
 
-    const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
-    if (salesTrendMonthlyCtx) {
-        salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
-            type: 'bar',
-            data: salesData.value.salesTrendMonthly,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            },
-        });
-    }
+    const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
+    if (salesTrendMonthlyCtx) {
+        salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
+            type: 'bar',
+            data: salesData.value.salesTrendMonthly,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            },
+        });
+    }
 };
 
 const pageTitle = computed(() => {
-    switch (activeFeature.value) {
-        case 'dashboard': return 'Dashboard';
-        case 'sales-report': return 'Sales Report';
-        case 'stock-monitoring': return 'Stock Monitoring';
-        case 'orders': return 'Purchased Orders';
-        case 'user-management': return 'User Management';
-        case 'settings': return 'System Settings';
-        default: return 'Super Admin Dashboard';
-    }
+    switch (activeFeature.value) {
+        case 'dashboard': return 'Dashboard';
+        case 'sales-report': return 'Sales Report';
+        case 'stock-monitoring': return 'Stock Monitoring';
+        case 'orders': return 'Purchased Orders';
+        case 'user-management': return 'User Management';
+        case 'settings': return 'System Settings';
+        default: return 'Super Admin Dashboard';
+    }
 });
 const setActiveFeature = (feature) => {
-    activeFeature.value = feature;
-    if (isMobile.value) {
-        toggleSidebar();
-    }
+    activeFeature.value = feature;
+    if (isMobile.value) {
+        toggleSidebar();
+    }
 };
 const toggleSidebar = () => {
-    sidebarToggled.value = !sidebarToggled.value;
+    sidebarToggled.value = !sidebarToggled.value;
 };
 const checkMobile = () => {
-    isMobile.value = window.innerWidth < 768;
-    if (!isMobile.value) {
-        sidebarToggled.value = false;
-    }
+    isMobile.value = window.innerWidth < 768;
+    if (!isMobile.value) {
+        sidebarToggled.value = false;
+    }
 };
 
 const confirmLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        console.error("Logout failed:", error.message);
-    } else {
-        // Redirect to the signup page on successful logout
-        router.push('/');
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        console.error("Logout failed:", error.message);
+    } else {
+        router.push('/');
+    }
 };
 
 const getStatusBadge = (status) => {
-    switch (status) {
-        case 'Completed': return 'bg-success';
-        case 'Pending': return 'bg-warning text-dark';
-        case 'Shipped': return 'bg-primary';
-        default: return 'bg-secondary';
-    }
+    switch (status) {
+        case 'Completed': return 'bg-success';
+        case 'Pending': return 'bg-warning text-dark';
+        case 'Shipped': return 'bg-primary';
+        default: return 'bg-secondary';
+    }
 };
 const getCardBorder = (status) => {
-    switch (status) {
-        case 'Completed': return 'border-completed';
-        case 'Shipped': return 'border-shipped';
-        case 'Pending': return 'border-pending';
-        default: return '';
-    }
+    switch (status) {
+        case 'Completed': return 'border-success';
+        case 'Shipped': return 'border-primary';
+        case 'Pending': return 'border-warning';
+        default: return '';
+    }
 };
 const filterOrders = (status) => {
-    selectedStatus.value = status;
+    selectedStatus.value = status;
 };
 
 const fetchUsers = async () => {
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, email, role, created_at')
-        .neq('role', 'Super Admin');
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, email, role, created_at')
+        .neq('role', 'Super Admin');
 
-    if (error) {
-        console.error('Error fetching users:', error);
-    } else {
-        users.value = data;
-    }
+    if (error) {
+        console.error('Error fetching users:', error);
+    } else {
+        users.value = data;
+    }
 };
 
 const deleteUser = async (userId, username) => {
-    if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
-        const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
-        if (error) alert(`Failed to delete user: ${error.message}`);
-        else alert(`User "${username || 'N/A'}" has been deleted.`);
-    }
+    if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
+        const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
+        if (error) alert(`Failed to delete user: ${error.message}`);
+        else alert(`User "${username || 'N/A'}" has been deleted.`);
+    }
 };
 
 onMounted(() => {
-    fetchStockItems();
-    fetchSalesReport(); // <-- NEW: Fetch live sales data
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    fetchSuperAdminProfile();
-    fetchUsers();
+    fetchStockItems();
+    fetchSalesReport();
+    fetchPurchaseOrders();
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    fetchSuperAdminProfile();
+    fetchUsers();
 
-    userManagementChannel = supabase
-        .channel('public:profiles')
+    userManagementChannel = supabase
+        .channel('public:profiles')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'profiles' },
+            (payload) => {
+                fetchUsers();
+            }
+        )
+        .subscribe();
+
+    // Real-time updates for orders
+    supabase
+        .channel('orders_updates')
         .on(
             'postgres_changes',
-            { event: '*', schema: 'public', table: 'profiles' },
-            (payload) => {
-                fetchUsers();
+            { event: '*', schema: 'public', table: 'orders' },
+            () => {
+                fetchPurchaseOrders();
             }
         )
         .subscribe();
 
-    nextTick(() => {
-        if (activeFeature.value === 'sales-report') {
-            createCharts();
-        }
-    });
+
+    nextTick(() => {
+        if (activeFeature.value === 'sales-report') {
+            createCharts();
+        }
+    });
 });
 
 onUnmounted(() => {
-    window.removeEventListener('resize', checkMobile);
-    if (salesTrendChart) salesTrendChart.destroy();
-    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
-    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    window.removeEventListener('resize', checkMobile);
+    if (salesTrendChart) salesTrendChart.destroy();
+    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
-    if (userManagementChannel) {
-        supabase.removeChannel(userManagementChannel);
-    }
+    if (userManagementChannel) {
+        supabase.removeChannel(userManagementChannel);
+    }
 });
 
 watch(activeFeature, (newFeature) => {
-    if (newFeature === 'sales-report') {
-        // Re-create charts only when the sales report view is activated
-        nextTick(() => {
-            createCharts();
-        });
-    }
+    if (newFeature === 'sales-report') {
+        nextTick(() => {
+            createCharts();
+        });
+    }
 });
 </script>

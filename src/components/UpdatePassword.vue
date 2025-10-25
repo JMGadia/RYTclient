@@ -46,12 +46,12 @@
                       <i class="fas fa-lock me-2 text-muted"></i>New Password
                     </label>
                     <div class="password-wrapper">
-                      <input 
-                        :type="passwordFieldType" 
-                        class="form-control form-control-lg rounded-3" 
-                        v-model="form.password" 
-                        placeholder="Enter your new password" 
-                        required 
+                      <input
+                        :type="passwordFieldType"
+                        class="form-control form-control-lg rounded-3"
+                        v-model="form.password"
+                        placeholder="Enter your new password"
+                        required
                       />
                       <img
                         :src="passwordIcon"
@@ -66,12 +66,12 @@
                     <label class="form-label fw-semibold">
                       <i class="fas fa-lock me-2 text-muted"></i>Confirm New Password
                     </label>
-                    <input 
-                      type="password" 
-                      class="form-control form-control-lg rounded-3" 
-                      v-model="form.confirmPassword" 
-                      placeholder="Confirm your new password" 
-                      required 
+                    <input
+                      type="password"
+                      class="form-control form-control-lg rounded-3"
+                      v-model="form.confirmPassword"
+                      placeholder="Confirm your new password"
+                      required
                     />
                   </div>
 
@@ -90,7 +90,7 @@
 
                 <div class="text-center" v-if="isSuccess">
                     <button type="button" class="btn btn-outline-primary rounded-3" @click="goToLogin">
-                        <i class="fas fa-sign-in-alt me-2"></i>Proceed to Login
+                        <i class="fas fa-sign-in-alt me-2"></i>Go Back to Main Page
                     </button>
                 </div>
 
@@ -142,7 +142,7 @@ const handleUpdatePassword = async () => {
     isSuccess.value = false;
     return;
   }
-  
+
   isLoading.value = true;
   message.value = '';
   isSuccess.value = false;
@@ -152,11 +152,11 @@ const handleUpdatePassword = async () => {
     const { error } = await supabase.auth.updateUser({
       password: form.password,
     });
-    
+
     if (error) throw error;
-    
+
     isSuccess.value = true;
-    message.value = 'Your password has been updated successfully!';
+    message.value = 'Your password has been updated successfully, Please Go Back to the Main Page with your new password!';
 
   } catch (error) {
     isSuccess.value = false;
