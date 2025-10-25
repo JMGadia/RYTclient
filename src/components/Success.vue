@@ -6,17 +6,17 @@
         <i class="fas fa-check text-white"></i>
       </div>
 
-      <h3 class="card-title text-success mb-3">Authentication Confirm!</h3>
+      <h3 class="card-title text-success mb-3">Password Reset Email Sent!</h3>
       <p class="card-text text-muted mb-4">
-        Your email has been successfully confirmed. You will now be redirected to set a new password.
+        Please check your email inbox to find the password reset link. It may take a few moments to arrive.
       </p>
 
-      <RouterLink to="/Update-Password" class="btn btn-success btn-lg w-100">
-        Update Password
+      <RouterLink to="/login" class="btn btn-success btn-lg w-100">
+        Back to Login
       </RouterLink>
 
-      <p v-if="redirecting" class="mt-3 small text-secondary">
-        Redirecting in {{ countdown }} seconds...
+      <p v-if="$route.query.message" class="mt-3 small text-secondary">
+        {{ $route.query.message }}
       </p>
 
     </div>
@@ -24,68 +24,51 @@
 </template>
 
 <script>
-// This is a Vue 2/3 Options API component (not <script setup>) used as an intermediate
-// success screen after a Super Admin successfully logs in for the *first time*.
+// This component should now ONLY be used for displaying the "Check Your Email" message
+// after the user submits the Forgot Password form. The automatic redirecting logic 
+// is no longer appropriate for this use case.
+
+import { useRoute } from 'vue-router'
 
 export default {
   // --- COMPONENT STATE (Data) ---
   data() {
     return {
-      // CHANGE: Target route for redirection is now Update-Password
+      // The automatic redirect logic is removed to serve as a static confirmation screen.
       redirectRoute: '/Update-Password', 
       countdown: 3, 
       timer: null, 
-      redirecting: true, 
-      // isFirstLogin is no longer strictly necessary for this use case, but kept for context/original flow
+      redirecting: false, 
       isFirstLogin: false, 
     };
   },
   
   // --- LIFECYCLE HOOKS ---
-
-  /**
-   * Executed when the component is first mounted to the DOM.
-   * Checks for the 'first login' flag and either starts the countdown or redirects immediately.
-   */
   mounted() {
-    this.startCountdown();
+    // Check if the component is being used as a simple email confirmation page
+    const route = useRoute();
+    if (route.query.message) {
+      // Set the success message from the query parameter (handled in the template)
+      this.redirecting = false; // Stop any existing redirecting logic
+      clearTimeout(this.timer);
+    } 
+    // If there is no query message, it might be the old SuperAdmin redirect logic,
+    // which is being ignored here in favor of the new password reset flow.
   },
   
-  /**
-   * Executed just before the component is destroyed.
-   * Clears the countdown timer to prevent memory leaks and unexpected behavior.
-   */
   beforeUnmount() {
     clearTimeout(this.timer);
   },
   
   // --- COMPONENT METHODS ---
-  
   methods: {
-    /**
-     * Recursively calls itself every second to decrement the countdown timer.
-     * Initiates redirection when the countdown reaches zero.
-     */
+    // Method implementations are kept but are no longer triggered in 'mounted'
     startCountdown() {
-      if (this.countdown > 0) {
-        // Set a timer for 1 second and call this method again
-        this.timer = setTimeout(() => {
-          this.countdown--;
-          this.startCountdown();
-        }, 1000);
-      } else {
-        // Countdown finished, initiate final redirect
-        this.redirectToDashboard();
-      }
+      // Logic removed to prevent automatic redirection.
     },
     
-    /**
-     * Pushes the user to the target dashboard route using Vue Router.
-     */
     redirectToDashboard() {
-      if (this.$router) {
-        this.$router.push(this.redirectRoute); // Redirects to /super-admin
-      }
+      // Logic removed to prevent automatic redirection.
     }
   }
 };

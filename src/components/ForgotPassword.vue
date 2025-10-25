@@ -36,12 +36,12 @@
                   <p class="text-muted mb-0">No problem. Enter your email below to get a reset link.</p>
                 </div>
 
-                <div v-if="message" class="alert" :class="isSuccess ? 'alert-success' : 'alert-danger'" role="alert">
-                    <i class="fas" :class="isSuccess ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
-                    {{ message }}
+                <div v-if="message && !isSuccess" class="alert alert-danger" role="alert">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ message }}
                 </div>
 
-                <form @submit.prevent="handlePasswordReset" novalidate v-if="!isSuccess">
+                <form @submit.prevent="handlePasswordReset" novalidate>
                   <div class="mb-4">
                     <label for="email" class="form-label fw-semibold">
                       <i class="fas fa-envelope me-2 text-muted"></i>Email Address
@@ -89,7 +89,7 @@
 <script setup>
 // --- IMPORTS & SETUP ---
 import { ref } from 'vue' // Import reactive state management from Vue
-import { useRouter } from 'vue-router' // Import router for navigation (though not directly used in this function, it's standard setup)
+import { useRouter } from 'vue-router' 
 import { supabase } from '../server/supabase' // Import Supabase client for authentication operations
 
 // Initialize the router
@@ -105,13 +105,12 @@ const isSuccess = ref(false) // Boolean to indicate if the reset request was suc
 
 /**
  * Handles the submission of the password reset form.
- * Validates the email, calls the Supabase password reset API,
- * and manages loading and feedback states.
+ * 1. Sets the email link's destination (redirectTo) to the '/Update-Password' page on the production domain.
+ * 2. On completion, redirects the user to the local '/success' page.
  */
 const handlePasswordReset = async () => {
   // Input validation
   if (!email.value) {
-    isSuccess.value = false;
     message.value = 'Please enter your email address.';
     return;
   }
@@ -120,13 +119,14 @@ const handlePasswordReset = async () => {
   isLoading.value = true;
   message.value = '';
   isSuccess.value = false;
+  
+  // 🛑 CRITICAL FIX: Hardcode the absolute URL for the production link.
+  const redirectTo = 'https://ry-tclient.vercel.app/Update-Password'; 
 
   try {
-    // 💥 CRITICAL FIX: Change redirectTo to the base URL (or /login). 
-    // The router guard will catch the recovery token on the landing page.
-    const redirectTo = `${window.location.origin}/`; 
-    // const redirectTo = `${window.location.origin}/login`; // Also safe
-
+    // OPTIONAL: Sign out any existing user session before requesting the reset.
+    await supabase.auth.signOut();
+    
     // Call Supabase API to send the password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
       redirectTo: redirectTo,
@@ -134,15 +134,29 @@ const handlePasswordReset = async () => {
 
     if (error) throw error; // Handle API errors
 
-    // Success state
-    isSuccess.value = true;
-    message.value = 'Success! If an account exists for this email, a password reset link has been sent to your inbox.';
+    // 1. Success on sending email: Redirect to the success page.
+    isSuccess.value = true; 
+    router.push({ 
+        name: 'success', 
+        query: { 
+            message: 'A password reset link has been sent to your email address.',
+            email: email.value 
+        } 
+    });
 
   } catch (error) {
-    // Error state - use a generic message for security
+    // 2. Error case: For security, still redirect to the success page to avoid email enumeration.
     isSuccess.value = false;
-    message.value = 'If an account exists for this email, a password reset link has been sent. If you don\'t see it, please check your spam folder.';
     console.error('Password reset error:', error.message);
+    
+    // Redirect to success page with a generic message.
+    router.push({ 
+        name: 'success', 
+        query: { 
+            message: 'If an account exists for this email, a password reset link has been sent to your inbox.'
+        } 
+    });
+    
   } finally {
     // Always stop loading, regardless of outcome
     isLoading.value = false;
@@ -159,7 +173,8 @@ const handlePasswordReset = async () => {
 }
 .background-overlay {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background: url('../assets/background.jpg') no-repeat center center;
+  /* NOTE: Assuming 'background.jpg' is available or adjusting the path if needed */
+  background: url('../assets/background.jpg') no-repeat center center; 
   background-size: cover; opacity: 0.1; z-index: 1;
 }
 .bg-primary-gradient {

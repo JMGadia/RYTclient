@@ -8,6 +8,36 @@ const getUser = async () => {
   return session?.user;
 }
 
+// 💥 DEDICATED RECOVERY ROUTING LOGIC
+const handleRecoveryRedirect = async (to, next) => {
+    // Check for the Supabase recovery token in the URL hash or query string
+    const isRecoveryFlow = window.location.hash.includes('type=recovery') || window.location.href.includes('type=recovery');
+
+    if (isRecoveryFlow) {
+        console.log('Recovery hash detected. Forcing sign-out and redirect to Update Password.');
+        
+        // CRITICAL FIX: Explicitly sign out to clear the temporary session.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase.auth.signOut();
+            console.log('Temporary session signed out.');
+        }
+
+        // Force redirect to the correct page to handle the token.
+        if (to.name !== 'update password') {
+            return next({ 
+                name: 'update password',
+                // Preserve the hash and query parameters for the UpdatePassword component to use
+                query: to.query, 
+                hash: window.location.hash 
+            });
+        }
+    }
+    // If not a recovery flow, or already on the correct page, continue through the main guard.
+    return next();
+};
+
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -104,45 +134,45 @@ const router = createRouter({
   ],
 });
 
-// ✅ UPDATED NAVIGATION GUARD
+// ✅ REVISED NAVIGATION GUARD
 router.beforeEach(async (to, from, next) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+    // 1. ABSOLUTE PRIORITY: Handle Recovery Redirect
+    // This must be the very first check to override all other authentication logic.
+    if (window.location.hash.includes('type=recovery') || window.location.href.includes('type=recovery')) {
+        return handleRecoveryRedirect(to, next);
+    }
+    
+    // 2. Resume normal authentication checks if not a recovery flow
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
-  // ✅ --- FIX START ---
-  // If the URL includes Supabase recovery query params, skip guards and redirect to /update-password
-  if (window.location.href.includes('type=recovery')) {
-    console.log('Detected Supabase recovery link — forcing redirect to /update-password');
-    return next({ name: 'update password' });
-  }
-  // ✅ --- FIX END ---
+    // Routes part of password reset flow (no protection needed)
+    const authFlowRoutes = ['forgot-password', 'success', 'update password'];
 
-  // Routes part of password reset flow
-  const authFlowRoutes = ['forgot-password', 'success', 'update password'];
+    // Protected routes
+    const authRequiredRoutes = [
+        'super admin', 'admin', 'ordering system', 'profile', 
+        'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImportProduct',
+        'payment system'
+    ]; 
 
-  // Protected routes
-  const authRequiredRoutes = [
-    'super admin', 'admin', 'ordering system', 'profile', 
-    'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImportProduct',
-    'payment system'
-  ]; 
+    // Allow password reset flow pages
+    if (authFlowRoutes.includes(to.name)) {
+        return next();
+    }
 
-  // Allow password reset flow pages
-  if (authFlowRoutes.includes(to.name)) {
+    // Redirect logged-in users away from signup/login
+    // This is the logic that was causing the unintended redirect.
+    if (['signup', 'login'].includes(to.name) && user) {
+        return next({ name: 'ordering system' });
+    }
+
+    // Redirect unauthenticated users trying to access protected pages
+    if (authRequiredRoutes.includes(to.name) && !user) {
+        return next({ name: 'login' });
+    }
+
     return next();
-  }
-
-  // Redirect logged-in users away from signup/login
-  if (['signup', 'login'].includes(to.name) && user) {
-    return next({ name: 'ordering system' });
-  }
-
-  // Redirect unauthenticated users trying to access protected pages
-  if (authRequiredRoutes.includes(to.name) && !user) {
-    return next({ name: 'login' });
-  }
-
-  return next();
 });
 
 export default router;
