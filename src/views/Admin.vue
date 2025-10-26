@@ -212,13 +212,12 @@
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
               <div
                 class="card h-100 shadow-sm border-warning"
-                :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered', 'border-info': order.b2b_permit_url}"
+                :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered'}"
               >
                 <div
                   class="card-header fw-bold"
                   :class="{
-                    'bg-info text-white': order.b2b_permit_url,
-                    'bg-warning text-dark': order.status === 'Order Processed' && !order.b2b_permit_url,
+                    'bg-warning text-dark': order.status === 'Order Processed',
                     'bg-success text-white': order.status === 'Shipped',
                     'bg-danger text-white': order.status === 'Delivered'
                   }"
@@ -245,40 +244,40 @@
                   </p>
 
                   <button
-                    class="btn w-100 mt-2"
-                    :class="{
-                      'btn-info': order.b2b_permit_url,
-                      'btn-primary': order.status === 'Order Processed' && !order.b2b_permit_url,
-                      'btn-success': order.status === 'Shipped',
-                      'btn-danger': order.status === 'Delivered'
-                    }"
-                    @click="
-                      order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
-                      (order.status === 'Order Processed' || order.status === 'Pre-Ordered') ? startScanForOrder(order) : null
-                    "
-                    :disabled="order.status === 'Shipped' || order.status === 'Delivered' || isDelivering === order.order_id"
+                      class="btn w-100 mt-2"
+                      :class="{
+                        'btn-info': order.status === 'Pre-Ordered',
+                        'btn-primary': order.status === 'Order Processed',
+                        'btn-success': order.status === 'Shipped',
+                        'btn-danger': order.status === 'Delivered'
+                      }"
+                      @click="
+                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
+                        order.status === 'Order Processed' ? startScanForOrder(order) : null
+                      "
+                      :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
                   >
                     <i
                         :class="{
-                          'fas fa-file-invoice me-2': order.b2b_permit_url,
-                          'fas fa-barcode me-2': order.status === 'Order Processed' && !order.b2b_permit_url,
-                          'fas fa-truck me-2': order.status === 'Shipped',
-                          'fas fa-check-circle me-2': order.status === 'Delivered'
+                            'bg-info text-white': order.status === 'Pre-Ordered',
+                            'fas fa-barcode me-2': order.status === 'Order Processed',
+                            'fas fa-truck me-2': order.status === 'Shipped',
+                            'fas fa-check-circle me-2': order.status === 'Delivered'
                         }"
                     ></i>
                     {{
-                        order.status === 'Delivered' ? 'Delivery Complete' :
-                        order.status === 'Shipped' ? 'Ready to Deliver (Tap to confirm)' :
-                        order.b2b_permit_url ? 'Take Pre-Ordered' :
+                        order.status === 'Delivered' ? 'Delivered Completed' :
+                        order.status === 'Shipped' ? 'Ready to Deliver' :
+                        order.status === 'Pre-Ordered' ? 'Take Pre-Order & Scan' :
                         'Take Order & Scan'
                     }}
                   </button>
                   </div>
-                </div>
               </div>
             </div>
           </div>
-      </main>
+        </div>
+        </main>
     </div>
 
     <div v-if="showProfileModal" class="custom-modal-overlay">
@@ -335,63 +334,42 @@
             </div>
         </div>
     </div>
-
     <div v-if="showScanModal" class="custom-modal-overlay">
         <div class="custom-modal-card card shadow-lg" style="max-width: 600px;">
             <div class="card-header bg-primary text-white text-center">
                 <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
             </div>
             <div class="card-body">
-              <p class="text-center fw-bold">Order #{{ orderToFulfill.order_id.slice(0, 8) }} | Total Items: {{ totalItemsScanned }} / {{ totalItemsToScan }}</p>
-
-              <ul class="list-group list-group-flush mb-3">
-                  <li
-                      class="list-group-item d-flex justify-content-between align-items-center"
-                      v-for="item in scannedItemsList"
-                      :key="item.id"
-                  >
-                      <div>
-                          <strong>{{ item.name }}</strong> (Required: {{ item.required }})
-                      </div>
-                      <span class="badge" :class="item.isComplete ? 'bg-success' : 'bg-warning text-dark'">
-                          Scanned: {{ item.scanned }}
-                          <i v-if="item.isComplete" class="fas fa-check ms-1"></i>
-                      </span>
-                  </li>
-              </ul>
-              <hr />
+              <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
 
               <div id="scanner-container" class="mb-3">
                 <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
               </div>
-              <div class="alert" :class="{'alert-warning': scanStatusMessage.includes('⚠️'), 'alert-success': scanStatusMessage.includes('✅'), 'alert-info': !scanStatusMessage.includes('⚠️') && !scanStatusMessage.includes('✅')}" v-if="scanStatusMessage">{{ scanStatusMessage }}</div>
+              <div class="alert alert-warning" v-if="scanStatusMessage">{{ scanStatusMessage }}</div>
 
               <div class="d-flex justify-content-center gap-3 mt-4">
                 <button class="btn btn-secondary" @click="closeScanModal">
                     <i class="fas fa-times me-2"></i> Cancel Scan
                 </button>
-                <button class="btn btn-warning" @click="captureBarcode" :disabled="isScanProgressComplete || isProcessingScan">
-                    <span v-if="isProcessingScan" class="spinner-border spinner-border-sm me-2"></span>
-                    <i v-else class="fas fa-camera me-2"></i> Manual Capture Last Barcode
+                <button class="btn btn-warning" @click="captureBarcode" :disabled="isProductScanned">
+                    <i class="fas fa-camera me-2"></i> Capture Barcode
                 </button>
               </div>
             </div>
         </div>
     </div>
-
-    <div v-if="isOrderScanComplete && orderToFulfill && !showScanModal" class="custom-modal-overlay">
+    <div v-if="isProductScanned && orderToFulfill && !showScanModal" class="custom-modal-overlay">
         <div class="custom-modal-card card shadow-lg" style="max-width: 450px;">
             <div class="card-header bg-success text-white text-center">
-                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Shipment</h5>
+                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
             </div>
             <div class="card-body text-center">
                 <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
                 <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
-                    <button class="btn btn-success" @click="updateStockOut" :disabled="isDelivering === orderToFulfill.order_id">
-                        <span v-if="isDelivering === orderToFulfill.order_id" class="spinner-border spinner-border-sm me-2"></span>
-                        <i v-else class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
+                    <button class="btn btn-success" @click="updateStockOut">
+                        <i class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
                     </button>
                 </div>
             </div>
@@ -436,7 +414,7 @@
     Admin Dashboard Vue Component - REVISED
     - Implements Multi-Scan Order Fulfillment.
     - Adds Barcode Validation Heuristics (via Quagga's quality checks).
-    - Updates button text for b2b_permit_url.
+    - Enables scanning for 'Pre-Ordered' status.
 ============================================================ */
 
 import { supabase } from '../server/supabase';
@@ -445,25 +423,26 @@ import JsBarcode from 'jsbarcode';
 import Quagga from '@ericblade/quagga2'; // Barcode scanning library
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
+const router = useRouter();
+
 // Utility function to determine if a detection is a 'good' barcode read
-// OBJECTIVE 3: Barcode-Only Validation
 function isBarcode(result) {
-    // Check if a code was actually decoded (not just a picture of an object/text)
+    // Check if a code was actually decoded (not just a picture of an object)
     if (!result.codeResult || !result.codeResult.code) {
         return false;
     }
 
-    // Heuristic: Check if the confidence level is above a threshold.
+    // Heuristic 1: Check if the confidence level is above a threshold.
     // Quagga provides an "error" property which is essentially (1 - confidence).
     // A lower error means higher confidence. 0.85 is a good threshold for confidence.
-    // This rejects blurry/unclear scans or non-barcode objects that might coincidentally match a pattern.
     const confidence = 1 - (result.codeResult.err || 1);
     if (confidence < 0.85) {
-        console.warn(`Low confidence scan: ${confidence.toFixed(2)} - Likely not a clear barcode.`);
+        console.warn(`Low confidence scan: ${confidence.toFixed(2)}`);
         return false;
     }
 
-    // If it passes the confidence check, assume it's a valid barcode read.
+    // Heuristic 2 (Simplified): If a high-confidence code is detected, accept it.
+    // Quagga's internal error checking handles most non-barcode noise.
     return true;
 }
 
@@ -471,16 +450,8 @@ function isBarcode(result) {
 export default {
     name: 'AdminDashboard',
 
-    // The router is not available via "this" inside the module scope,
-    // so we get it outside if needed, but for a standard Vue component
-    // we should rely on this.$router inside the methods.
-    // Note: The original provided code had the router instantiation outside
-    // the component export, which is generally incorrect for Vue 2/3 Composition API context
-    // but often exists in boilerplate. We'll keep it as a comment for context.
-    // const router = useRouter();
-
     /* ============================================================
-      ROUTE GUARD (No changes)
+      ROUTE GUARD
     ============================================================ */
     beforeRouteLeave(to, from, next) {
         const allowedExitRoutes = ['login', 'signup'];
@@ -496,9 +467,6 @@ export default {
 
         if (answer) {
             supabase.auth.signOut().then(() => {
-                // Use a proper router push if available, otherwise fallback
-                // this.$router.push('/login'); // Assuming this.$router is available
-                // As a fallback to the original code's style:
                 next(false);
                 window.location.href = '/login';
             });
@@ -529,10 +497,10 @@ export default {
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
+            // Removed: isProductScanned (replaced by isOrderScanComplete)
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false,
-
-            // OBJECTIVE 2: New state for multi-scan tracking
+            // New state for multi-scan tracking
             orderItemsScanned: {},
             isOrderScanComplete: false,
 
@@ -575,25 +543,23 @@ export default {
     computed: {
         totalItemsToScan() {
             if (!this.orderToFulfill || !this.orderToFulfill.order_items) return 0;
-            // Sum of all quantities in all items for the order
             return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
         },
         totalItemsScanned() {
             // Calculates the total number of items scanned across all product IDs
             return Object.values(this.orderItemsScanned).reduce((total, count) => total + count, 0);
         },
-        // Detailed list of items required vs. scanned for the modal UI
         scannedItemsList() {
             if (!this.orderToFulfill || !this.orderToFulfill.order_items) return [];
 
             return this.orderToFulfill.order_items.map(item => {
-                const productId = item.product_id;
+                const productId = item.products.id;
                 const productName = item.products ? item.products.brand : 'Unknown Product';
                 const required = item.quantity;
                 const scanned = this.orderItemsScanned[productId] || 0;
 
                 return {
-                    id: productId,
+                    id: productId, // Important: Use product ID for tracking
                     name: productName,
                     required: required,
                     scanned: scanned,
@@ -601,12 +567,12 @@ export default {
                 };
             });
         },
-        // OBJECTIVE 2: Checks if every item's required quantity has been met
+        // Checks if every item's required quantity has been met by the scanned quantity
         isScanProgressComplete() {
             if (!this.orderToFulfill) return false;
             return this.scannedItemsList.every(item => item.isComplete);
         },
-        // Keeping this helper function for template compatibility (no change)
+        // Keeping this helper function for template compatibility
         getOrderProductDetails() {
              return (items) => {
                  if (!items || items.length === 0) return 'No items found.';
@@ -642,7 +608,7 @@ export default {
                         facingMode: "environment"
                     }
                 },
-                decoder: { readers: ['code_128_reader', 'ean_reader', 'upc_reader'] },
+                decoder: { readers: ['code_128_reader', 'ean_reader', 'upc_reader'] }, // Added more readers
                 locator: {
                     halfSample: false,
                     patchSize: "medium"
@@ -667,7 +633,7 @@ export default {
             try {
                 if (Quagga && Quagga.stop) {
                     Quagga.stop();
-                    Quagga.offDetected && Quagga.offDetected(this.onQuaggaDetected);
+                    Quagga.offDetected && Quagga.offDetected(this.onQuaggaDetected); // Remove specific handler
                 }
             } catch (err) {
                 console.warn('Error stopping Quagga:', err);
@@ -682,15 +648,15 @@ export default {
 
             const scannedCode = result.codeResult.code;
 
-            // OBJECTIVE 3: Barcode-Only Validation
+            // --- 2. Barcode-Only Validation ---
             if (!isBarcode(result)) {
                 this.scanStatusMessage = "⚠️ Not a clear barcode. Please align better.";
-                // Do not return here, allow the system to keep trying on the next frame
                 return;
             }
 
-            // Simple debounce: If the same code is detected very quickly, ignore it.
-            if (scannedCode === this.lastDetectedCode) {
+            // Simple debounce to prevent a rapid fire of the same barcode
+            if (scannedCode === this.lastDetectedCode && this.autoDetect) {
+                // Ignore repeated rapid scans of the same code
                 return;
             }
 
@@ -700,6 +666,7 @@ export default {
 
 
         startScanForOrder(order) {
+            // --- 3. Pre-Ordered Functionality ---
             // Allow scanning for both 'Pre-Ordered' and 'Order Processed'
             if (order.status !== 'Pre-Ordered' && order.status !== 'Order Processed') return;
 
@@ -710,23 +677,23 @@ export default {
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
 
-            // Optional: Auto-update status from Pre-Ordered → Order Processed
-            if (order.status === 'Pre-Ordered' && order.b2b_permit_url) {
-                supabase.from('orders')
-                   .update({ status: 'Order Processed' })
-                   .eq('order_id', order.order_id)
-                   .then(({ error }) => {
-                     if (error) console.warn('Failed to update status:', error);
-                     else {
-                         this.orderToFulfill.status = 'Order Processed'; // Optimistic UI update
-                         this.fetchProcessedOrders();
-                     }
-                   });
+            // --- 3. Pre-Ordered Status Update ---
+            // Auto-update status from Pre-Ordered → Order Processed (as processing has started)
+            if (order.status === 'Pre-Ordered') {
+              supabase.from('orders')
+                 .update({ status: 'Order Processed' })
+                 .eq('order_id', order.order_id)
+                 .then(({ error }) => {
+                    if (error) console.warn('Failed to update status:', error);
+                    else {
+                        this.orderToFulfill.status = 'Order Processed'; // Optimistic UI update
+                        this.fetchProcessedOrders();
+                    }
+                 });
             }
 
             // Wait for DOM to be ready before initializing Quagga
             nextTick(() => {
-                // Short delay to ensure video element is fully rendered
                 setTimeout(() => {
                     this.initQuagga();
                 }, 100);
@@ -734,9 +701,8 @@ export default {
         },
 
 
-        // OBJECTIVE 2: Multi-Scan Logic Implementation
+        // 1. Multi-Scan Logic
         async handleBarcodeScanned(scannedCode) {
-            // isScanProgressComplete check is handled by the overall flow
             if (!scannedCode || this.isProcessingScan || this.isScanProgressComplete) return;
 
             this.isProcessingScan = true;
@@ -757,22 +723,23 @@ export default {
                 );
 
                 if (!requiredItem) {
-                    this.scanStatusMessage = `❌ Barcode **${product.brand}** is not in this order!`;
+                    this.scanStatusMessage = `❌ Barcode ${product.brand} is not in this order!`;
                     this.lastDetectedCode = null; // Allow re-scan immediately
                     return;
                 }
 
-                // 3. Check if the required quantity has been met for this product
+                // 3. Check if the required quantity has been met
                 const currentScanned = this.orderItemsScanned[product.id] || 0;
                 if (currentScanned < requiredItem.quantity) {
-                    // Increment the scanned count for this product (ensuring reactivity)
+                    // Increment the scanned count for this product
+                    // Use Vue.set or spread to ensure reactivity if needed, but direct assignment often works with simple objects
                     this.orderItemsScanned = {
                         ...this.orderItemsScanned,
                         [product.id]: currentScanned + 1
                     };
-                    this.scanStatusMessage = `✅ Scanned **${product.brand}**. Progress: ${currentScanned + 1}/${requiredItem.quantity}`;
+                    this.scanStatusMessage = `✅ Scanned ${product.brand}. Progress: ${currentScanned + 1}/${requiredItem.quantity}`;
                 } else {
-                    this.scanStatusMessage = `⚠️ All **${product.brand}** (${requiredItem.quantity}) have already been scanned.`;
+                    this.scanStatusMessage = `⚠️ All ${product.brand} (${requiredItem.quantity}) have already been scanned.`;
                     return;
                 }
 
@@ -781,14 +748,11 @@ export default {
                     this.isOrderScanComplete = true;
                     this.stopQuagga();
                     this.scanStatusMessage = `🎉 All items scanned! Ready for shipment confirmation.`;
-                    // Immediately show the confirmation modal
+                    // Hide scanner modal and show confirmation modal
                     this.showScanModal = false;
+                    this.showDeliveryConfirmationModal = true;
                     this.isDelivering = this.orderToFulfill.order_id;
-                } else {
-                    // Automatically re-enable scanning to catch the next item (manual capture is also available)
-                    this.lastDetectedCode = null;
                 }
-
             } catch (err) {
                 console.error('Scan processing error:', err);
                 this.scanStatusMessage = '🛑 Error processing scan: ' + (err.message || 'Product or Barcode not found.');
@@ -808,7 +772,7 @@ export default {
         },
 
         captureBarcode() {
-            // Allows manual processing of the *last successfully validated* barcode
+            // Uses the last detected and validated code for manual trigger
             if (!this.lastDetectedCode) {
                 this.scanStatusMessage = 'Please ensure a barcode is in view.';
                 return;
@@ -899,9 +863,6 @@ export default {
                 .lt('date_and_time', tomorrow.toISOString());
             this.stockInTodayCount = stockInCount;
 
-            // NOTE: stockOutTodayCount is not implemented in the provided fetchDashboardData, keeping it at 0.
-            this.stockOutTodayCount = 0;
-
             const { data: activities } = await supabase.from('stock_in')
                 .select('*')
                 .order('date_and_time', { ascending: false })
@@ -927,7 +888,7 @@ export default {
                             product_id,
                             quantity,
                             price_at_purchase,
-                            products!inner(id, brand, size, barcode)
+                            products!inner(id, brand, size)
                         )
                     `)
                     .in('status', ['Pre-Ordered','Order Processed', 'Shipped', 'Delivered'])
@@ -955,14 +916,34 @@ export default {
         },
 
         /* ============================
-          --- STOCK OUT METHODS (SHIPPING) ---
+          --- STOCK OUT METHODS (SHIPPING) (Modified to be called after scan) ---
           ============================ */
-        // Renamed and streamlined updateStockOut to only focus on the final confirmation after a successful scan
-        async updateStockOut() {
+        // New method to confirm shipment after successful multi-scan
+        async confirmShipmentFinal() {
             if (!this.orderToFulfill || !this.isScanProgressComplete) {
                 alert('Cannot confirm shipment: Scan is incomplete or order is missing.');
                 return;
             }
+
+            this.isDelivering = this.orderToFulfill.order_id;
+
+            try {
+                // Call the main processing function
+                await this.updateStockOut();
+
+                this.closeConfirmDeliveryModal();
+                await this.fetchProcessedOrders();
+            } catch (error) {
+                console.error("Error confirming shipment:", error.message);
+                alert(`Failed to confirm shipment. Details: ${error.message}`);
+            } finally {
+                this.isDelivering = null;
+            }
+        },
+
+
+        async updateStockOut() {
+            if (!this.orderToFulfill) return;
 
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items;
@@ -970,10 +951,9 @@ export default {
             let totalOrdersCount = 1;
 
             const productTrendMap = new Map();
-            this.isDelivering = orderId;
 
             try {
-                // 1. Log stock-out transactions and calculate sales
+                // 1. Calculate sales and log individual stock-out transactions
                 for (const item of items) {
                     const { product_id, quantity, price_at_purchase } = item;
                     totalSalesAmount += (quantity * price_at_purchase);
@@ -997,7 +977,7 @@ export default {
                     });
                     if (logError) console.warn('Failed to log stock-out for item:', logError);
 
-                    // 💥 CRITICAL STEP: Stock Quantity Reduction (Ensure rpc is correct or use standard update)
+                    // 💥 CRITICAL STEP: Stock Quantity Reduction (Placeholder implementation)
                     const { error: stockUpdateError } = await supabase.from('products')
                         .rpc('decrement_product_stock', { p_product_id: product_id, p_decrement_qty: quantity });
                     if (stockUpdateError) console.error(`Failed to decrement stock for product ${product_id}:`, stockUpdateError);
@@ -1027,8 +1007,9 @@ export default {
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery! Sales report updated.`);
 
                 // Clear state
-                this.closeScanModal(); // This clears all scan-related state
-                this.closeConfirmDeliveryModal();
+                this.isOrderScanComplete = false;
+                this.showScanModal = false;
+                this.orderToFulfill = null;
 
                 this.fetchProcessedOrders();
                 this.fetchDashboardData();
@@ -1036,8 +1017,7 @@ export default {
             } catch (error) {
                 console.error('Stock Out/Shipping Error:', error);
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
-            } finally {
-                this.isDelivering = null;
+                throw error;
             }
         },
 
@@ -1045,7 +1025,7 @@ export default {
           --- ADMIN DELIVERY CONFIRMATION (No changes) ---
           ============================ */
         openConfirmDeliveryModal(order) {
-            // Only allow if the order is Shipped
+            // FIX: Allow only if the order is Shipped
             if (order.status !== 'Shipped') return;
 
             this.orderToFulfill = order;
@@ -1054,9 +1034,6 @@ export default {
 
         closeConfirmDeliveryModal() {
             this.showDeliveryConfirmationModal = false;
-            // Only clear orderToFulfill if it was set for delivery confirmation,
-            // otherwise the value from the scan confirmation modal might still be needed
-            // if we add a flow where the user goes back to the list.
             this.orderToFulfill = null;
             this.isDelivering = null; // Ensure loading state is cleared
         },
@@ -1086,7 +1063,7 @@ export default {
 
 
         /* ============================
-          --- STOCK IN METHODS (No major changes) ---
+          --- STOCK IN METHODS (No changes) ---
           ============================ */
         async addStockIn() {
             if (!this.stockIn.productName) {
@@ -1214,8 +1191,7 @@ export default {
                 const { error } = await supabase.auth.signOut();
                 if (error) { alert(`Logout failed: ${error.message}`); return; }
 
-                // The beforeRouteLeave hook should handle the redirect, but this is a fallback for direct action
-                await this.$router.push('/login');
+                await this.$router.push('/');
                 window.location.reload();
             } catch (e) {
                 console.error('Unexpected logout error:', e);
@@ -1227,7 +1203,7 @@ export default {
     },
 
     /* ============================================================
-      LIFECYCLE HOOKS (No changes)
+      LIFECYCLE HOOKS
     ============================================================ */
     mounted() {
         this.checkMobile();
