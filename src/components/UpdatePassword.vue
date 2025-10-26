@@ -88,10 +88,6 @@
                   </div>
                 </form>
 
-                <div class="text-center" v-if="isSuccess">
-                        <i class="fas fa-sign-in-alt me-2"></i>Go Back to Main Page
-                </div>
-
               </div>
             </div>
           </div>
