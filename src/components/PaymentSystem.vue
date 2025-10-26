@@ -14,6 +14,7 @@
           <div class="card shadow-lg border-0 rounded-4">
             <div class="card-body p-4 p-sm-5">
 
+              <!-- Title -->
               <div class="text-center mb-4">
                 <h2 class="card-title fw-bold text-dark mb-2">
                   <i class="fas fa-shield-alt me-2 text-primary"></i>Secure Payment
@@ -21,6 +22,7 @@
                 <p class="text-muted">Complete your purchase</p>
               </div>
 
+              <!-- Customer Type -->
               <div class="mb-4">
                 <h5 class="fw-semibold">Select Customer Type</h5>
                 <div class="d-grid gap-2 d-sm-flex">
@@ -37,8 +39,11 @@
                 </div>
               </div>
 
+              <!-- If type selected -->
               <div v-if="customerType">
                 <hr class="my-4">
+
+                <!-- Order Summary -->
                 <div class="mb-4">
                   <h5 class="fw-semibold">Order Summary</h5>
                   <ul class="list-group list-group-flush">
@@ -62,10 +67,16 @@
                       <strong class="h6">₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
                   </ul>
+
+                  <p class="text-muted small mt-2">
+                    <i class="fas fa-truck me-1"></i>
+                    Delivery may take <strong>7–14 business days</strong> after payment confirmation.
+                  </p>
                 </div>
 
                 <hr class="my-4">
 
+                <!-- Payment Method -->
                 <h5 class="fw-semibold mb-3">Choose Payment Method</h5>
                 <div class="d-grid gap-3">
 
@@ -94,41 +105,76 @@
                   </template>
 
                   <template v-if="customerType === 'B2B'">
-                    <label class="payment-option-label">
-                      <input type="radio" class="form-check-input" name="paymentMethod" value="bank_check" v-model="selectedPaymentMethod">
-                      <div class="d-flex align-items-center">
-                        <i class="fas fa-money-check-alt fa-2x me-3 text-muted"></i>
-                        <div>
-                          <span class="fw-bold d-block">Bank Check</span>
-                          <small class="text-muted">Pay the partial payment via bank check.</small>
+                    <div class="text-center my-3">
+                      <h6 class="fw-bold">GCash Partial Payment (for B2B)</h6>
+                      <p class="small text-muted">
+                        Send the required partial payment of
+                        <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
+                        to <strong>0912-345-6789 (RYT-Tyre Inc.)</strong>.
+                      </p>
+
+                      <div class="qr-wrapper text-center my-3">
+                        <img
+                          src="/src/assets/QR-GCash.jpg"
+                          alt="GCash QR Code"
+                          class="qr-image"
+                          @click="isQrModalOpen = true"
+                        />
+                        <p class="small text-muted mt-2">Tap to enlarge QR code</p>
+                      </div>
+
+                      <div v-if="isQrModalOpen" class="qr-modal" @click.self="isQrModalOpen = false">
+                        <div class="qr-modal-content">
+                          <img
+                            src="/src/assets/QR-GCash.jpg"
+                            alt="GCash QR Zoomed"
+                            class="qr-modal-image"
+                          />
+                          <button class="close-btn" @click="isQrModalOpen = false">&times;</button>
                         </div>
                       </div>
-                    </label>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="paymentProofB2B" class="form-label fw-semibold">
+                        Upload Proof of Payment (GCash Screenshot)
+                      </label>
+                      <input
+                        class="form-control"
+                        type="file"
+                        id="paymentProofB2B"
+                        @change="handlePaymentProofUpload"
+                      />
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="businessProof" class="form-label fw-semibold">
+                        Upload Business Proof (Business Permit Required)
+                      </label>
+                      <input
+                        class="form-control"
+                        type="file"
+                        id="businessProof"
+                        @change="handleB2BPermitUpload"
+                      />
+                    </div>
                   </template>
                 </div>
 
-                <!-- GCash / COD Payment Section -->
+                <!-- GCash / COD Section -->
                 <div v-if="selectedPaymentMethod === 'gcash' || selectedPaymentMethod === 'cod'" class="mt-4 p-3 bg-light rounded-3">
                   <h6 class="fw-bold">GCash Partial Payment</h6>
                   <p class="small text-muted">
-                    To confirm your order, please send the partial payment of
+                    Send the partial payment of
                     <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
-                    to the following GCash number:
-                    <strong>0912-345-6789 (RYT-Tyre Inc.)</strong>
+                    to <strong>0912-345-6789 (RYT-Tyre Inc.)</strong>
                   </p>
 
-                  <!-- Responsive + Zoomable QR -->
                   <div class="qr-wrapper text-center my-3">
-                    <img
-                      src="/src/assets/QR-GCash.jpg"
-                      alt="GCash QR Code"
-                      class="qr-image"
-                      @click="isQrModalOpen = true"
-                    />
+                    <img src="/src/assets/QR-GCash.jpg" alt="GCash QR Code" class="qr-image" @click="isQrModalOpen = true" />
                     <p class="small text-muted mt-2">Tap to enlarge QR code</p>
                   </div>
 
-                  <!-- QR Modal -->
                   <div v-if="isQrModalOpen" class="qr-modal" @click.self="isQrModalOpen = false">
                     <div class="qr-modal-content">
                       <img src="/src/assets/QR-GCash.jpg" alt="GCash QR Zoomed" class="qr-modal-image" />
@@ -140,29 +186,25 @@
                     <label for="gcashNumber" class="form-label fw-semibold">Your GCash Number</label>
                     <input type="tel" class="form-control" id="gcashNumber" v-model="gcashNumber" placeholder="e.g., 09XX-XXX-XXXX">
                   </div>
-                  <div>
-                    <label for="paymentProof" class="form-label fw-semibold">Upload Proof of Payment</label>
-                    <input class="form-control" type="file" id="paymentProof" @change="handleFileUpload">
+
+                  <div class="mb-3">
+                    <label for="paymentProof" class="form-label fw-semibold">Upload Confirmation of Payment</label>
+                    <input class="form-control" type="file" id="paymentProof" @change="handlePaymentProofUpload">
                   </div>
                 </div>
 
-                <!-- Bank Check Section -->
-                <div v-if="selectedPaymentMethod === 'bank_check'" class="mt-4 p-3 bg-light rounded-3">
-                  <h6 class="fw-bold">Bank Check Instructions</h6>
-                  <p class="small text-muted">
-                    Please prepare a check for the partial payment of
-                    <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong> payable to "RYT-Tyre Inc.".
-                  </p>
-                  <p class="small text-muted">Further instructions will be sent to your email after placing the order.</p>
-                </div>
-
+                <!-- ✅ Updated Pre-Order Button -->
                 <div class="d-grid mt-4">
-                  <button class="btn btn-primary btn-lg fw-semibold" @click="handleSubmit" :disabled="!selectedPaymentMethod">
-                    <i class="fas fa-check-circle me-2"></i> Place Order
+                  <button
+                    class="btn btn-primary btn-lg fw-semibold"
+                    @click="handleSubmit"
+                    :disabled="!isPreOrderEnabled"
+                  >
+                    <i class="fas fa-shopping-cart me-2"></i> Pre-Order
                   </button>
                 </div>
-              </div>
 
+              </div> <!-- End v-if -->
             </div>
           </div>
         </div>
@@ -172,144 +214,246 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { supabase } from '../server/supabase';
-import { useRouter } from 'vue-router';
-import { useCart } from '../composables/useCart';
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '../server/supabase'
+import { useRouter } from 'vue-router'
+import { useCart } from '../composables/useCart'
 
-const router = useRouter();
-const { cart, cartTotal, clearCart, fetchCart } = useCart();
+const router = useRouter()
+const { cart, cartTotal, clearCart, fetchCart } = useCart()
 
-const customerType = ref(null);
-const selectedPaymentMethod = ref(null);
-const gcashNumber = ref('');
-const paymentProofFile = ref(null);
-const isProcessing = ref(false);
-const serviceFee = ref(0);
-const isQrModalOpen = ref(false);
+// ----------------------------
+// STATE
+// ----------------------------
+const customerType = ref(null)
+const selectedPaymentMethod = ref(null)
+const gcashNumber = ref('')
+const paymentProofFile = ref(null)
+const b2bPermitFile = ref(null)
+const isProcessing = ref(false)
+const serviceFee = ref(0)
+const isQrModalOpen = ref(false)
 
+// ----------------------------
+// COMPUTED TOTALS
+// ----------------------------
 const grandTotal = computed(() => {
-  const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
-  return total + serviceFee.value;
-});
+    const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0
+    return total + serviceFee.value
+})
 
 const partialPayment = computed(() => {
-  const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0;
-  return total / 4;
-});
+    const total = typeof cartTotal.value === 'number' ? cartTotal.value : 0
+    return total / 4
+})
 
+// ----------------------------
+// CUSTOMER TYPE SELECTION
+// ----------------------------
 const setCustomerType = (type) => {
-  customerType.value = type;
-  selectedPaymentMethod.value = null;
-};
+    customerType.value = type
+    selectedPaymentMethod.value = null
+    paymentProofFile.value = null
+    b2bPermitFile.value = null
+}
 
-const handleFileUpload = (event) => {
-  paymentProofFile.value = event.target.files[0];
-};
+// ----------------------------
+// FILE HANDLERS
+// ----------------------------
+const handlePaymentProofUpload = (event) => {
+    paymentProofFile.value = event.target.files[0]
+}
 
+const handleB2BPermitUpload = (event) => {
+    b2bPermitFile.value = event.target.files[0]
+}
+
+// ----------------------------
+// NAVIGATION
+// ----------------------------
 const goToAddressBook = () => {
-  router.push({ name: 'BookOrderAddress' });
-};
+    router.push({ name: 'BookOrderAddress' })
+}
 
+// ----------------------------
+// ENABLE BUTTON CONDITION
+// ----------------------------
+const isPreOrderEnabled = computed(() => {
+    if (customerType.value === 'Regular') {
+        // NOTE: Keeping the original check: Payment Proof is required for Pre-Order confirmation
+        return !!selectedPaymentMethod.value && !!paymentProofFile.value
+    } else if (customerType.value === 'B2B') {
+        return !!paymentProofFile.value && !!b2bPermitFile.value
+    }
+    return false
+})
+
+// ----------------------------
+// MAIN ORDER SUBMISSION (UPDATED)
+// ----------------------------
 const handleSubmit = async () => {
-  if (!selectedPaymentMethod.value || cart.value.length === 0) {
-    alert('Please select a payment method or add items to your cart.');
-    return;
-  }
+    if (!cart.value.length) {
+        alert('Please add items to your cart before pre-ordering.')
+        return
+    }
 
-  if ((selectedPaymentMethod.value === 'gcash' || selectedPaymentMethod.value === 'cod') && !paymentProofFile.value) {
-    alert('Please upload your proof of payment.');
-    return;
-  }
+    if (customerType.value === 'Regular') {
+        if (!selectedPaymentMethod.value) {
+            alert('Please select a payment method.')
+            return
+        }
+        if (!paymentProofFile.value) {
+            alert('Please upload your payment proof.')
+            return
+        }
+    }
 
-  isProcessing.value = true;
-  let paymentProofUrl = null;
+    if (customerType.value === 'B2B') {
+        if (!paymentProofFile.value || !b2bPermitFile.value) {
+            alert('Please upload both proof of payment and business permit.')
+            return
+        }
+    }
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('You must be logged in to place an order.');
+    isProcessing.value = true
+    let paymentProofUrl = null
+    let b2bPermitUrl = null
+    let totalSalesAmount = grandTotal.value; // Total sale for this order
 
-    const { data: addressData } = await supabase
-      .from('addresses')
-      .select('full_address, name, phone')
-      .eq('user_id', user.id)
-      .eq('is_default', true)
-      .single();
+    try {
+        // 🔹 Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) throw new Error('You must be logged in to place an order.')
 
-    if (!addressData) throw new Error('Please set a default address before ordering.');
+        // 🔹 Get default address
+        const { data: addressData, error: addressError } = await supabase
+            .from('addresses')
+            .select('full_address, name, phone')
+            .eq('user_id', user.id)
+            .eq('is_default', true)
+            .single()
 
-    if (paymentProofFile.value) {
-      const fileExt = paymentProofFile.value.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        if (addressError || !addressData) throw new Error('Please set a default address before ordering.')
 
-      const { error: uploadError } = await supabase.storage
-        .from('partialpay_proof')
-        .upload(filePath, paymentProofFile.value, {
-          cacheControl: '3600',
-          upsert: false,
+        // 🔹 Upload B2B Permit (if applicable)
+        if (customerType.value === 'B2B' && b2bPermitFile.value) {
+            const fileExt = b2bPermitFile.value.name.split('.').pop()
+            const filePath = `${user.id}/${Date.now()}_b2b.${fileExt}`
+            const { error: uploadError } = await supabase.storage
+                .from('B2B_Permit')
+                .upload(filePath, b2bPermitFile.value, { cacheControl: '3600', upsert: false })
+            if (uploadError) throw new Error(`B2B Permit upload failed: ${uploadError.message}`)
+            const { data } = supabase.storage.from('B2B_Permit').getPublicUrl(filePath)
+            b2bPermitUrl = data.publicUrl
+        }
+
+        // 🔹 Upload Payment Proof
+        if (paymentProofFile.value) {
+            const fileExt = paymentProofFile.value.name.split('.').pop()
+            const filePath = `${user.id}/${Date.now()}_pay.${fileExt}`
+            const { error: uploadError } = await supabase.storage
+                .from('partialpay_proof')
+                .upload(filePath, paymentProofFile.value, { cacheControl: '3600', upsert: false })
+            if (uploadError) throw new Error(`Payment Proof upload failed: ${uploadError.message}`)
+            const { data } = supabase.storage.from('partialpay_proof').getPublicUrl(filePath)
+            paymentProofUrl = data.publicUrl
+        }
+
+        // 🔹 Prepare order data safely
+        const orderData = {
+            user_id: user.id,
+            username: addressData.name,
+            shipping_address: addressData.full_address,
+            contact: addressData.phone,
+            total_price: grandTotal.value,
+            status: 'Pre-Ordered',
+            payment_method: selectedPaymentMethod.value || 'GCash',
+            payment_proof_url: paymentProofUrl
+        }
+
+        // Only add this if the column exists and value is available
+        if (customerType.value === 'B2B' && b2bPermitUrl) {
+            orderData.b2b_permit_url = b2bPermitUrl
+        }
+
+        // 🔹 Save order
+        const { data: newOrder, error: orderError } = await supabase
+            .from('orders')
+            .insert(orderData)
+            .select('order_id')
+            .single()
+
+        if (orderError) throw orderError
+
+        // 🔹 Save order items
+        const orderItems = cart.value.map(item => ({
+            order_id: newOrder.order_id,
+            product_id: item.id,
+            quantity: item.quantity,
+            price_at_purchase: item.price // Use item price, not cart price
+        }))
+
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+        if (itemsError) throw itemsError
+
+        // 🔹 Update stock via RPC
+        for (const item of cart.value) {
+            const { error: stockError } = await supabase.rpc('decrement_stock', {
+                product_id_to_update: item.id,
+                quantity_to_decrement: item.quantity
+            })
+            if (stockError) console.warn('Stock update failed for:', item.id, stockError.message)
+        }
+
+        // ==========================================================
+        // 💰 NEW LOGIC: UPDATE DAILY SALES REPORT (ON PAYMENT)
+        // ==========================================================
+
+        // 1. Aggregate product trend data for the JSONB column
+        const dailyProductTrend = {};
+        for (const item of cart.value) {
+            const productName = item.brand;
+            const itemRevenue = item.quantity * item.price;
+
+            // Check if the product already exists in the aggregation for today
+            dailyProductTrend[productName] = {
+                sales: (dailyProductTrend[productName]?.sales || 0) + itemRevenue,
+                count: (dailyProductTrend[productName]?.count || 0) + item.quantity,
+            };
+        }
+
+        // 2. Call the RPC to upsert the daily sales report
+        const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
+            p_sales_amount: totalSalesAmount,
+            p_orders_count: 1, // This is one order
+            p_product_trend: dailyProductTrend
         });
 
-      if (uploadError) throw new Error(`File upload failed: ${uploadError.message}`);
+        if (salesReportError) {
+            // Log this as a warning, not a critical failure, since the order went through.
+            console.warn('Failed to update sales report during order placement:', salesReportError.message);
+        }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('partialpay_proof')
-        .getPublicUrl(filePath);
+        // ==========================================================
 
-      paymentProofUrl = publicUrl;
+        // 🔹 Clear cart and redirect
+        await clearCart()
+        alert('✅ Pre-order placed successfully! Payment recorded.')
+        router.push('/order-tracking')
+    } catch (err) {
+        console.error('Order error:', err.message)
+        alert('⚠️ Failed to place order: ' + err.message)
+    } finally {
+        isProcessing.value = false
     }
+}
 
-    const orderData = {
-      user_id: user.id,
-      username: addressData.name,
-      shipping_address: addressData.full_address,
-      contact: addressData.phone,
-      total_price: grandTotal.value,
-      status: 'Order Processed',
-      payment_proof_url: paymentProofUrl,
-    };
-
-    const { data: newOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert(orderData)
-      .select('order_id')
-      .single();
-
-    if (orderError) throw orderError;
-
-    const orderItems = cart.value.map((item) => ({
-      order_id: newOrder.order_id,
-      product_id: item.id,
-      quantity: item.quantity,
-      price_at_purchase: item.price,
-    }));
-
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-    if (itemsError) throw itemsError;
-
-    for (const item of cart.value) {
-      const { error: stockUpdateError } = await supabase.rpc('decrement_stock', {
-        product_id_to_update: item.id,
-        quantity_to_decrement: item.quantity,
-      });
-      if (stockUpdateError)
-        console.warn(`Could not update stock for product ${item.id}:`, stockUpdateError.message);
-    }
-
-    await clearCart();
-    alert('✅ Order placed successfully! Redirecting to order tracking...');
-    router.push('/order-tracking');
-  } catch (err) {
-    console.error('Order error:', err.message);
-    alert('⚠️ Failed to place order: ' + err.message);
-  } finally {
-    isProcessing.value = false;
-  }
-};
-
-onMounted(() => {
-  fetchCart();
-});
+// ----------------------------
+// ON MOUNT
+// ----------------------------
+onMounted(fetchCart)
 </script>
+
 
 <style scoped>
 .payment-page-background {

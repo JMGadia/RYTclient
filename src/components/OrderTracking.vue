@@ -95,129 +95,124 @@
 </template>
 
 <script setup>
-// --- IMPORTS & SETUP ---
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-// --- REACTIVE STATE ---
 const orders = ref([]);
 const isLoading = ref(true);
-const isUpdatingStatus = ref(null); // from stable code
-const statusHierarchy = ['Payment Process', 'Payment Success', 'Order Processed', 'Shipped', 'Delivered'];
+const isUpdatingStatus = ref(null);
 
-// --- DATABASE FUNCTION ---
+const statusHierarchy = [
+  'Payment Process',
+  'Payment Success',
+  'Order Processed',
+  'Shipped',
+  'Delivered'
+];
+
+// --- FETCH ORDERS ---
 const fetchOrders = async () => {
-    isLoading.value = true;
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            orders.value = [];
-            return;
-        }
-
-        // Fetch orders, including nested order items and product details (from stable code)
-        const { data, error } = await supabase
-            .from('orders')
-            .select(`
-                *,
-                order_items (
-                    id,
-                    quantity,
-                    price_at_purchase,
-                    products!inner(brand, size)
-                )
-            `)
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        orders.value = data;
-    } catch (error) {
-        console.error("Error fetching orders:", error.message);
-    } finally {
-        isLoading.value = false;
+  isLoading.value = true;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      orders.value = [];
+      return;
     }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          id,
+          quantity,
+          price_at_purchase,
+          products!inner(brand, size)
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // ✅ Map 'Pre-Ordered' to 'Order Processed' before displaying
+    orders.value = data.map(order => ({
+      ...order,
+      status: order.status === 'Pre-Ordered' ? 'Order Processed' : order.status
+    }));
+
+  } catch (error) {
+    console.error('Error fetching orders:', error.message);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-/**
- * Handles the customer confirming receipt of the order. (from stable code)
- */
+// --- CONFIRM ORDER RECEIVED ---
 const handleOrderReceived = async (orderId) => {
-    if (!window.confirm('Confirming receipt will mark the order as DELIVERED. Proceed?')) {
-        return;
-    }
+  if (!window.confirm('Confirming receipt will mark the order as DELIVERED. Proceed?')) return;
 
-    isUpdatingStatus.value = orderId;
-    try {
-        const { error } = await supabase
-            .from('orders')
-            .update({ status: 'Delivered' })
-            .eq('order_id', orderId);
+  isUpdatingStatus.value = orderId;
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'Delivered' })
+      .eq('order_id', orderId);
 
-        if (error) throw error;
+    if (error) throw error;
 
-        alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
-        await fetchOrders();
-
-    } catch (error) {
-        console.error("Error confirming delivery:", error.message);
-        alert(`Failed to confirm delivery. Please try again. Details: ${error.message}`);
-    } finally {
-        isUpdatingStatus.value = null;
-    }
+    alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
+    await fetchOrders();
+  } catch (error) {
+    console.error('Error confirming delivery:', error.message);
+    alert(`Failed to confirm delivery. Please try again. Details: ${error.message}`);
+  } finally {
+    isUpdatingStatus.value = null;
+  }
 };
 
-// --- ORDER TRACKING UI LOGIC (Computed Classes from stable code) ---
-
+// --- STATUS TRACKER HELPERS ---
 const getStatusColorClass = (status) => {
-    switch (status) {
-        case 'Delivered':
-            return 'text-success';
-        case 'Shipped':
-            return 'text-warning'; // Yellow/orange for in-transit
-        case 'Order Processed':
-        case 'Payment Success':
-            return 'text-info';
-        default:
-            return 'text-primary';
-    }
+  switch (status) {
+    case 'Delivered':
+      return 'text-success';
+    case 'Shipped':
+      return 'text-warning';
+    case 'Order Processed':
+    case 'Payment Success':
+      return 'text-info';
+    default:
+      return 'text-primary';
+  }
 };
 
 const getStepClass = (orderStatus, stepName) => {
-    const orderIndex = statusHierarchy.indexOf(orderStatus);
-    const stepIndex = statusHierarchy.indexOf(stepName);
-
-    if (stepIndex < orderIndex) {
-        return 'step completed';
-    } else if (stepIndex === orderIndex) {
-        return 'step active';
-    } else {
-        return 'step';
-    }
+  const orderIndex = statusHierarchy.indexOf(orderStatus);
+  const stepIndex = statusHierarchy.indexOf(stepName);
+  if (stepIndex < orderIndex) return 'step completed';
+  if (stepIndex === orderIndex) return 'step active';
+  return 'step';
 };
 
 const getConnectorClass = (orderStatus, stepName) => {
-    const orderIndex = statusHierarchy.indexOf(orderStatus);
-    const stepIndex = statusHierarchy.indexOf(stepName);
-
-    if (stepIndex < orderIndex) {
-        return 'connector completed';
-    } else {
-        return 'connector';
-    }
+  const orderIndex = statusHierarchy.indexOf(orderStatus);
+  const stepIndex = statusHierarchy.indexOf(stepName);
+  return stepIndex < orderIndex ? 'connector completed' : 'connector';
 };
 
-// --- NAVIGATION FUNCTION ---
+// --- NAVIGATION ---
 const goToOrderingSystem = () => {
-    router.push({ name: 'ordering system' });
+  router.push({ name: 'ordering system' });
 };
 
-// --- LIFECYCLE HOOKS ---
+// --- INITIAL LOAD ---
 onMounted(fetchOrders);
 </script>
+
 
 <style scoped>
 /* ============================================================

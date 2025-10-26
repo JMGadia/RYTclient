@@ -27,15 +27,23 @@
                 <span v-if="address.is_default" class="badge bg-success">Default</span>
               </div>
             </div>
+
+            <!-- Updated Footer Buttons -->
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
               <button
-                v-if="!address.is_default"
                 class="btn btn-sm btn-link text-success"
-                @click="handleSetDefault(address.id)"
+                @click="handleAddressAction(address)"
                 :disabled="isSettingDefault === address.id"
               >
-                <span v-if="isSettingDefault === address.id" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span v-else>Set as Default</span>
+                <span
+                  v-if="isSettingDefault === address.id"
+                  class="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                <span v-else>
+                  {{ address.is_default ? 'Confirm' : 'Set as Default' }}
+                </span>
               </button>
               <div class="ms-auto">
                 <button class="btn btn-sm btn-light border me-2" @click="openEditModal(address)">Edit</button>
@@ -55,6 +63,7 @@
       </div>
     </div>
 
+    <!-- Modal Section -->
     <div class="modal-backdrop" v-if="showModal"></div>
     <div class="modal fade" :class="{ 'show': showModal }" style="display: block;" v-if="showModal">
       <div class="modal-dialog modal-dialog-centered">
@@ -75,7 +84,13 @@
               </div>
               <div class="mb-3">
                 <label for="full_address" class="form-label">Full Address</label>
-                <textarea class="form-control" id="full_address" rows="3" v-model="currentAddress.full_address" required></textarea>
+                <textarea
+                  class="form-control"
+                  id="full_address"
+                  rows="3"
+                  v-model="currentAddress.full_address"
+                  required
+                ></textarea>
               </div>
             </form>
           </div>
@@ -96,154 +111,135 @@
   </div>
 </template>
 
-
 <script setup>
-// --- IMPORTS (from Stable Code) ---
 import { ref, onMounted } from 'vue';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
-// --- SETUP ---
 const router = useRouter();
 
-// --- STATE MANAGEMENT (Reactive Variables from Stable Code) ---
 const addresses = ref([]);
 const isLoading = ref(true);
 const isSaving = ref(false);
 const showModal = ref(false);
 const isEditing = ref(false);
-const currentAddress = ref({
-    id: null,
-    name: '',
-    phone: '',
-    full_address: ''
-});
+const currentAddress = ref({ id: null, name: '', phone: '', full_address: '' });
 const user = ref(null);
 const isSettingDefault = ref(null);
 
-// --- NAVIGATION & UTILITY FUNCTIONS (from Stable Code) ---
-
 const goToOrderingSystem = () => {
-    router.push({ name: 'ordering system' });
+  router.push({ name: 'ordering system' });
 };
 
-// --- MODAL CONTROL FUNCTIONS (from Stable Code) ---
-
 const openAddModal = () => {
-    isEditing.value = false;
-    currentAddress.value = { id: null, name: '', phone: '', full_address: '' };
-    showModal.value = true;
+  isEditing.value = false;
+  currentAddress.value = { id: null, name: '', phone: '', full_address: '' };
+  showModal.value = true;
 };
 
 const openEditModal = (address) => {
-    isEditing.value = true;
-    currentAddress.value = { ...address };
-    showModal.value = true;
+  isEditing.value = true;
+  currentAddress.value = { ...address };
+  showModal.value = true;
 };
 
 const closeModal = () => {
-    showModal.value = false;
+  showModal.value = false;
 };
 
-// --- DATABASE INTERACTION FUNCTIONS (from Stable Code) ---
-
 const fetchAddresses = async () => {
-    isLoading.value = true;
-    try {
-        if (!user.value) {
-            addresses.value = [];
-            return;
-        }
-
-        const { data, error } = await supabase
-            .from('addresses')
-            .select('*')
-            .eq('user_id', user.value.id)
-            .order('is_default', { ascending: false })
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        addresses.value = data;
-    } catch (error) {
-        console.error('Error fetching addresses:', error.message);
-    } finally {
-        isLoading.value = false;
+  isLoading.value = true;
+  try {
+    if (!user.value) {
+      addresses.value = [];
+      return;
     }
+
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', user.value.id)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    addresses.value = data;
+  } catch (error) {
+    console.error('Error fetching addresses:', error.message);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const handleSaveAddress = async () => {
-    isSaving.value = true;
-    try {
-        const addressData = {
-            name: currentAddress.value.name,
-            phone: currentAddress.value.phone,
-            full_address: currentAddress.value.full_address,
-            user_id: user.value.id
-        };
+  isSaving.value = true;
+  try {
+    const addressData = {
+      name: currentAddress.value.name,
+      phone: currentAddress.value.phone,
+      full_address: currentAddress.value.full_address,
+      user_id: user.value.id,
+    };
 
-        if (isEditing.value) {
-            const { error } = await supabase
-                .from('addresses')
-                .update(addressData)
-                .eq('id', currentAddress.value.id);
-            if (error) throw error;
-        } else {
-            const { error } = await supabase.from('addresses').insert([addressData]);
-            if (error) throw error;
-        }
-
-        closeModal();
-        await fetchAddresses();
-    } catch (error) {
-        console.error('Error saving address:', error.message);
-    } finally {
-        isSaving.value = false;
+    if (isEditing.value) {
+      const { error } = await supabase.from('addresses').update(addressData).eq('id', currentAddress.value.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('addresses').insert([addressData]);
+      if (error) throw error;
     }
+
+    closeModal();
+    await fetchAddresses();
+  } catch (error) {
+    console.error('Error saving address:', error.message);
+  } finally {
+    isSaving.value = false;
+  }
 };
 
 const handleDeleteAddress = async (addressId) => {
-    if (window.confirm('Are you sure you want to delete this address?')) {
-        try {
-            const { error } = await supabase
-                .from('addresses')
-                .delete()
-                .eq('id', addressId);
-            if (error) throw error;
-            await fetchAddresses();
-        } catch (error) {
-            console.error('Error deleting address:', error.message);
-        }
-    }
-};
-
-const handleSetDefault = async (addressId) => {
-    isSettingDefault.value = addressId;
+  if (window.confirm('Are you sure you want to delete this address?')) {
     try {
-        const { error } = await supabase.rpc('set_default_address', {
-            address_id_to_set: addressId
-        });
-
-        if (error) {
-            throw error;
-        }
-
-        // On successful update, proceed to the payment system
-        router.push({ name: 'payment system' });
-
+      const { error } = await supabase.from('addresses').delete().eq('id', addressId);
+      if (error) throw error;
+      await fetchAddresses();
     } catch (error) {
-        console.error('Error setting default address:', error.message);
-        alert('Failed to set default address. Check the console for more details.');
-    } finally {
-        isSettingDefault.value = null;
+      console.error('Error deleting address:', error.message);
     }
+  }
 };
 
-// --- LIFECYCLE HOOKS ---
+// ✅ New unified handler for both “Set as Default” and “Confirm”
+const handleAddressAction = async (address) => {
+  if (address.is_default) {
+    // Already default → just confirm and go to payment system
+    router.push({ name: 'payment system' });
+    return;
+  }
+
+  // Otherwise, set it as default first
+  isSettingDefault.value = address.id;
+  try {
+    const { error } = await supabase.rpc('set_default_address', {
+      address_id_to_set: address.id,
+    });
+
+    if (error) throw error;
+
+    router.push({ name: 'payment system' });
+  } catch (error) {
+    console.error('Error setting default address:', error.message);
+    alert('Failed to set default address.');
+  } finally {
+    isSettingDefault.value = null;
+  }
+};
 
 onMounted(async () => {
-    const { data } = await supabase.auth.getUser();
-    user.value = data.user;
-    await fetchAddresses();
+  const { data } = await supabase.auth.getUser();
+  user.value = data.user;
+  await fetchAddresses();
 });
 </script>
 
