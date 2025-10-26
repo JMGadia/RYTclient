@@ -41,12 +41,12 @@ export default async function handler(request, response) {
     if (faceDetails.length !== 1) {
       return response.status(400).json({ success: false, message: 'Please ensure only one person is in the photo.' });
     }
-    
+
     const face = faceDetails[0];
 
     // Step 3: Check Confidence Level (Must be very high)
     // This ensures Rekognition is very sure it's a well-defined face.
-    const confidenceThreshold = 99.5; 
+    const confidenceThreshold = 99.5;
     if (face.Confidence < confidenceThreshold) {
       return response.status(400).json({ success: false, message: 'Face is not clear enough. Please ensure good lighting.' });
     }
@@ -57,7 +57,7 @@ export default async function handler(request, response) {
     if (face.Quality.Sharpness < sharpnessThreshold) {
         return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
     }
-    
+
     // --- END OF IMPLEMENT ---
 
     return response.status(200).json({ success: true, message: 'Face verified successfully.' });
