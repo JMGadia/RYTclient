@@ -1141,10 +1141,23 @@ const fetchStockItems = async () => {
             .order('brand', { ascending: true });
 
         if (error) throw error;
-        stockItems.value = data.map(item => ({
-            ...item,
-            status: item.quantity <= item.reorder_point ? 'Low Stock' : 'In Stock'
-        }));
+
+        stockItems.value = data.map(item => {
+            let status;
+            if (item.quantity === 0) {
+                // 🌟 NEW LOGIC: If quantity is exactly 0, it's 'Out of Stock'
+                status = 'Out of Stock';
+            } else if (item.quantity <= item.reorder_point) {
+                status = 'Low Stock';
+            } else {
+                status = 'In Stock';
+            }
+            return {
+                ...item,
+                status: status
+            };
+        });
+
     } catch (err) {
         stockError.value = 'Failed to load stock items.';
         console.error(err);
