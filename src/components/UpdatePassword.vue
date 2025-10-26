@@ -89,9 +89,7 @@
                 </form>
 
                 <div class="text-center" v-if="isSuccess">
-                    <button type="button" class="btn btn-outline-primary rounded-3" @click="goToLogin">
                         <i class="fas fa-sign-in-alt me-2"></i>Go Back to Main Page
-                    </button>
                 </div>
 
               </div>
@@ -122,8 +120,6 @@ const isPasswordVisible = ref(false)
 const passwordFieldType = computed(() => isPasswordVisible.value ? 'text' : 'password')
 const passwordIcon = computed(() => isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png')
 const togglePasswordVisibility = () => { isPasswordVisible.value = !isPasswordVisible.value }
-
-const goToLogin = () => router.push({ name: 'login' });
 
 const handleUpdatePassword = async () => {
   // --- Validation ---
