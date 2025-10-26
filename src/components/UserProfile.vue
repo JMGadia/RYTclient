@@ -106,7 +106,7 @@ onMounted(async () => {
     // 1. Get Authentication User Data
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     if (authError) throw authError;
-    
+
     if (authUser) {
       user.value = authUser;
       email.value = authUser.email;
@@ -119,7 +119,7 @@ onMounted(async () => {
         .single();
 
       // Handle potential no-data error (PGRST116) gracefully
-      if (profileError && profileError.code !== 'PGRST116') throw profileError; 
+      if (profileError && profileError.code !== 'PGRST116') throw profileError;
       if (profileData) username.value = profileData.username;
     }
   } catch (error) {
@@ -150,7 +150,7 @@ const saveUsername = async () => {
     isEditing.value = false;
     return;
   }
-  
+
   isLoading.value = true;
   try {
     // Call the Supabase function to update the username
@@ -158,7 +158,7 @@ const saveUsername = async () => {
       new_username_text: editableUsername.value
     });
     if (error) throw error;
-    
+
     // Update the displayed username on success
     username.value = editableUsername.value;
     alert('Username updated successfully!');
@@ -215,7 +215,7 @@ const handleLogout = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    
+
     showLogoutConfirm.value = false; // Close modal (if open)
     router.push({ name: 'login' }); // Redirect to login
   } catch (error) {
@@ -225,16 +225,85 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-/* All existing styles remain the same */
+/* All styles from the UI-focused code are used to provide the new aesthetic. */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap');
-.user-profile-page { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; min-height: calc(100vh - 56px); padding: 2rem 0; }
-.profile-container { width: 100%; max-width: 500px; border: none; border-radius: 0.75rem; }
+.user-profile-page {
+  font-family: 'Roboto', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Aurora-style animated gradient */
+.user-profile-page::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image:
+    radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
+    radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
+  filter: blur(100px);
+  animation: moveAurora 20s linear infinite;
+  z-index: 0;
+}
+
+@keyframes moveAurora {
+  0% { transform: rotate(0deg) translate(0, 0); }
+  50% { transform: rotate(180deg) translate(10%, 10%); }
+  100% { transform: rotate(360deg) translate(0, 0); }
+}
+
+/* Glassmorphism card container */
+.profile-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 1rem;
+  background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+  backdrop-filter: blur(20px); /* Glass effect */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
 .card-body h3, .modal-title { font-family: 'Poppins', sans-serif; }
 .form-label { font-family: 'Poppins', sans-serif; font-size: 0.9rem; }
-.read-only-input { display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0.75rem; font-size: 1rem; font-weight: 400; line-height: 1.5; color: #212529; background-color: #fff; border: 1px solid #ced4da; border-radius: 0.375rem; cursor: pointer; min-height: 38px; }
+
+/* Editable Username Box Style */
+.read-only-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  min-height: 38px;
+  transition: border-color 0.2s;
+}
 .read-only-input:hover { border-color: #86b7fe; }
 input:disabled { background-color: #e9ecef; cursor: not-allowed; }
-.btn { font-family: 'Poppins', sans-serif; font-size: 0.9rem; transition: all 0.2s ease-in-out; }
+
+/* Buttons style */
+.btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+}
 .btn i { font-size: 1.2rem; }
 
 /* Modal Styles */

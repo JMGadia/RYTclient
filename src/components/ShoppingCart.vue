@@ -19,15 +19,15 @@
                     <p class="text-muted small mb-0">Size: {{ item.size }}</p>
                   </div>
                   <div class="col-3 col-md-3">
-                    <input 
-                      type="number" 
-                      class="form-control form-control-sm text-center" 
+                    <input
+                      type="number"
+                      class="form-control form-control-sm text-center"
                       :value="item.quantity"
                       @input="updateQuantity(item.id, parseInt($event.target.value))"
                       min="1"
                     >
                   </div>
-                  <div class="col-2 col-md-2 text-end">  
+                  <div class="col-2 col-md-2 text-end">
                     <h6 class="fw-bold mb-0">₱{{ (item.price * item.quantity).toLocaleString() }}</h6>
                     <a href="#" class="text-danger small" @click.prevent="removeFromCart(item.id)">Remove</a>
                   </div>
@@ -67,7 +67,7 @@
           </div>
         </div>
       </div>
-      
+
       <div v-else class="text-center py-5">
         <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
         <h4 class="fw-bold">Your cart is empty</h4>
@@ -77,10 +77,6 @@
         </button>
       </div>
     </div>
-  </div>
-  <div class="shopping-cart-page">
-    <div class="container py-5">
-      </div>
 
     <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
       <i class="fas fa-shopping-bag"></i>
@@ -89,10 +85,10 @@
 </template>
 
 <script setup>
-// --- IMPORTS & SETUP ---
-import { ref, computed } from 'vue'; // Core Vue functions for state and reactivity
-import { useRouter } from 'vue-router'; // Vue Router hook for navigation
-import { useCart } from '../composables/useCart'; // Custom composable for managing cart state and actions
+// --- IMPORTS & SETUP (from Stable Code) ---
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCart } from '../composables/useCart';
 
 // Initialize the router
 const router = useRouter();
@@ -101,14 +97,13 @@ const router = useRouter();
 const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
 
 // --- REACTIVE STATE & CONSTANTS ---
-
 // Placeholder/Example shipping fee
-const shippingFee = "Free Shipping"; 
+const shippingFee = "Free Shipping";
 
 // --- COMPUTED PROPERTIES ---
 
 /**
- * Calculates the grand total for the order. 
+ * Calculates the grand total for the order.
  * Since shipping is marked as "Free", this just mirrors the cart subtotal.
  */
 const grandTotal = computed(() => {
@@ -140,34 +135,142 @@ const proceedToAddress = () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400&display=swap');
+/* ============================================================
+    STYLES from UI-focused Code (Modern Aurora Background & Glassmorphism)
+  ============================================================
+*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap');
 
+/* 🌈 Aurora Gradient Background (Unified with Other Pages) */
 .shopping-cart-page {
   font-family: 'Roboto', sans-serif;
-  background-color: #f8f9fa;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
-.section-title, .card-header h5, .cart-item h6 {
+
+/* Animated Aurora Effect */
+.shopping-cart-page::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image:
+    radial-gradient(circle at 15% 20%, #5a7dff 10%, transparent 50%),
+    radial-gradient(circle at 80% 80%, #d08bff 10%, transparent 40%),
+    radial-gradient(circle at 50% 40%, #ff8ed1 10%, transparent 40%),
+    linear-gradient(120deg, #0c0a24, #241e4e, #17133d);
+  filter: blur(80px);
+  opacity: 0.9;
+  animation: auroraAnimation 25s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes auroraAnimation {
+  0% { transform: rotate(0deg) translateX(0); }
+  50% { transform: rotate(180deg) translateX(10%); }
+  100% { transform: rotate(360deg) translateX(0); }
+}
+
+/* Keep content above aurora */
+.container,
+.fab {
+  position: relative;
+  z-index: 2;
+}
+
+/* --- Section Title --- */
+.section-title {
   font-family: 'Poppins', sans-serif;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-.card { border: none; }
+
+/* --- Card Styling (Glassmorphism Effect) --- */
+.card {
+  border: none;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.85); /* Semi-transparent background */
+  backdrop-filter: blur(15px); /* Blur effect */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
+}
+
+.card-header {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* --- Cart Items --- */
 .cart-item img {
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.8);
 }
+.cart-item h6,
+.card-header h5 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* --- Form Controls --- */
 .form-control-sm {
   max-width: 80px;
   margin: 0 auto;
+  border-radius: 50rem;
+  text-align: center;
 }
+
+/* --- Order Summary --- */
 .list-group-item {
   background-color: transparent;
+  border: none;
+  font-family: 'Poppins', sans-serif;
 }
+.list-group-item span {
+  color: #212529;
+}
+.text-danger {
+  color: #dc3545 !important;
+}
+
+/* --- Primary Button --- */
 .btn-primary {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
+  border-radius: 50rem;
+  transition: all 0.3s ease-in-out;
+}
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
 }
 
-/* ADDED STYLES FOR FAB */
+/* --- Empty Cart State --- */
+/* Ensure text is visible against the dark background */
+.shopping-cart-page .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+.shopping-cart-page h4 {
+  color: #fff;
+}
+.fa-shopping-cart {
+  opacity: 0.9;
+  color: #fff !important;
+}
+
+/* --- Floating Action Button (FAB) --- */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -187,7 +290,6 @@ const proceedToAddress = () => {
   z-index: 1000;
   transition: transform 0.2s ease-in-out;
 }
-
 .fab:hover {
   transform: scale(1.1);
 }
