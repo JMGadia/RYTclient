@@ -249,7 +249,7 @@
             </div>
 
             <div class="row g-4">
-              <div class="col-lg-8">
+              <div class="col-lg-12">
                 <div class="card shadow-sm h-100">
                   <div class="card-header bg-white">
                     <h5 class="mb-0 text-primary fw-bold">Sales Trend (Last 7 Days)</h5>
@@ -259,31 +259,32 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div calss="col-lg-4"></div>
-              <div class="row g-4 mt-4">
-                  <div class="col-lg-12">
-                    <div class="card shadow-sm h-100">
-                      <div class="card-header bg-white">
-                        <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
-                      </div>
-                      <div class="card-body">
-                        <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
-                      </div>
+            <div class="row g-4 mt-4">
+                <div class="col-lg-6 offset-lg-3">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                      <h5 class="mb-0 text-primary fw-bold">Sales by Tire Type</h5>
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                      <canvas id="salesByTireTypeChart"></canvas>
                     </div>
                   </div>
-              </div>
+                </div>
+            </div>
 
-              <div class="col-lg-4">
-                <div class="card shadow-sm h-100">
-                  <div class="card-header bg-white">
-                    <h5 class="mb-0 text-primary fw-bold">Sales by Tire Type</h5>
-                  </div>
-                  <div class="card-body d-flex justify-content-center align-items-center">
-                    <canvas id="salesByTireTypeChart"></canvas>
+            <div class="row g-4 mt-4">
+                <div class="col-lg-12">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                      <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
+                    </div>
+                    <div class="card-body">
+                      <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
           <div v-else-if="activeFeature === 'stock-monitoring'">
@@ -413,7 +414,7 @@
                         <i class="fas fa-clock fa-3x opacity-50"></i>
                     </div>
                 </div>
-            </div>
+              </div>
         </div>
         <div class="col-lg-4 col-md-12">
             <div
@@ -543,7 +544,7 @@
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="logoutButton"></button>
-          </div>
+           </div>
           <div class="modal-body text-center">
             <div class="p-3">
               <i class="fas fa-sign-out-alt fa-3x text-primary mb-3"></i>
@@ -974,26 +975,26 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 
 // --- 👇 THIS IS THE EXIT GUARD ---
 onBeforeRouteLeave((to, from, next) => {
-    const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
-    if (allowedExitRoutes.includes(to.name)) {
-        next();
-        return;
-    }
+    const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
+    if (allowedExitRoutes.includes(to.name)) {
+        next();
+        return;
+    }
 
-    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
-    if (answer) {
-        supabase.auth.signOut();
-        next({ name: 'login' }); 
-    } else {
-        next(false);
-    }
+    const answer = window.confirm('Are you sure you want to leave? This will end your session for security.');
+    if (answer) {
+        supabase.auth.signOut();
+        next({ name: 'login' });
+    } else {
+        next(false);
+    }
 });
 // --- 👆 END OF EXIT GUARD ---
 
 const router = useRouter();
 
 const navigateToAddProduct = () => {
-    router.push('/import-product');
+    router.push('/import-product');
 };
 
 const superAdminProfile = ref({ username: '', email: '' });
@@ -1027,7 +1028,8 @@ const fetchPurchaseOrders = async () => {
                     products!inner(id, brand, size)
                 )
             `)
-            .in('status', ['Order Processed', 'Shipped', 'Delivered'])
+            // NOTE: Including 'Pre-Ordered' to show payments waiting for processing
+            .in('status', ['Pre-Ordered', 'Order Processed', 'Shipped', 'Delivered'])
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -1035,7 +1037,7 @@ const fetchPurchaseOrders = async () => {
         // Map database status to front-end card status (Pending, Shipped, Completed)
         purchaseOrders.value = data.map(order => {
             let cardStatus;
-            if (order.status === 'Order Processed') {
+            if (order.status === 'Pre-Ordered' || order.status === 'Order Processed') {
                 cardStatus = 'Pending';
             } else if (order.status === 'Shipped') {
                 cardStatus = 'Shipped';
@@ -1059,6 +1061,56 @@ const fetchPurchaseOrders = async () => {
     }
 };
 
+// --- UPDATED FUNCTION: Update Order Status (SIMPLIFIED SALES AGGREGATION) ---
+const updateOrderStatus = async (orderId, newStatus) => {
+    if (!confirm(`Are you sure you want to change order ${orderId} status to "${newStatus}"?`)) return;
+
+    let totalSalePrice = 0;
+
+    try {
+        // 1. If 'Delivered', get price before status update
+        if (newStatus === 'Delivered') {
+            const { data: orderData, error: fetchError } = await supabase
+                .from('orders')
+                .select('total_price')
+                .eq('order_id', orderId)
+                .single();
+
+            if (fetchError) throw fetchError;
+            totalSalePrice = orderData.total_price;
+        }
+
+        // 2. Update the order status
+        const { error: updateError } = await supabase
+            .from('orders')
+            .update({ status: newStatus })
+            .eq('order_id', orderId);
+
+        if (updateError) throw updateError;
+
+        // 3. ONLY run the simplified sales aggregation if the order is marked Delivered
+        if (newStatus === 'Delivered') {
+            // Call the simple RPC to update ONLY daily_sales, weekly_sales, and monthly_sales
+            const { error: salesError } = await supabase.rpc('record_sale_amount', {
+                p_sales_amount: totalSalePrice
+            });
+
+            if (salesError) {
+                console.error('Failed to update sales data after delivery:', salesError.message);
+            }
+        }
+
+        // Refresh the list of orders and sales data
+        fetchPurchaseOrders();
+        fetchSalesReport();
+        alert(`Order ${orderId} successfully updated to ${newStatus}.`);
+    } catch (err) {
+        alert(`Failed to complete action: ${err.message}`);
+        console.error('Error in updateOrderStatus:', err);
+    }
+};
+
+
 // --- NEW FUNCTION: VIEW ORDER DETAILS (Shows payment proof) ---
 const viewOrderDetails = (order) => {
     let paymentProofUrl = null;
@@ -1080,73 +1132,76 @@ const viewOrderDetails = (order) => {
 
 
 const fetchStockItems = async () => {
-    stockLoading.value = true;
-    stockError.value = null;
-    try {
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('brand', { ascending: true });
+    stockLoading.value = true;
+    stockError.value = null;
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('brand', { ascending: true });
 
-        if (error) throw error;
-        stockItems.value = data;
-    } catch (err) {
-        stockError.value = 'Failed to load stock items.';
-        console.error(err);
-    } finally {
-        stockLoading.value = false;
-    }
+        if (error) throw error;
+        stockItems.value = data.map(item => ({
+            ...item,
+            status: item.quantity <= item.reorder_point ? 'Low Stock' : 'In Stock'
+        }));
+    } catch (err) {
+        stockError.value = 'Failed to load stock items.';
+        console.error(err);
+    } finally {
+        stockLoading.value = false;
+    }
 };
 
 const fetchSuperAdminProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-        const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('username, email')
-            .eq('id', user.id)
-            .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('username, email')
+            .eq('id', user.id)
+            .single();
 
-        if (error) {
-            console.error('Error fetching super admin profile:', error);
-        } else if (profile) {
-            superAdminProfile.value = profile;
-        }
-    }
+        if (error) {
+            console.error('Error fetching super admin profile:', error);
+        } else if (profile) {
+            superAdminProfile.value = profile;
+        }
+    }
 };
 
 // Functions for editing the username (omitted for brevity, assume they are correct)
 const startUsernameEdit = () => {
-    isEditingUsername.value = true;
-    editableUsername.value = superAdminProfile.value.username;
+    isEditingUsername.value = true;
+    editableUsername.value = superAdminProfile.value.username;
 };
 
 const cancelUsernameEdit = () => {
-    isEditingUsername.value = false;
+    isEditingUsername.value = false;
 };
 
 const saveUsername = async () => {
-    if (editableUsername.value.trim() === '') {
-        alert('Username cannot be empty.');
-        return;
-    }
-    if (editableUsername.value === superAdminProfile.value.username) {
-        isEditingUsername.value = false;
-        return;
-    }
-    try {
-        const { error } = await supabase.rpc('update_my_username', {
-            new_username_text: editableUsername.value
-        });
-        if (error) throw error;
+    if (editableUsername.value.trim() === '') {
+        alert('Username cannot be empty.');
+        return;
+    }
+    if (editableUsername.value === superAdminProfile.value.username) {
+        isEditingUsername.value = false;
+        return;
+    }
+    try {
+        const { error } = await supabase.rpc('update_my_username', {
+            new_username_text: editableUsername.value
+        });
+        if (error) throw error;
 
-        superAdminProfile.value.username = editableUsername.value;
-        alert('Username updated successfully!');
-    } catch (error) {
-        alert(`Error updating username: ${error.message}`);
-    } finally {
-        isEditingUsername.value = false;
-    }
+        superAdminProfile.value.username = editableUsername.value;
+        alert('Username updated successfully!');
+    } catch (error) {
+        alert(`Error updating username: ${error.message}`);
+    } finally {
+        isEditingUsername.value = false;
+    }
 };
 
 const activeFeature = ref('dashboard');
@@ -1161,59 +1216,156 @@ const salesLoading = ref(true);
 const salesError = ref(null);
 
 const salesData = ref({
-    totalSalesToday: 0, totalOrdersToday: 0,
-    salesTrend: { labels: [], datasets: [{ label: 'Daily Sales (₱)', data: [], backgroundColor: '#0d6efd', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 5, }], },
-    salesTrendMonthly: { labels: [], datasets: [{ label: 'Monthly Sales (₱)', data: [], backgroundColor: '#198754', borderColor: '#198754', borderWidth: 1, borderRadius: 5, }], },
-    salesByTireType: { labels: [], datasets: [{ label: 'Sales by Tire Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
+    totalSalesToday: 0,
+    totalOrdersToday: 0,
+    totalWeeklySales: 0,
+    totalMonthlySales: 0,
+    // Chart data is initialized empty
+    salesTrend: { labels: [], datasets: [{ label: 'Daily Sales (₱)', data: [], backgroundColor: '#0d6efd', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 5, }], },
+    salesTrendMonthly: { labels: [], datasets: [{ label: 'Monthly Sales (₱)', data: [], backgroundColor: '#198754', borderColor: '#198754', borderWidth: 1, borderRadius: 5, }], },
+    salesByTireType: { labels: [], datasets: [{ label: 'Sales by Product Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
 });
 
+// --- CORE FUNCTION: UPDATED FETCH SALES REPORT DATA WITH DUMMY DATA FALLBACK ---
 const fetchSalesReport = async () => {
     salesLoading.value = true;
     salesError.value = null;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     try {
-        const { data: dailyData, error: dailyError } = await supabase
-            .from('sales_report')
-            .select('report_date, sales_per_day, total_orders_f, product_trend')
-            .order('report_date', { ascending: false })
-            .limit(7);
+        // 1. Fetch sales_data (Cumulative Totals)
+        const { data: cumulativeData, error: cumulativeError } = await supabase
+            .from('sales_data')
+            .select('daily_sales, weekly_sales, monthly_sales')
+            .limit(1)
+            .single();
 
-        if (dailyError) throw dailyError;
-
-        if (dailyData && dailyData.length > 0) {
-            const sortedData = dailyData.sort((a, b) => new Date(a.report_date) - new Date(b.report_date));
-            const latestReport = sortedData[sortedData.length - 1];
-
-            // Update Summary Cards
-            salesData.value.totalSalesToday = latestReport.sales_per_day || 0;
-            salesData.value.totalOrdersToday = latestReport.total_orders_f || 0;
-
-            // Update Daily Trend Chart
-            salesData.value.salesTrend.labels = sortedData.map(d => new Date(d.report_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
-            salesData.value.salesTrend.datasets[0].data = sortedData.map(d => d.sales_per_day);
-
-            // Update Product Trend Chart (using latest day's JSONB data)
-            const trendData = latestReport.product_trend;
-            if (trendData) {
-                const labels = Object.keys(trendData);
-                const data = labels.map(key => trendData[key].sales);
-                salesData.value.salesByTireType.labels = labels;
-                salesData.value.salesByTireType.datasets[0].data = data;
-            }
-        } else {
-            // No data received from Supabase, clear all sales fields
-            salesData.value.totalSalesToday = 0;
-            salesData.value.totalOrdersToday = 0;
-            salesData.value.salesTrend.labels = [];
-            salesData.value.salesTrend.datasets[0].data = [];
-            salesData.value.salesByTireType.labels = [];
-            salesData.value.salesByTireType.datasets[0].data = [];
+        if (cumulativeError && cumulativeError.code !== 'PGRST116') { // PGRST116 is "Did not find row"
+            throw cumulativeError;
         }
 
-        // Monthly Trend (Still placeholder as this requires aggregated monthly data)
-        salesData.value.salesTrendMonthly.labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        salesData.value.salesTrendMonthly.datasets[0].data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // Initialize sales data variables
+        let liveDailySales = 0;
+        let liveWeeklySales = 0;
+        let liveMonthlySales = 0;
 
+        if (cumulativeData) {
+            liveDailySales = cumulativeData.daily_sales || 0;
+            liveWeeklySales = cumulativeData.weekly_sales || 0;
+            liveMonthlySales = cumulativeData.monthly_sales || 0;
+        }
+
+        // Update live summary cards
+        salesData.value.totalSalesToday = liveDailySales;
+        salesData.value.totalWeeklySales = liveWeeklySales;
+        salesData.value.totalMonthlySales = liveMonthlySales;
+
+        // 2. Calculate Total Orders for Today and Product Trend
+        const { data: orderItemsData, error: ordersError } = await supabase
+            .from('orders')
+            .select(`
+                status,
+                created_at,
+                order_items (
+                    quantity,
+                    price_at_purchase,
+                    products (brand)
+                )
+            `)
+            .eq('status', 'Delivered')
+            .gte('created_at', today) // Orders created today or later
+            .order('created_at', { ascending: false });
+
+        if (ordersError) throw ordersError;
+
+        let totalOrdersTodayCount = 0;
+        const productTrendMap = {};
+
+        if (orderItemsData) {
+            orderItemsData.forEach(order => {
+                totalOrdersTodayCount++;
+
+                // Aggregate Product Trend (Sales by Tire Type)
+                order.order_items.forEach(item => {
+                    const brand = item.products.brand;
+                    // Fallback safety for missing price_at_purchase
+                    const revenue = item.quantity * (item.price_at_purchase || 0);
+
+                    if (!productTrendMap[brand]) {
+                        productTrendMap[brand] = 0;
+                    }
+                    productTrendMap[brand] += revenue;
+                });
+            });
+        }
+
+        // Update live total orders card
+        salesData.value.totalOrdersToday = totalOrdersTodayCount;
+
+        // 3. Update Product Trend Chart (SALES BY TIRE TYPE - Live Data)
+        salesData.value.salesByTireType.labels = Object.keys(productTrendMap);
+        salesData.value.salesByTireType.datasets[0].data = Object.values(productTrendMap);
+
+        // -----------------------------------------------------------
+        // 4. ADD DUMMY DATA for Daily Trend Chart (Last 7 Days)
+        // -----------------------------------------------------------
+        // Helper function to get the last N day names
+        const getLastNDays = (n) => {
+            const days = [];
+            for (let i = n - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                if (i === 0) {
+                    days.push('Today'); // Set the last day as 'Today'
+                } else {
+                    days.push(d.toLocaleString('en-US', { weekday: 'short' }));
+                }
+            }
+            return days;
+        };
+
+        const dailyLabels = getLastNDays(7);
+        salesData.value.salesTrend.labels = dailyLabels;
+
+        // Dummy values for the past 6 days (simulating a slight upward trend)
+        const dailyDummySales = [
+            Math.floor(liveDailySales * 0.5 + 1000),
+            Math.floor(liveDailySales * 0.7 + 1500),
+            Math.floor(liveDailySales * 0.6 + 800),
+            Math.floor(liveDailySales * 0.8 + 2000),
+            Math.floor(liveDailySales * 0.9 + 1000),
+            Math.floor(liveDailySales * 0.7 + 2500)
+        ];
+
+        // Use the 6 dummy values and the live daily sales for the final bar
+        const dailyData = [...dailyDummySales, liveDailySales];
+        salesData.value.salesTrend.datasets[0].data = dailyData;
+
+        // -----------------------------------------------------------
+        // 5. ADD DUMMY DATA for Monthly Trend Chart (Full Year: Jan to Dec)
+        // -----------------------------------------------------------
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const currentMonthIndex = new Date().getMonth(); // 0 to 11
+
+        // Generate more realistic dummy data for a full year (adjusting for the current month)
+        const monthlyDataFullYear = [
+            250000, 300000, 450000, 400000, 550000, 600000,
+            750000, 700000, 850000, 900000, 1000000, 1100000
+        ];
+
+        // Create an array that uses liveMonthlySales for the current month and future months are 0
+        const finalMonthlyData = monthlyDataFullYear.map((dummyValue, index) => {
+            if (index === currentMonthIndex) {
+                return liveMonthlySales;
+            } else if (index > currentMonthIndex) {
+                return 0; // Future months show 0
+            }
+            return dummyValue; // Past months show dummy data
+        });
+
+        salesData.value.salesTrendMonthly.labels = monthNames;
+        salesData.value.salesTrendMonthly.datasets[0].data = finalMonthlyData;
+        // -----------------------------------------------------------
 
     } catch (err) {
         salesError.value = 'Failed to load sales report data.';
@@ -1231,48 +1383,50 @@ const selectedStatus = ref('All');
 
 // --- COMPUTED PROPERTIES ---
 
-const totalSalesLast30Days = computed(() => {
-    const dailyAverage = salesData.value.salesTrend.datasets[0].data.reduce((acc, val) => acc + val, 0) / 7;
-    return Math.round(dailyAverage * 30);
-});
+// These now read directly from the fetched sales_data
+const totalSalesToday = computed(() => salesData.value.totalSalesToday);
+const totalOrdersToday = computed(() => salesData.value.totalOrdersToday);
+const totalSalesLast7Days = computed(() => salesData.value.totalWeeklySales);
+const totalSalesLast30Days = computed(() => salesData.value.totalMonthlySales);
+
 const newUsersCount = computed(() => users.value.length);
 const totalStock = computed(() => stockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0));
 const lowStockCount = computed(() => stockItems.value.filter(item => item.status === 'Low Stock').length);
 const productTypes = computed(() => stockItems.value.length);
-const totalSalesToday = computed(() => salesData.value.totalSalesToday);
-const totalOrdersToday = computed(() => salesData.value.totalOrdersToday);
+
 
 // --- UPDATED ORDER COUNTS ---
 const totalOrders = computed(() => purchaseOrders.value.length);
+// Pending: Includes 'Pre-Ordered' and 'Order Processed'
 const pendingOrdersCount = computed(() => purchaseOrders.value.filter(o => o.cardStatus === 'Pending' || o.cardStatus === 'Shipped').length);
 const completedOrdersCount = computed(() => purchaseOrders.value.filter(o => o.cardStatus === 'Completed').length);
 
 const filteredOrders = computed(() => {
-    let filtered = purchaseOrders.value;
-    if (selectedStatus.value !== 'All') {
-        if (selectedStatus.value === 'Pending') {
-            filtered = filtered.filter(order => order.cardStatus === 'Pending' || order.cardStatus === 'Shipped');
-        } else {
-            filtered = filtered.filter(order => order.cardStatus === selectedStatus.value);
-        }
-    }
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        filtered = filtered.filter(order =>
-            order.order_id.toString().includes(query) ||
-            order.username.toLowerCase().includes(query) ||
-            order.cardStatus.toLowerCase().includes(query)
-        );
-    }
-    return filtered;
+    let filtered = purchaseOrders.value;
+    if (selectedStatus.value !== 'All') {
+        if (selectedStatus.value === 'Pending') {
+            filtered = filtered.filter(order => order.cardStatus === 'Pending' || order.cardStatus === 'Shipped');
+        } else {
+            filtered = filtered.filter(order => order.cardStatus === selectedStatus.value);
+        }
+    }
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        filtered = filtered.filter(order =>
+            order.order_id.toString().includes(query) ||
+            order.username.toLowerCase().includes(query) ||
+            order.cardStatus.toLowerCase().includes(query)
+        );
+    }
+    return filtered;
 });
 
 const sortedUsers = computed(() => {
-    return [...users.value].sort((a, b) => {
-        if (a.role === 'Admin' && b.role !== 'Admin') return -1;
-        if (a.role !== 'Admin' && b.role === 'Admin') return 1;
-        return (a.username || '').localeCompare(b.username || '');
-    });
+    return [...users.value].sort((a, b) => {
+        if (a.role === 'Admin' && b.role !== 'Admin') return -1;
+        if (a.role !== 'Admin' && b.role === 'Admin') return 1;
+        return (a.username || '').localeCompare(b.username || '');
+    });
 });
 
 let salesTrendChart = null;
@@ -1280,139 +1434,140 @@ let salesByTireTypeChart = null;
 let salesTrendMonthlyChart = null;
 
 const createCharts = () => {
-    // Destroy existing charts to prevent memory leaks and chart stacking
-    if (salesTrendChart) salesTrendChart.destroy();
-    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
-    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    // Destroy existing charts to prevent memory leaks and chart stacking
+    if (salesTrendChart) salesTrendChart.destroy();
+    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
-    const salesTrendCtx = document.getElementById('salesTrendChart');
-    if (salesTrendCtx) {
-        salesTrendChart = new Chart(salesTrendCtx, {
-            type: 'bar',
-            data: salesData.value.salesTrend,
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
-        });
-    }
-    
-    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
-    if (salesByTireTypeCtx) {
-        salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
-    }
+    const salesTrendCtx = document.getElementById('salesTrendChart');
+    if (salesTrendCtx) {
+        salesTrendChart = new Chart(salesTrendCtx, {
+            type: 'bar',
+            data: salesData.value.salesTrend,
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
+        });
+    }
 
-    const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
-    if (salesTrendMonthlyCtx) {
-        salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
-            type: 'bar',
-            data: salesData.value.salesTrendMonthly,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            },
-        });
-    }
+    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
+    if (salesByTireTypeCtx && salesData.value.salesByTireType.labels.length > 0) {
+        salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
+    }
+
+    const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
+    if (salesTrendMonthlyCtx) {
+        salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
+            type: 'bar',
+            data: salesData.value.salesTrendMonthly,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            },
+        });
+    }
 };
 
 const pageTitle = computed(() => {
-    switch (activeFeature.value) {
-        case 'dashboard': return 'Dashboard';
-        case 'sales-report': return 'Sales Report';
-        case 'stock-monitoring': return 'Stock Monitoring';
-        case 'orders': return 'Purchased Orders';
-        case 'user-management': return 'User Management';
-        case 'settings': return 'System Settings';
-        default: return 'Super Admin Dashboard';
-    }
+    switch (activeFeature.value) {
+        case 'dashboard': return 'Dashboard';
+        case 'sales-report': return 'Sales Report';
+        case 'stock-monitoring': return 'Stock Monitoring';
+        case 'orders': return 'Purchased Orders';
+        case 'user-management': return 'User Management';
+        case 'settings': return 'System Settings';
+        default: return 'Super Admin Dashboard';
+    }
 });
 const setActiveFeature = (feature) => {
-    activeFeature.value = feature;
-    if (isMobile.value) {
-        toggleSidebar();
-    }
+    activeFeature.value = feature;
+    if (isMobile.value) {
+        toggleSidebar();
+    }
 };
 const toggleSidebar = () => {
-    sidebarToggled.value = !sidebarToggled.value;
+    sidebarToggled.value = !sidebarToggled.value;
 };
 const checkMobile = () => {
-    isMobile.value = window.innerWidth < 768;
-    if (!isMobile.value) {
-        sidebarToggled.value = false;
-    }
+    isMobile.value = window.innerWidth < 768;
+    if (!isMobile.value) {
+        sidebarToggled.value = false;
+    }
 };
 
 const confirmLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        console.error("Logout failed:", error.message);
-    } else {
-        router.push('/');
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        console.error("Logout failed:", error.message);
+    } else {
+        router.push('/');
+    }
 };
 
 const getStatusBadge = (status) => {
-    switch (status) {
-        case 'Completed': return 'bg-success';
-        case 'Pending': return 'bg-warning text-dark';
-        case 'Shipped': return 'bg-primary';
-        default: return 'bg-secondary';
-    }
+    switch (status) {
+        case 'Completed': return 'bg-success';
+        case 'Pending': return 'bg-warning text-dark';
+        case 'Shipped': return 'bg-primary';
+        default: return 'bg-secondary';
+    }
 };
 const getCardBorder = (status) => {
-    switch (status) {
-        case 'Completed': return 'border-success';
-        case 'Shipped': return 'border-primary';
-        case 'Pending': return 'border-warning';
-        default: return '';
-    }
+    switch (status) {
+        case 'Completed': return 'border-success';
+        case 'Shipped': return 'border-primary';
+        case 'Pending': return 'border-warning';
+        default: return '';
+    }
 };
 const filterOrders = (status) => {
-    selectedStatus.value = status;
+    selectedStatus.value = status;
 };
 
 const fetchUsers = async () => {
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, email, role, created_at')
-        .neq('role', 'Super Admin');
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, email, role, created_at')
+        .neq('role', 'Super Admin');
 
-    if (error) {
-        console.error('Error fetching users:', error);
-    } else {
-        users.value = data;
-    }
+    if (error) {
+        console.error('Error fetching users:', error);
+    } else {
+        users.value = data;
+    }
 };
 
 const deleteUser = async (userId, username) => {
-    if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
-        const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
-        if (error) alert(`Failed to delete user: ${error.message}`);
-        else alert(`User "${username || 'N/A'}" has been deleted.`);
-    }
+    if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
+        const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
+        if (error) alert(`Failed to delete user: ${error.message}`);
+        else alert(`User "${username || 'N/A'}" has been deleted.`);
+    }
 };
 
 onMounted(() => {
-    fetchStockItems();
-    fetchSalesReport();
+    fetchStockItems();
+    fetchSalesReport();
     fetchPurchaseOrders();
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    fetchSuperAdminProfile();
-    fetchUsers();
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    fetchSuperAdminProfile();
+    fetchUsers();
 
-    userManagementChannel = supabase
-        .channel('public:profiles')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'profiles' },
-            (payload) => {
-                fetchUsers();
-            }
-        )
-        .subscribe();
+    // Real-time subscriptions remain unchanged as they are still useful
+    userManagementChannel = supabase
+        .channel('public:profiles')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'profiles' },
+            (payload) => {
+                fetchUsers();
+            }
+        )
+        .subscribe();
 
     // Real-time updates for orders
     supabase
@@ -1422,34 +1577,37 @@ onMounted(() => {
             { event: '*', schema: 'public', table: 'orders' },
             () => {
                 fetchPurchaseOrders();
+                fetchSalesReport();
             }
         )
         .subscribe();
 
+    // Removed the 'sales_report_updates' channel since 'sales_report' is no longer the source
+    // Sales data will be refreshed when orders change status
 
-    nextTick(() => {
-        if (activeFeature.value === 'sales-report') {
-            createCharts();
-        }
-    });
+    nextTick(() => {
+        if (activeFeature.value === 'sales-report' || activeFeature.value === 'dashboard') {
+            createCharts();
+        }
+    });
 });
 
 onUnmounted(() => {
-    window.removeEventListener('resize', checkMobile);
-    if (salesTrendChart) salesTrendChart.destroy();
-    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
-    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    window.removeEventListener('resize', checkMobile);
+    if (salesTrendChart) salesTrendChart.destroy();
+    if (salesByTireTypeChart) salesByTireTypeChart.destroy();
+    if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
-    if (userManagementChannel) {
-        supabase.removeChannel(userManagementChannel);
-    }
+    if (userManagementChannel) {
+        supabase.removeChannel(userManagementChannel);
+    }
 });
 
 watch(activeFeature, (newFeature) => {
-    if (newFeature === 'sales-report') {
-        nextTick(() => {
-            createCharts();
-        });
-    }
+    if (newFeature === 'sales-report' || newFeature === 'dashboard') {
+        nextTick(() => {
+            createCharts();
+        });
+    }
 });
 </script>

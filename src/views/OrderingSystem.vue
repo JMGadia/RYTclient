@@ -66,7 +66,7 @@
               <i class="bi bi-person-circle me-2"></i>
               My Account
             </a>
-          </li>
+            </li>
           <li class="mb-4">
             <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('order tracking')">
               <i class="bi bi-truck me-2"></i>
@@ -184,7 +184,7 @@
                 <img src="../assets/tiktok.png" alt="TikTok Icon" />
               </a>
             </div>
-          </div>
+        </div>
         </div>
 
         <hr class="my-4 bg-white-50">
@@ -296,10 +296,21 @@ onMounted(async () => {
         if (fetchError) throw fetchError;
 
         if (data) {
-            allProducts.value = data.map(product => ({
-                ...product,
-                image_url: getProductImageURL(product.image_url) // Full image URL
-            }));
+            allProducts.value = data.map(product => {
+                // 👇 MODIFICATION: Check quantity and set status for the UI
+                let calculatedStatus = product.status;
+
+                // Set status to 'Out of Stock' if quantity is 0
+                if (product.quantity === 0) {
+                    calculatedStatus = 'Out of Stock';
+                }
+
+                return {
+                    ...product,
+                    status: calculatedStatus, // Use the calculated status
+                    image_url: getProductImageURL(product.image_url) // Full image URL
+                };
+            });
         }
     } catch (err) {
         error.value = err.message;

@@ -14,15 +14,13 @@
           <div class="card shadow-lg border-0 rounded-4">
             <div class="card-body p-4 p-sm-5">
 
-              <!-- Title -->
               <div class="text-center mb-4">
                 <h2 class="card-title fw-bold text-dark mb-2">
                   <i class="fas fa-shield-alt me-2 text-primary"></i>Secure Payment
                 </h2>
                 <p class="text-muted">Complete your purchase</p>
-              </div>
+          </div>
 
-              <!-- Customer Type -->
               <div class="mb-4">
                 <h5 class="fw-semibold">Select Customer Type</h5>
                 <div class="d-grid gap-2 d-sm-flex">
@@ -39,11 +37,9 @@
                 </div>
               </div>
 
-              <!-- If type selected -->
               <div v-if="customerType">
                 <hr class="my-4">
 
-                <!-- Order Summary -->
                 <div class="mb-4">
                   <h5 class="fw-semibold">Order Summary</h5>
                   <ul class="list-group list-group-flush">
@@ -76,23 +72,11 @@
 
                 <hr class="my-4">
 
-                <!-- Payment Method -->
                 <h5 class="fw-semibold mb-3">Choose Payment Method</h5>
                 <div class="d-grid gap-3">
 
                   <template v-if="customerType === 'Regular'">
-                    <label class="payment-option-label">
-                      <input type="radio" class="form-check-input" name="paymentMethod" value="cod" v-model="selectedPaymentMethod">
-                      <div class="d-flex align-items-center">
-                        <i class="fas fa-truck fa-2x me-3 text-muted"></i>
-                        <div>
-                          <span class="fw-bold d-block">Cash on Delivery (COD)</span>
-                          <small class="text-muted">Pay the partial payment online now, and the rest on delivery.</small>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label class="payment-option-label">
+                                        <label class="payment-option-label">
                       <input type="radio" class="form-check-input" name="paymentMethod" value="gcash" v-model="selectedPaymentMethod">
                       <div class="d-flex align-items-center">
                         <img src="/src/assets/gcash-logow.png" alt="GCash Logo" class="payment-logo me-3">
@@ -132,7 +116,7 @@
                           />
                           <button class="close-btn" @click="isQrModalOpen = false">&times;</button>
                         </div>
-                      </div>
+                    </div>
                     </div>
 
                     <div class="mb-3">
@@ -161,8 +145,7 @@
                   </template>
                 </div>
 
-                <!-- GCash / COD Section -->
-                <div v-if="selectedPaymentMethod === 'gcash' || selectedPaymentMethod === 'cod'" class="mt-4 p-3 bg-light rounded-3">
+                <div v-if="selectedPaymentMethod === 'gcash'" class="mt-4 p-3 bg-light rounded-3">
                   <h6 class="fw-bold">GCash Partial Payment</h6>
                   <p class="small text-muted">
                     Send the partial payment of
@@ -193,19 +176,25 @@
                   </div>
                 </div>
 
-                <!-- ✅ Updated Pre-Order Button -->
                 <div class="d-grid mt-4">
                   <button
                     class="btn btn-primary btn-lg fw-semibold"
                     @click="handleSubmit"
                     :disabled="!isPreOrderEnabled"
                   >
-                    <i class="fas fa-shopping-cart me-2"></i> Pre-Order
+                    <template v-if="customerType === 'Regular'">
+                        <i class="fas fa-money-check-alt me-2"></i> Confirm Payment
+                    </template>
+                    <template v-else-if="customerType === 'B2B'">
+                        <i class="fas fa-file-invoice me-2"></i> Confirm Pre-Order
+                    </template>
+                    <template v-else>
+                        <i class="fas fa-shopping-cart me-2"></i> Place Order
+                    </template>
                   </button>
                 </div>
 
-              </div> <!-- End v-if -->
-            </div>
+              </div> </div>
           </div>
         </div>
       </div>
@@ -252,9 +241,16 @@ const partialPayment = computed(() => {
 // ----------------------------
 const setCustomerType = (type) => {
     customerType.value = type
+    // Reset selected payment method when customer type changes
     selectedPaymentMethod.value = null
     paymentProofFile.value = null
     b2bPermitFile.value = null
+
+    // NEW: If 'Regular' is selected, automatically set 'gcash' as default,
+    // since it's the only option now.
+    if (type === 'Regular') {
+        selectedPaymentMethod.value = 'gcash'
+    }
 }
 
 // ----------------------------
@@ -280,25 +276,27 @@ const goToAddressBook = () => {
 // ----------------------------
 const isPreOrderEnabled = computed(() => {
     if (customerType.value === 'Regular') {
-        // NOTE: Keeping the original check: Payment Proof is required for Pre-Order confirmation
-        return !!selectedPaymentMethod.value && !!paymentProofFile.value
+        // NOTE: Only GCash remains, so check for method selected ('gcash') and proof uploaded
+        return selectedPaymentMethod.value === 'gcash' && !!paymentProofFile.value
     } else if (customerType.value === 'B2B') {
+        // NOTE: Checks for payment proof and business permit for B2B
         return !!paymentProofFile.value && !!b2bPermitFile.value
     }
     return false
 })
 
 // ----------------------------
-// MAIN ORDER SUBMISSION (UPDATED)
+// MAIN ORDER SUBMISSION (FINAL SALES REPORT ADJUSTMENT)
 // ----------------------------
 const handleSubmit = async () => {
     if (!cart.value.length) {
-        alert('Please add items to your cart before pre-ordering.')
+        alert('Please add items to your cart before proceeding.')
         return
     }
 
     if (customerType.value === 'Regular') {
-        if (!selectedPaymentMethod.value) {
+        // Only check for GCash now since COD is removed
+        if (selectedPaymentMethod.value !== 'gcash') {
             alert('Please select a payment method.')
             return
         }
@@ -366,7 +364,9 @@ const handleSubmit = async () => {
             shipping_address: addressData.full_address,
             contact: addressData.phone,
             total_price: grandTotal.value,
+            // Status is 'Pre-Ordered' after payment confirmation from user side
             status: 'Pre-Ordered',
+            // selectedPaymentMethod.value will be 'gcash' or 'null' for B2B (defaulted to 'GCash' below)
             payment_method: selectedPaymentMethod.value || 'GCash',
             payment_proof_url: paymentProofUrl
         }
@@ -383,7 +383,7 @@ const handleSubmit = async () => {
             .select('order_id')
             .single()
 
-        if (orderError) throw orderError
+        if (orderError) throw error
 
         // 🔹 Save order items
         const orderItems = cart.value.map(item => ({
@@ -396,7 +396,7 @@ const handleSubmit = async () => {
         const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
         if (itemsError) throw itemsError
 
-        // 🔹 Update stock via RPC
+        // 🔹 Update stock via RPC (decrement_stock)
         for (const item of cart.value) {
             const { error: stockError } = await supabase.rpc('decrement_stock', {
                 product_id_to_update: item.id,
@@ -406,39 +406,25 @@ const handleSubmit = async () => {
         }
 
         // ==========================================================
-        // 💰 NEW LOGIC: UPDATE DAILY SALES REPORT (ON PAYMENT)
+        // 💰 SALES DATA UPDATE: SIMPLIFIED TO ONLY AFFECT SALES COLUMNS
         // ==========================================================
 
-        // 1. Aggregate product trend data for the JSONB column
-        const dailyProductTrend = {};
-        for (const item of cart.value) {
-            const productName = item.brand;
-            const itemRevenue = item.quantity * item.price;
-
-            // Check if the product already exists in the aggregation for today
-            dailyProductTrend[productName] = {
-                sales: (dailyProductTrend[productName]?.sales || 0) + itemRevenue,
-                count: (dailyProductTrend[productName]?.count || 0) + item.quantity,
-            };
-        }
-
-        // 2. Call the RPC to upsert the daily sales report
-        const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
-            p_sales_amount: totalSalesAmount,
-            p_orders_count: 1, // This is one order
-            p_product_trend: dailyProductTrend
-        });
+        // Call the new, simple RPC to update only daily_sales, weekly_sales, and monthly_sales
+        const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
+            p_sales_amount: totalSalesAmount
+        })
 
         if (salesReportError) {
-            // Log this as a warning, not a critical failure, since the order went through.
-            console.warn('Failed to update sales report during order placement:', salesReportError.message);
+            console.warn('Failed to update sales data:', salesReportError.message)
         }
+
+        // Removed: All prior logic related to upsert_daily_sales_report and update_cumulative_sales
 
         // ==========================================================
 
         // 🔹 Clear cart and redirect
         await clearCart()
-        alert('✅ Pre-order placed successfully! Payment recorded.')
+        alert('✅ Order placed successfully! Payment recorded.')
         router.push('/order-tracking')
     } catch (err) {
         console.error('Order error:', err.message)
@@ -454,8 +440,8 @@ const handleSubmit = async () => {
 onMounted(fetchCart)
 </script>
 
-
 <style scoped>
+/* (The style block remains unchanged) */
 .payment-page-background {
   background-color: #f4f7f9;
   font-family: 'Segoe UI', sans-serif;
