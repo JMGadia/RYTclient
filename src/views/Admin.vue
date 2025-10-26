@@ -433,7 +433,7 @@
 
 <script>
 /* ============================================================
-    Admin Dashboard Vue Component - REVISED
+    Admin Dashboard Vue Component - REVISED FOR QUAGGA PERFORMANCE
     - Implements Multi-Scan Order Fulfillment.
     - Adds Barcode Validation Heuristics (via Quagga's quality checks).
     - Updates button text for b2b_permit_url.
@@ -444,6 +444,9 @@ import { nextTick } from 'vue';
 import JsBarcode from 'jsbarcode';
 import Quagga from '@ericblade/quagga2'; // Barcode scanning library
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
+
+// Define a constant for scan cooldown
+const SCAN_COOLDOWN_MS = 1500; // 1.5 seconds cooldown after a successful scan attempt
 
 // Utility function to determine if a detection is a 'good' barcode read
 // OBJECTIVE 3: Barcode-Only Validation
@@ -456,10 +459,9 @@ function isBarcode(result) {
     // Heuristic: Check if the confidence level is above a threshold.
     // Quagga provides an "error" property which is essentially (1 - confidence).
     // A lower error means higher confidence. 0.85 is a good threshold for confidence.
-    // This rejects blurry/unclear scans or non-barcode objects that might coincidentally match a pattern.
     const confidence = 1 - (result.codeResult.err || 1);
     if (confidence < 0.85) {
-        console.warn(`Low confidence scan: ${confidence.toFixed(2)} - Likely not a clear barcode.`);
+        // console.warn(`Low confidence scan: ${confidence.toFixed(2)} - Likely not a clear barcode.`);
         return false;
     }
 
@@ -470,14 +472,6 @@ function isBarcode(result) {
 
 export default {
     name: 'AdminDashboard',
-
-    // The router is not available via "this" inside the module scope,
-    // so we get it outside if needed, but for a standard Vue component
-    // we should rely on this.$router inside the methods.
-    // Note: The original provided code had the router instantiation outside
-    // the component export, which is generally incorrect for Vue 2/3 Composition API context
-    // but often exists in boilerplate. We'll keep it as a comment for context.
-    // const router = useRouter();
 
     /* ============================================================
       ROUTE GUARD (No changes)
@@ -508,7 +502,7 @@ export default {
     },
 
     /* ============================================================
-      DATA PROPERTIES (UPDATED for Multi-Scan)
+      DATA PROPERTIES (UPDATED for Debounce)
     ============================================================ */
     data() {
         return {
@@ -531,6 +525,8 @@ export default {
             isStockOutLoading: false,
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false,
+            // 💡 FIX: New property for time-based debouncing
+            lastScanTime: 0,
 
             // OBJECTIVE 2: New state for multi-scan tracking
             orderItemsScanned: {},
@@ -570,7 +566,7 @@ export default {
     },
 
     /* ============================================================
-      COMPUTED PROPERTIES (UPDATED for Multi-Scan Logic)
+      COMPUTED PROPERTIES (No changes)
     ============================================================ */
     computed: {
         totalItemsToScan() {
@@ -608,24 +604,24 @@ export default {
         },
         // Keeping this helper function for template compatibility (no change)
         getOrderProductDetails() {
-             return (items) => {
-                 if (!items || items.length === 0) return 'No items found.';
-                 return items.map(item => {
-                     const brand = item.products ? item.products.brand : 'Unknown Product';
-                     const size = item.products ? item.products.size : 'N/A';
-                     return `${brand} (${size}) x${item.quantity}`;
-                 }).join(', ');
-             };
-         }
+            return (items) => {
+                if (!items || items.length === 0) return 'No items found.';
+                return items.map(item => {
+                    const brand = item.products ? item.products.brand : 'Unknown Product';
+                    const size = item.products ? item.products.size : 'N/A';
+                    return `${brand} (${size}) x${item.quantity}`;
+                }).join(', ');
+            };
+        }
     },
 
     /* ============================================================
-      METHODS (UPDATED for all 3 objectives)
+      METHODS (UPDATED for Quagga Performance)
     ============================================================ */
     methods: {
 
         /* ============================
-          --- QUAGGA BARCODE SCANNER (MULTI-SCAN & VALIDATION) ---
+          --- QUAGGA BARCODE SCANNER (PERFORMANCE FIXES) ---
           ============================ */
         initQuagga() {
             if (typeof Quagga === 'undefined' || !Quagga.init) {
@@ -639,15 +635,28 @@ export default {
                     type: "LiveStream",
                     target: document.querySelector('#scanner-container'),
                     constraints: {
-                        facingMode: "environment"
+                        facingMode: "environment",
+                        // 💡 FIX 1: Optimal resolution for fast decoding on most devices
+                        width: { min: 640, ideal: 800, max: 1280 },
+                        height: { min: 480, ideal: 600, max: 720 }
                     }
                 },
-                decoder: { readers: ['code_128_reader', 'ean_reader', 'upc_reader'] },
-                locator: {
-                    halfSample: false,
-                    patchSize: "medium"
+                decoder: {
+                    readers: ['code_128_reader', 'ean_reader', 'upc_reader'],
+                    // 💡 FIX 2: Set minimum image quality threshold for decoding attempts
+                    config: {
+                         code_128_reader: { min_avg_error: 0.25 }
+                    }
                 },
-                locate: true
+                locator: {
+                    halfSample: true, // Speeds up localization
+                    patchSize: "medium",
+                    // 💡 FIX 3: Restrict scanning area to the center 60% of the viewport (improves focus/speed)
+                    area: { top: "20%", right: "20%", left: "20%", bottom: "20%" }
+                },
+                locate: true,
+                // 💡 FIX 4: Throttle the decoding frequency to reduce CPU load and prevent rapid misreads
+                frequency: 100 // Decode every 100 milliseconds
             }, (err) => {
                 if (err) {
                     console.error("Quagga init failed:", err);
@@ -676,24 +685,42 @@ export default {
 
         // New Quagga detection handler for multi-scan and barcode-only validation
         onQuaggaDetected(result) {
+            const currentTime = Date.now();
+
             if (this.isProcessingScan || this.isScanProgressComplete) {
                 return;
             }
 
-            const scannedCode = result.codeResult.code;
+            const scannedCode = result.codeResult && result.codeResult.code;
 
             // OBJECTIVE 3: Barcode-Only Validation
             if (!isBarcode(result)) {
-                this.scanStatusMessage = "⚠️ Not a clear barcode. Please align better.";
-                // Do not return here, allow the system to keep trying on the next frame
+                // 💡 FIX 5: Only show the "Not clear" message if the current message is different,
+                // preventing annoying status flickering.
+                if (this.scanStatusMessage !== "⚠️ Align barcode clearly in view.") {
+                     this.scanStatusMessage = "⚠️ Align barcode clearly in view.";
+                }
+                // Do NOT return here, as we want to allow re-evaluation on the next frame.
                 return;
             }
 
-            // Simple debounce: If the same code is detected very quickly, ignore it.
-            if (scannedCode === this.lastDetectedCode) {
+            // 💡 FIX 6: Implement time-based debounce: If a successful, high-confidence scan
+            // occurred recently, ignore this one to prevent double-counting.
+            if (currentTime - this.lastScanTime < SCAN_COOLDOWN_MS) {
+                // The status message for the product (if already scanned) is maintained.
                 return;
             }
 
+            // Simple code debounce: If the same code is detected very quickly, ignore it
+            // unless it's the very first scan after a successful processing.
+            if (scannedCode === this.lastDetectedCode && this.lastDetectedCode !== null) {
+                 this.scanStatusMessage = `✅ Barcode **${scannedCode}** is confirmed in view.`;
+                 // Since it's the same code, we just wait for the user to move to the next item.
+                 return;
+            }
+
+            // Update time and code for successful read
+            this.lastScanTime = currentTime;
             this.lastDetectedCode = scannedCode;
             this.handleBarcodeScanned(scannedCode);
         },
@@ -707,21 +734,22 @@ export default {
             this.isOrderScanComplete = false;
             this.orderItemsScanned = {}; // Reset scanned items for the new order
             this.lastDetectedCode = null;
+            this.lastScanTime = 0; // 💡 FIX: Reset scan timer
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
 
             // Optional: Auto-update status from Pre-Ordered → Order Processed
             if (order.status === 'Pre-Ordered' && order.b2b_permit_url) {
                 supabase.from('orders')
-                   .update({ status: 'Order Processed' })
-                   .eq('order_id', order.order_id)
-                   .then(({ error }) => {
-                     if (error) console.warn('Failed to update status:', error);
-                     else {
-                         this.orderToFulfill.status = 'Order Processed'; // Optimistic UI update
-                         this.fetchProcessedOrders();
-                     }
-                   });
+                       .update({ status: 'Order Processed' })
+                       .eq('order_id', order.order_id)
+                       .then(({ error }) => {
+                          if (error) console.warn('Failed to update status:', error);
+                          else {
+                              this.orderToFulfill.status = 'Order Processed'; // Optimistic UI update
+                              this.fetchProcessedOrders();
+                          }
+                       });
             }
 
             // Wait for DOM to be ready before initializing Quagga
@@ -786,6 +814,8 @@ export default {
                     this.isDelivering = this.orderToFulfill.order_id;
                 } else {
                     // Automatically re-enable scanning to catch the next item (manual capture is also available)
+                    // Reset lastDetectedCode to allow the next *different* item to be scanned immediately,
+                    // but the time-based debounce prevents the same item from being counted repeatedly.
                     this.lastDetectedCode = null;
                 }
 
@@ -805,6 +835,7 @@ export default {
             this.orderToFulfill = null;
             this.orderItemsScanned = {};
             this.lastDetectedCode = null;
+            this.lastScanTime = 0; // 💡 FIX: Ensure timer is reset when modal closes
         },
 
         captureBarcode() {
