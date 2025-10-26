@@ -365,7 +365,7 @@ const handleSubmit = async () => {
             contact: addressData.phone,
             total_price: grandTotal.value,
             // Status is 'Pre-Ordered' after payment confirmation from user side
-            status: 'Pre-Ordered',
+            status: 'Order Processed',
             // selectedPaymentMethod.value will be 'gcash' or 'null' for B2B (defaulted to 'GCash' below)
             payment_method: selectedPaymentMethod.value || 'GCash',
             payment_proof_url: paymentProofUrl
