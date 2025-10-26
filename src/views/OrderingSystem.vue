@@ -1,6 +1,7 @@
 <template>
   <div class="ordering-page">
-    <nav class="navbar navbar-expand-md navbar-light bg-white py-3 border-bottom shadow-sm sticky-top">
+<nav class="navbar navbar-expand-md navbar-light py-3 border-bottom shadow-sm">
+
       <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="#">
           <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
@@ -10,13 +11,7 @@
         <form class="d-none d-md-flex mx-auto" style="max-width: 500px;" @submit.prevent>
           <div class="input-group">
             <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-            <input 
-              class="form-control rounded-pill rounded-start-0 border-start-0" 
-              type="search" 
-              placeholder="Search for tires and parts..." 
-              aria-label="Search" 
-              v-model="searchQuery" 
-            />
+            <input class="form-control rounded-pill rounded-start-0 border-start-0" type="search" placeholder="Search for tires and parts..." aria-label="Search" />
           </div>
         </form>
 
@@ -24,59 +19,62 @@
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="d-none d-md-flex align-items-center">
-          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'profile' })" title="My Account">
-            <img src="../assets/userIcon.png" alt="Account Management" height="28" />
-          </a>
-          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'order tracking' })" title="Track Order">
-            <img src="../assets/orderTrackicon.png" alt="Order Tracking" height="28" />
-          </a>
-          <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'cart' })" title="Shopping Cart">
-            <img src="../assets/cartIcon.png" alt="Cart" height="28" />
-          </a>
-        </div>
+          <div class="d-none d-md-flex align-items-center gap-4">
+            <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'profile' })" title="My Account">
+              <i class="fas fa-user-circle"></i>
+            </a>
+            <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'order tracking' })" title="Track Order">
+              <i class="fas fa-truck"></i>
+            </a>
+            <a href="#" class="nav-icon-link" @click.prevent="router.push({ name: 'cart' })" title="Shopping Cart">
+              <i class="fas fa-shopping-bag"></i>
+            </a>
+          </div>
+
       </div>
     </nav>
 
-    <div class="container d-md-none py-2 bg-white border-bottom">
-      <form @submit.prevent>
-        <div class="input-group">
-          <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-          <input 
-            class="form-control rounded-pill rounded-start-0 border-start-0" 
-            type="search" 
-            placeholder="Search..." 
-            aria-label="Search" 
-            v-model="searchQuery" 
-          />
-        </div>
-      </form>
-    </div>
-
-    <Transition name="slide-right">
-      <div v-if="isMobileMenuOpen" class="mobile-side-panel">
-        <ul class="list-unstyled mb-0">
-          <li>
-            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('profile')">
-              <img src="../assets/userIcon.png" alt="Account" height="24" />
-              <span>My Account</span>
-            </a>
-          </li>
-          <li>
-            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('order tracking')">
-              <img src="../assets/orderTrackicon.png" alt="Track Order" height="24" />
-              <span>Track Order</span>
-            </a>
-          </li>
-          <li>
-            <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('cart')">
-              <img src="../assets/cartIcon.png" alt="Cart" height="24" />
-              <span>Shopping Cart</span>
-            </a>
-          </li>
-        </ul>
+      <div class="mobile-search d-md-none px-3 py-2">
+        <form @submit.prevent>
+          <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-search text-secondary"></i>
+            </span>
+            <input class="form-control border-start-0 rounded-pill rounded-start-0" 
+                  type="search" placeholder="Search..." aria-label="Search" />
+          </div>
+        </form>
       </div>
-    </Transition>
+
+  <Transition name="slide-right">
+  <div v-if="isMobileMenuOpen" class="mobile-fullscreen-panel">
+      <button class="close-btn" @click="isMobileMenuOpen = false">
+        <i class="fas fa-times"></i>
+      </button>
+
+
+    <ul class="list-unstyled text-center mt-5">
+      <li class="mb-4">
+        <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('profile')">
+          <i class="bi bi-person-circle me-2"></i>
+          My Account
+        </a>
+      </li>
+      <li class="mb-4">
+        <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('order tracking')">
+          <i class="bi bi-truck me-2"></i>
+          Track Order
+        </a>
+      </li>
+      <li class="mb-4">
+        <a href="#" class="panel-link" @click.prevent="navigateAndCloseMenu('cart')">
+          <i class="bi bi-bag-check me-2"></i>
+          Shopping Cart
+        </a>
+      </li>
+    </ul>
+  </div>
+</Transition>
 
     <main class="container py-4">
       
@@ -129,7 +127,7 @@
             </div>
           </div>
           <div v-else class="text-center py-5">
-            <p class="text-muted fs-5">No products found matching your search or category.</p>
+            <p class="text-muted fs-5">No products found in this category.</p>
           </div>
         </div>
       </section>
@@ -162,7 +160,7 @@
               </li>
               <li>
                 <i class="fas fa-file-contract me-2"></i>
-                <a href="https://www.freeprivacypolicy.com/live/5c820c67-e042-4384-891e-c3ecacc2fe7c" class="footer-link">Privacy Policy</a>
+                <a href="#" class="footer-link">Privacy Policy</a>
               </li>
             </ul>
           </div>
@@ -193,16 +191,16 @@
 
 <script setup>
 /* ============================================================
-    Customer Product Listing Page
-    Features:
-    - Exit Guard (Warn before leaving page)
-    - Product Fetching & Filtering
-    - Cart Management
-    - Responsive Mobile Menu
-    - Category Filtering
+   Customer Product Listing Page
+   Features:
+   - Exit Guard (Warn before leaving page)
+   - Product Fetching & Filtering
+   - Cart Management
+   - Responsive Mobile Menu
+   - Category Filtering
 ============================================================ */
 
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
 import { useCart } from '../composables/useCart';
@@ -210,116 +208,114 @@ import { supabase } from '../server/supabase';
 import AdScroller from '../components/AdScroller.vue'; // Optional component for ads
 
 /* ============================================================
-    ROUTE GUARD
-    Warns user before leaving pages that may cause logout/session end
+   ROUTE GUARD
+   Warns user before leaving pages that may cause logout/session end
 ============================================================ */
 onBeforeRouteLeave(async (to, from, next) => {
-    const safeRoutes = ['profile', 'order tracking', 'cart'];
+  const safeRoutes = ['profile', 'order tracking', 'cart'];
 
-    // Allow navigation for safe routes
-    if (safeRoutes.includes(to.name)) {
-        next();
-        return;
-    }
+  // Allow navigation for safe routes
+  if (safeRoutes.includes(to.name)) {
+    next();
+    return;
+  }
 
-    const answer = window.confirm(
-        'Are you sure you want to leave this page? You will be logged out for security.'
-    );
+  const answer = window.confirm(
+    'Are you sure you want to leave this page? You will be logged out for security.'
+  );
 
-    if (answer) {
-        await supabase.auth.signOut();
-        next(false); // Cancel current navigation
-        window.location.href = '/login'; // Force redirect to login page
-    } else {
-        next(false); // Cancel navigation
-    }
+  if (answer) {
+    await supabase.auth.signOut();
+    next(false); // Cancel current navigation
+    window.location.href = '/login'; // Force redirect to login page
+  } else {
+    next(false); // Cancel navigation
+  }
 });
 
 /* ============================================================
-    ROUTER & UI STATE
+   ROUTER & UI STATE
 ============================================================ */
 const router = useRouter();
 const isMobileMenuOpen = ref(false); // Controls mobile menu visibility
 const selectedCategory = ref('All'); // Default category filter
-const searchQuery = ref(''); // FIX: Reactive state for the search bar input
 
 // Navigate to a route and close the mobile menu
 const navigateAndCloseMenu = (routeName) => {
-    isMobileMenuOpen.value = false;
-    router.push({ name: routeName });
+  isMobileMenuOpen.value = false;
+  router.push({ name: routeName });
 };
 
 // Select a product category for filtering
 const selectCategory = (category) => {
-    selectedCategory.value = category;
+  selectedCategory.value = category;
 };
 
 /* ============================================================
-    PRODUCT DATA FETCHING
+   PRODUCT DATA FETCHING
 ============================================================ */
 const allProducts = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// Filtered products based on selected category AND search query
+// Filtered products based on selected category
 const filteredProducts = computed(() => {
-    const query = searchQuery.value.toLowerCase().trim();
-    
-    let products = allProducts.value;
-
-    // 1. Apply Category Filter
-    if (selectedCategory.value !== 'All') {
-        products = products.filter(product => product.product_type === selectedCategory.value);
-    }
-
-    // 2. Apply Search Filter
-    if (query) {
-        products = products.filter(product => {
-            // Search across multiple fields: brand, size, car_brand, and product_type
-            const brandMatch = (product.brand || '').toLowerCase().includes(query);
-            const sizeMatch = (product.size || '').toLowerCase().includes(query);
-            const typeMatch = (product.product_type || '').toLowerCase().includes(query);
-            const carBrandMatch = (product.car_brand || '').toLowerCase().includes(query);
-            
-            return brandMatch || sizeMatch || typeMatch || carBrandMatch;
-        });
-    }
-
-    return products;
+  if (selectedCategory.value === 'All') return allProducts.value;
+  return allProducts.value.filter(product => product.product_type === selectedCategory.value);
 });
 
 // Fetch products on component mount
 onMounted(async () => {
-    loading.value = true;
-    error.value = null;
+  loading.value = true;
+  error.value = null;
 
-    try {
-        const { data, error: fetchError } = await getProducts();
-        if (fetchError) throw fetchError;
+  try {
+    const { data, error: fetchError } = await getProducts();
+    if (fetchError) throw fetchError;
 
-        if (data) {
-            allProducts.value = data.map(product => ({
-                ...product,
-                image_url: getProductImageURL(product.image_url) // Full image URL
-            }));
-        }
-    } catch (err) {
-        error.value = err.message;
-        console.error("Failed to fetch products:", err);
-    } finally {
-        loading.value = false;
+    if (data) {
+      allProducts.value = data.map(product => ({
+        ...product,
+        image_url: getProductImageURL(product.image_url) // Full image URL
+      }));
     }
+  } catch (err) {
+    error.value = err.message;
+    console.error("Failed to fetch products:", err);
+  } finally {
+    loading.value = false;
+  }
 });
 
+const handleScroll = () => {
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    if (window.scrollY > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
+
+
 /* ============================================================
-    CART MANAGEMENT
+   CART MANAGEMENT
 ============================================================ */
 const { addToCart } = useCart();
 
 // Add selected product to cart and redirect to cart page
 const handleAddToCart = (product) => {
-    addToCart(product);
-    router.push({ name: 'cart' });
+  addToCart(product);
+  router.push({ name: 'cart' });
 };
 </script>
 
@@ -335,68 +331,68 @@ const handleAddToCart = (product) => {
 
 /* Add this new rule to style the image icons */
 .social-icon img {
-    width: 20px; 
-    height: 20px; 
+  width: 20px;  /* Adjust size as needed */
+  height: 20px; /* Adjust size as needed */
 }
 
 .ordering-page { 
-    font-family: 'Roboto', sans-serif; 
-    position: relative;
-    background-color: #0c0a24;
-    overflow-x: hidden;
+  font-family: 'Roboto', sans-serif; 
+  position: relative;
+  background-color: #0c0a24;
+  overflow-x: hidden;
 }
 
 .ordering-page::before {
-    content: '';
-    position: fixed;
-    top: -50%; left: -50%; right: -50%; bottom: -50%;
-    z-index: 0;
-    background-image: 
-        radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
-        radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
-        radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
-        radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
-    filter: blur(100px);
-    animation: auroraAnimation 20s ease-in-out infinite;
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%; right: -50%; bottom: -50%;
+  z-index: 0;
+  background-image: 
+    radial-gradient(circle at 10% 20%, #6e86ff 10%, transparent 40%),
+    radial-gradient(circle at 80% 90%, #d8b4fe 15%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #f7c2d8 12%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #63a4ff 20%, transparent 60%);
+  filter: blur(100px);
+  animation: auroraAnimation 20s ease-in-out infinite;
 }
 
 .navbar, section, footer {
-    position: relative;
-    z-index: 1;
+  position: relative;
+  z-index: 1;
 }
 
 section {
-    background-color: transparent !important;
+  background-color: transparent !important;
 }
 
 .section-title { 
-    font-family: 'Poppins', sans-serif; 
-    color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    position: relative; 
-    padding-bottom: 10px; 
+  font-family: 'Poppins', sans-serif; 
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  position: relative; 
+  padding-bottom: 10px; 
 }
 .section-title::after { 
-    content: ''; 
-    position: absolute; 
-    left: 50%; bottom: 0; 
-    transform: translateX(-50%); 
-    width: 60px; height: 3px; 
-    background-color: #0d6efd; 
-    border-radius: 2px; 
+  content: ''; 
+  position: absolute; 
+  left: 50%; bottom: 0; 
+  transform: translateX(-50%); 
+  width: 60px; height: 3px; 
+  background-color: #0d6efd; 
+  border-radius: 2px; 
 }
 
 .product-card { 
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 1rem; 
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); 
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem; 
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); 
 }
 .card-img-container { 
-    background-color: rgba(255, 255, 255, 0.7);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    height: 160px; 
+  background-color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  height: 160px; 
 }
 
 /* --- NAVBAR STYLES --- */
@@ -411,55 +407,55 @@ section {
 
 /* --- MOBILE SIDE PANEL STYLES --- */
 .mobile-side-panel {
-    position: fixed;
-    top: 80px;
-    right: 0;
-    width: auto;
-    background-color: #343a40; /* Simple solid dark color */
-    border-radius: 1rem 0 0 1rem; /* Rounded on the left side */
-    box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
-    z-index: 1050;
-    padding: 0.5rem;
-    padding-left: 2rem; /* Make space for the handle */
+  position: fixed;
+  top: 80px;
+  right: 0;
+  width: auto;
+  background-color: #343a40; /* Simple solid dark color */
+  border-radius: 1rem 0 0 1rem; /* Rounded on the left side */
+  box-shadow: -5px 5px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1050;
+  padding: 0.5rem;
+  padding-left: 2rem; /* Make space for the handle */
 }
 /* This creates the "handle" from your sketch */
 .mobile-side-panel::before {
-    content: '';
-    position: absolute;
-    left: -10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 60px;
-    background-color: #343a40;
-    border-radius: 10px 0 0 10px;
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 60px;
+  background-color: #343a40;
+  border-radius: 10px 0 0 10px;
 }
 .panel-link {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    color: #f8f9fa;
-    text-decoration: none;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s ease;
-    white-space: nowrap; /* Prevent text from wrapping */
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  color: #f8f9fa;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  white-space: nowrap; /* Prevent text from wrapping */
 }
 .panel-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 .panel-link img {
-    filter: invert(1);
-    margin-right: 0.75rem;
+  filter: invert(1);
+  margin-right: 0.75rem;
 }
 
 /* --- TRANSITION FOR THE PANEL --- */
 .slide-right-enter-active,
 .slide-right-leave-active {
-    transition: transform 0.4s ease;
+  transition: transform 0.4s ease;
 }
 .slide-right-enter-from,
 .slide-right-leave-to {
-    transform: translateX(100%);
+  transform: translateX(100%);
 }
 
 .advertisement-banner img { width: 100%; height: auto; display: block; }
@@ -471,61 +467,276 @@ section {
 footer { background-color: rgba(12, 10, 36, 0.8) !important; backdrop-filter: blur(5px); }
 
 .btn-glass {
-    padding: 0.5rem 1.5rem;
-    font-family: 'Poppins', sans-serif;
-    border-radius: 50rem;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
+  padding: 0.5rem 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 50rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 .btn-glass.active {
-    background: #0d6efd;
-    border-color: #0d6efd;
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  background: #0d6efd;
+  border-color: #0d6efd;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
 }
 
 @media (max-width: 767.98px) {
-    h3.section-title { font-size: 1.5rem; }
-    section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
-    .card-img-container { height: 120px; }
-    .product-name { font-size: 0.9rem; }
+  h3.section-title { font-size: 1.5rem; }
+  section.py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+  .card-img-container { height: 120px; }
+  .product-name { font-size: 0.9rem; }
 }
 
 /* --- FOOTER STYLES --- */
 .footer-section {
-    background-color: rgba(12, 10, 36, 0.8) !important;
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(12, 10, 36, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-link {
-    color: #adb5bd; /* Lighter gray for better readability */
-    text-decoration: none;
-    transition: color 0.3s ease;
+  color: #adb5bd; /* Lighter gray for better readability */
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-    color: #ffffff;
-    text-decoration: underline;
+  color: #ffffff;
+  text-decoration: underline;
 }
 
 .social-icon {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 1rem;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .social-icon:hover {
-    background-color: #0d6efd; /* Primary blue on hover */
-    transform: translateY(-3px);
-    color: #fff;
+  background-color: #0d6efd; /* Primary blue on hover */
+  transform: translateY(-3px);
+  color: #fff;
 }
+
+
+.navbar {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1055;
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* When scrolled */
+.navbar.scrolled {
+  background: rgba(12, 10, 36, 0.7) !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+}
+
+
+body,
+.ordering-page {
+  padding-top: 90px;
+}
+
+
+.navbar-brand strong {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  background: linear-gradient(45deg, #0066ff, #8a2be2);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.ordering-page::before {
+  background-image:
+    radial-gradient(circle at 15% 20%, #5a7dff 10%, transparent 50%),
+    radial-gradient(circle at 80% 80%, #d08bff 10%, transparent 40%),
+    radial-gradient(circle at 50% 40%, #ff8ed1 10%, transparent 40%),
+    linear-gradient(120deg, #0c0a24, #241e4e, #17133d);
+  filter: blur(80px);
+  opacity: 0.9;
+}
+.product-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(13,110,253,0.25);
+}
+
+.card-img-container {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(240,240,255,0.7));
+  border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+.nav-icon-link {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.6rem;
+  transition: all 0.3s ease;
+}
+
+.nav-icon-link:hover {
+  color: #0d6efd; 
+  transform: scale(1.15);
+}
+
+.nav-icon-link i {
+  vertical-align: middle;
+}
+
+/* Overriding CSS classes */
+.navbar-toggler {
+  border: none;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(255,255,255,0.9)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.mobile-search {
+  background: transparent; 
+  backdrop-filter: none;  
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.mobile-search .input-group {
+  width: 100%;
+}
+
+.mobile-search .form-control {
+  background-color: #f8f9fa; 
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-search .input-group-text {
+  background-color: #f8f9fa;
+  border: none;
+}
+
+
+
+.mobile-search .form-control {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.mobile-search .input-group-text {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50rem 0 0 50rem;
+}
+
+@media (max-width: 767.98px) {
+  .navbar-brand strong {
+    font-size: 1rem;
+  }
+
+  .navbar img {
+    height: 32px !important;
+  }
+
+  .navbar {
+    padding: 0.5rem 1rem !important;
+  }
+}
+
+/* 🌈 Full-Screen Mobile Panel */
+.mobile-fullscreen-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.9), rgba(111, 66, 193, 0.9));
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  animation: fadeIn 0.4s ease;
+}
+
+/* Close button — more visible and larger tap area */
+.close-btn {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.6rem;
+  cursor: pointer;
+  z-index: 1200;
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffc107;
+  transform: rotate(90deg) scale(1.1);
+}
+
+.close-btn i {
+  pointer-events: none; /* Make sure icon doesn't block clicks */
+}
+
+/* Menu links */
+.panel-link {
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.3rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+.panel-link:hover {
+  color: #ffc107;
+  transform: scale(1.1);
+}
+.panel-link i {
+  font-size: 1.5rem;
+  vertical-align: middle;
+}
+
+/* Transition effect */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.4s ease;
+}
+.slide-right-enter-from,
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+/* Simple fade */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
+
 </style>

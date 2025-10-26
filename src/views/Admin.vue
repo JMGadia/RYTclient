@@ -1,65 +1,46 @@
 <template>
-  <div id="admin-dashboard" class="d-flex flex-column min-vh-100 bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-      <div class="container-fluid">
-        <button class="btn btn-primary" @click="toggleSidebar">
-          <i class="fas fa-bars"></i>
-        </button>
-        <a class="navbar-brand fw-bold ms-3" href="#">Administrator</a>
-        <div v-if="!isMobile" class="collapse navbar-collapse justify-content-end">
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-bell me-1"></i> Notifications</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                ref="adminDropdownToggle"
-                @click.prevent="toggleDesktopAdminMenu"
-              >
-                <i class="fas fa-user-circle me-1"></i> {{ currentUser.username }}
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" v-show="desktopAdminDropdownOpen">
-                <li><a class="dropdown-item" href="#" @click.prevent="showProfileModal = true">Profile</a></li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
-              </ul>
-            </li>
-          </ul>
+ <div>
+    <!-- ✅ Navbar stays full width -->
+    <nav class="navbar navbar-dark bg-primary shadow-sm fixed-top w-100">
+      <div class="container-fluid d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn text-white border-0 shadow-none" type="button" @click="toggleSidebar">
+            <i class="fas fa-bars fa-lg"></i>
+          </button>
+          <span class="fw-bold text-white d-none d-md-inline">Administrator</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <a class="nav-link text-white" href="#"><i class="fas fa-bell fa-lg"></i></a>
+          <div class="dropdown">
+            <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center"
+               @click.prevent="toggleDesktopAdminMenu">
+              <i class="fas fa-user-circle fa-lg me-1"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" v-show="desktopAdminDropdownOpen">
+              <li><a class="dropdown-item" href="#" @click.prevent="showProfileModal = true">Profile</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="logout">Logout</a></li>
+            </ul>
+          </div>
         </div>
       </div>
     </nav>
-    <div class="d-flex flex-grow-1">
-      <div
-        :class="[
-          'sidebar bg-dark text-white shadow',
-          { collapsed: isCollapsed && !isMobile },
-          { 'sidebar-visible': isSidebarVisible && isMobile }
-        ]"
-      >
+
+
+    <div id="admin-dashboard" class="d-flex flex-column min-vh-100 bg-light pt-5">
+    <div
+      :class="[
+        'sidebar bg-dark text-white shadow',
+        { collapsed: isCollapsed && !isMobile },
+        { 'sidebar-visible': isSidebarVisible }
+      ]"
+    >
+
+
         <nav class="h-100 p-3">
           <h5 class="text-center mb-4 text-uppercase" v-if="!isCollapsed || isMobile">RYT-Tyre</h5>
           <ul class="nav flex-column">
-            <li v-if="isMobile" class="nav-item mt-2">
-              <div class="nav-link text-white py-2 px-3 d-flex align-items-center justify-content-between" @click="toggleAdminMenu" style="cursor: pointer;">
-                <div>
-                  <i class="fas fa-user-circle me-2"></i>
-                  <span>{{ currentUser.username }}</span>
-                </div>
-                <i :class="adminMenuOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-              </div>
-              <ul v-if="adminMenuOpen" class="ps-4 mt-2">
-                <li><a class="text-white d-block py-1" href="#" @click.prevent="showProfileModal = true; closeSidebar();">Profile</a></li>
-                <li><a class="text-white d-block py-1" href="#" @click.prevent="logout">Logout</a></li>
-              </ul>
-            </li>
-            <li v-if="isMobile" class="nav-item mt-2">
-              <a class="nav-link text-white py-2 px-3 d-flex align-items-center" href="#">
-                <i class="fas fa-bell me-2"></i>
-                <span>Notifications</span>
-              </a>
-            </li>
             <li
               class="nav-item mt-3 mb-2"
               v-for="item in menuItems"
@@ -78,12 +59,13 @@
           </ul>
         </nav>
       </div>
-
       <div
-        v-if="isMobile && isSidebarVisible"
+        v-if="isSidebarVisible"
         class="sidebar-overlay"
         @click="closeSidebar"
       ></div>
+
+
       <main class="flex-grow-1 p-4">
         <h2 class="text-primary mb-4">{{ currentView }}</h2>
         
@@ -134,34 +116,52 @@
           <div class="card shadow-sm border-0 rounded-lg mb-4">
             <div class="card-header bg-white text-dark fw-bold">Record New Stock In</div>
             <div class="card-body">
-              <form @submit.prevent="addStockIn">
-                <div class="mb-3">
-                  <label for="productNameIn" class="form-label">Product (Brand)</label>
-                  <select class="form-select" id="productNameIn" v-model="stockIn.productName" required>
-                    <option disabled value="">Please select a product</option>
-                    <option v-for="product in availableProducts" :key="product.id" :value="product.brand">
-                      {{ product.brand }} (Current Size: {{ product.size }})
-                    </option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label for="sizeIn" class="form-label">New Size</label>
-                  <input type="text" class="form-control" id="sizeIn" v-model="stockIn.size" required>
-                </div>
-                <div class="mb-3">
-                  <label for="quantityIn" class="form-label">Quantity to Add</label>
-                  <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
-                </div>
-                <div class="mb-3">
-                  <label for="supplierIn" class="form-label">Supplier</label>
-                  <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
-                </div>
-                <div class="mb-3">
-                  <label for="dateTimeIn" class="form-label">Date and Time</label>
-                  <input type="datetime-local" class="form-control" id="dateTimeIn" v-model="stockIn.dateTime" required>
-                </div>
-                <button type="submit" class="btn btn-success rounded-pill px-4">Record Stock In</button>
-              </form>
+ <form @submit.prevent="addStockIn" class="p-3">
+  <div class="row g-3">
+    <!-- Left Column -->
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="productNameIn" class="form-label fw-semibold">Product (Brand)</label>
+        <select class="form-select" id="productNameIn" v-model="stockIn.productName" required>
+          <option disabled value="">Please select a product</option>
+          <option v-for="product in availableProducts" :key="product.id" :value="product.brand">
+            {{ product.brand }} (Current Size: {{ product.size }})
+          </option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="quantityIn" class="form-label fw-semibold">Quantity to Add</label>
+        <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="dateTimeIn" class="form-label fw-semibold">Date and Time</label>
+        <input type="datetime-local" class="form-control" id="dateTimeIn" v-model="stockIn.dateTime" required>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="sizeIn" class="form-label fw-semibold">New Size</label>
+        <input type="text" class="form-control" id="sizeIn" v-model="stockIn.size" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="supplierIn" class="form-label fw-semibold">Supplier</label>
+        <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-success rounded-pill px-5 py-2 fw-bold">
+      Record Stock In
+    </button>
+  </div>
+</form>
+
             </div>
           </div>
           <div class="card shadow-sm border-0 rounded-lg">
@@ -201,7 +201,7 @@
           <div v-if="activeOrders.length === 0 && !isStockOutLoading" class="card text-center p-5 bg-light">
             <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
             <h4 class="fw-bold">No Processed Orders Awaiting Shipment</h4>
-            <p class="text-muted">Orders with 'Order Processed' or 'Shipped' status will appear here.</p>
+            <p class="text-muted">Orders with 'Order Processed' status will appear here.</p>
           </div>
           
           <div v-if="isStockOutLoading" class="text-center p-5">
@@ -210,66 +210,28 @@
 
           <div v-else class="row">
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
-              <div 
-                class="card h-100 shadow-sm border-warning"
-                :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered'}"
-              >
-                <div 
-                  class="card-header fw-bold"
-                  :class="{
-                    'bg-warning text-dark': order.status === 'Order Processed', 
-                    'bg-success text-white': order.status === 'Shipped',
-                    'bg-danger text-white': order.status === 'Delivered'
-                  }"
-                >
+              <div class="card h-100 shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark fw-bold">
                   Order #{{ order.order_id.slice(0, 8) }}
                 </div>
                 <div class="card-body">
-                  <h5 class="card-title fw-bold text-primary mb-3">
-                    <i class="fas fa-box me-2"></i> 
-                    {{ getOrderProductDetails(order.order_items) }}
-                  </h5>
+                  <h5 class="card-title fw-bold text-primary">{{ order.product_name }} (x{{ order.quantity }})</h5>
                   <p class="card-text mb-1">
-                    <i class="fas fa-user me-2 text-muted"></i>
-                    <strong>{{ order.username || 'Name Missing' }}</strong>
+                    <i class="fas fa-user me-2 text-muted"></i>{{ order.username }}
                   </p>
-                  <p class="card-text mb-1">
-                    <i class="fas fa-phone me-2 text-muted"></i>
-                    {{ order.contact || 'Phone Missing' }}
-                  </p>
-                  <p class="card-text mb-2 small text-muted">
+                  <p class="card-text mb-1 small text-muted">
                     <i class="fas fa-map-marker-alt me-2"></i>
                     {{ order.shipping_address ? order.shipping_address.substring(0, 40) : 'Address Missing' }}
                     <span v-if="order.shipping_address && order.shipping_address.length > 40">...</span>
                   </p>
-                  
-                  <button 
-                      class="btn w-100 mt-2" 
-                      :class="{
-                        'btn-primary': order.status === 'Order Processed',
-                        'btn-success': order.status === 'Shipped',
-                        'btn-danger': order.status === 'Delivered'
-                      }"
-                      @click="
-                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) : 
-                        order.status === 'Order Processed' ? startScanForOrder(order) : null
-                      "
-                      :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
-                  >
-                    <i 
-                        :class="{
-                            'fas fa-barcode me-2': order.status === 'Order Processed',
-                            'fas fa-truck me-2': order.status === 'Shipped',
-                            'fas fa-check-circle me-2': order.status === 'Delivered'
-                        }"
-                    ></i>
-                    {{ 
-                        order.status === 'Delivered' ? 'Delivered Completed' : 
-                        order.status === 'Shipped' ? 'Ready to Deliver' : 
-                        'Take Order & Scan' 
-                    }}
+                  <p class="card-text mb-2">
+                    <i class="fas fa-tag me-2 text-muted"></i>Size: {{ order.size }}
+                  </p>
+                  <button class="btn btn-primary w-100 mt-2" 
+                          @click="startScanForOrder(order)">
+                    <i class="fas fa-barcode me-2"></i>Take Order & Scan
                   </button>
-                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -283,21 +245,46 @@
           <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i> User Profile</h5>
         </div>
         <div class="card-body">
-          <form @submit.prevent="saveProfile">
-            <div class="mb-3">
-              <label for="profileUsername" class="form-label fw-bold">Username</label>
-              <input type="text" class="form-control" id="profileUsername" v-model="editableUser.username" required>
-            </div>
-            <div class="mb-4">
-              <label for="profileEmail" class="form-label fw-bold">Email</label>
-              <input type="email" class="form-control" id="profileEmail" :value="currentUser.email" disabled>
-              <div class="form-text">Email cannot be changed here.</div>
-            </div>
-            <div class="d-flex justify-content-end gap-3">
-              <button type="button" class="btn btn-secondary" @click="cancelProfileEdit">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save Changes</button>
-            </div>
-          </form>
+            <form @submit.prevent="addStockIn">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="productNameIn" class="form-label">Product (Brand)</label>
+                  <select class="form-select" id="productNameIn" v-model="stockIn.productName" required>
+                    <option disabled value="">Please select a product</option>
+                    <option v-for="product in availableProducts" :key="product.id" :value="product.brand">
+                      {{ product.brand }} (Current Size: {{ product.size }})
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="sizeIn" class="form-label">New Size</label>
+                  <input type="text" class="form-control" id="sizeIn" v-model="stockIn.size" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="quantityIn" class="form-label">Quantity to Add</label>
+                  <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="supplierIn" class="form-label">Supplier</label>
+                  <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="dateTimeIn" class="form-label">Date and Time</label>
+                  <input type="datetime-local" class="form-control" id="dateTimeIn" v-model="stockIn.dateTime" required>
+                </div>
+              </div>
+
+              <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success rounded-pill px-5">
+                  Record Stock In
+                </button>
+              </div>
+            </form>
+
         </div>
       </div>
     </div>
@@ -337,7 +324,7 @@
                 <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
             </div>
             <div class="card-body">
-              <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+              <p class="text-center text-muted">Scan **{{ orderToFulfill.product_name }} (x{{ orderToFulfill.quantity }})** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
               
               <div id="scanner-container" class="mb-3">
                 <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
@@ -361,60 +348,29 @@
                 <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
             </div>
             <div class="card-body text-center">
-                <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
-                <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+                <p class="lead">Barcode successfully matched!</p>
+                <p>Ready to ship **{{ orderToFulfill.product_name }} (x{{ orderToFulfill.quantity }})** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
                 <div class="d-flex justify-content-center gap-3 mt-4">
                     <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
                     <button class="btn btn-success" @click="updateStockOut">
-                        <i class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
+                        <i class="fas fa-shipping-fast me-2"></i> Confirm Shipment
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div v-if="showDeliveryConfirmationModal" class="custom-modal-overlay" style="z-index: 1060;"></div>
-    <div class="modal fade" :class="{ 'show': showDeliveryConfirmationModal }" style="display: block; z-index: 1070;" v-if="showDeliveryConfirmationModal">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Confirm Order Delivery</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="closeConfirmDeliveryModal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="fas fa-truck-loading fa-3x text-success mb-3"></i>
-                    <p class="lead fw-semibold">Confirm final delivery for Order #{{ orderToFulfill ? orderToFulfill.order_id.slice(0, 8) : 'N/A' }}?</p>
-                    <p class="text-muted small">
-                        This action will mark the order as **DELIVERED**.
-                    </p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" @click="closeConfirmDeliveryModal">Cancel</button>
-                    <button 
-                        type="button" 
-                        class="btn btn-success" 
-                        @click="confirmDeliverySuccessAdmin" 
-                        :disabled="isDelivering === orderToFulfill?.order_id"
-                    >
-                        <span v-if="isDelivering === orderToFulfill?.order_id" class="spinner-border spinner-border-sm me-2"></span>
-                        Order Delivered
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
+  </div>
 </template>
 
 <script>
 /* ============================================================
-    Admin Dashboard Vue Component
-    Features:
-    - User Profile Management
-    - Stock In / Stock Out Handling
-    - Barcode Generation & Scanning (Quagga2 & JsBarcode)
-    - Dashboard Statistics & Recent Activities
-    - Responsive UI and Sidebar Navigation
+   Admin Dashboard Vue Component
+   Features:
+   - User Profile Management
+   - Stock In / Stock Out Handling
+   - Barcode Generation & Scanning (Quagga2 & JsBarcode)
+   - Dashboard Statistics & Recent Activities
+   - Responsive UI and Sidebar Navigation
 ============================================================ */
 
 import { supabase } from '../server/supabase';
@@ -426,655 +382,619 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router';
 const router = useRouter();
 
 export default {
-    name: 'AdminDashboard',
+  name: 'AdminDashboard',
 
-    /* ============================================================
-      ROUTE GUARD
-    ============================================================ */
-    beforeRouteLeave(to, from, next) {
-        const allowedExitRoutes = ['login', 'signup'];
+  /* ============================================================
+     ROUTE GUARD
+     Warns user before leaving admin routes (e.g., via browser back button)
+  ============================================================ */
+  beforeRouteLeave(to, from, next) {
+    const allowedExitRoutes = ['login', 'signup'];
 
-        if (allowedExitRoutes.includes(to.name)) {
-            next(); // Allowed route, no warning
-            return;
-        }
+    if (allowedExitRoutes.includes(to.name)) {
+      next(); // Allowed route, no warning
+      return;
+    }
 
-        const answer = window.confirm(
-            'Are you sure you want to leave? This will end your session for security.'
-        );
+    const answer = window.confirm(
+      'Are you sure you want to leave? This will end your session for security.'
+    );
 
-        if (answer) {
-            supabase.auth.signOut().then(() => {
-                next(false);
-                window.location.href = '/login';
-            });
-        } else {
-            next(false); // Cancel navigation
-        }
-    },
+    if (answer) {
+      supabase.auth.signOut().then(() => {
+        next(false);
+        window.location.href = '/login';
+      });
+    } else {
+      next(false); // Cancel navigation
+    }
+  },
 
-    /* ============================================================
-      DATA PROPERTIES
-    ============================================================ */
-    data() {
-        return {
-            // --- UI State ---
-            isCollapsed: false,
-            isSidebarVisible: false,
-            isMobile: false,
-            adminMenuOpen: false,
-            desktopAdminDropdownOpen: false,
-            lastDetectedCode: null,
-            autoDetect: true,
-            showLogoutModal: false,
-            showProfileModal: false,
-            showBarcodeModal: false,
-            showScanModal: false,
-            showDeliveryConfirmationModal: false,
-            isDelivering: null, 
+  /* ============================================================
+     DATA PROPERTIES
+  ============================================================ */
+  data() {
+    return {
+      // --- UI State ---
+      isCollapsed: false,
+      isSidebarVisible: false,
+      isMobile: false,
+      adminMenuOpen: false,
+      desktopAdminDropdownOpen: false,
+      lastDetectedCode: null,
+      autoDetect: true,
+      showLogoutModal: false,
+      showProfileModal: false,
+      showBarcodeModal: false,
+      showScanModal: false,
 
-            // --- Loading / Scan State ---
-            isStockOutLoading: false,
-            isProductScanned: false,
-            scanStatusMessage: 'Awaiting camera initialization...',
-            isProcessingScan: false, 
-            orderItemsScanned: {}, 
+      // --- Loading / Scan State ---
+      isStockOutLoading: false,
+      isProductScanned: false,
+      scanStatusMessage: 'Awaiting camera initialization...',
 
-            // --- Dashboard / Views ---
-            currentView: 'Dashboard',
-            totalProductsCount: 0,
-            stockInTodayCount: 0,
-            stockOutTodayCount: 0,
-            recentActivities: [],
-            availableProducts: [], 
-            activeOrders: [],
-            menuItems: [
-                { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
-                { icon: 'fas fa-boxes', label: 'Stock In' },
-                { icon: 'fas fa-truck-loading', label: 'Stock Out' }
-            ],
+      // --- Dashboard / Views ---
+      currentView: 'Dashboard',
+      totalProductsCount: 0,
+      stockInTodayCount: 0,
+      stockOutTodayCount: 0,
+      recentActivities: [],
+      availableProducts: [],
+      activeOrders: [],
+      menuItems: [
+        { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+        { icon: 'fas fa-boxes', label: 'Stock In' },
+        { icon: 'fas fa-truck-loading', label: 'Stock Out' }
+      ],
 
-            // --- User Info ---
-            currentUser: { username: 'Loading...', email: 'loading@app.com', id: null },
-            editableUser: { username: 'Loading...' },
+      // --- User Info ---
+      currentUser: { username: 'Loading...', email: 'loading@app.com', id: null },
+      editableUser: { username: 'Loading...' },
 
-            // --- Stock In Form ---
-            stockIn: {
-                productName: '',
-                size: '',
-                quantity: 1,
-                supplier: '',
-                dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))
-                    .toISOString()
-                    .slice(0, 16)
-            },
-            stockInHistory: [],
-            orderToFulfill: null
-        };
-    },
+      // --- Stock In Form ---
+      stockIn: {
+        productName: '',
+        size: '',
+        quantity: 1,
+        supplier: '',
+        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000))
+          .toISOString()
+          .slice(0, 16)
+      },
+      stockInHistory: [],
+      itemToPrint: null,
+      orderToFulfill: null
+    };
+  },
 
-    /* ============================================================
-      COMPUTED PROPERTIES
-    ============================================================ */
-    computed: {
-        totalItemsToScan() {
-            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return 0;
-            return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
-        },
-        totalItemsScanned() {
-            return Object.values(this.orderItemsScanned).reduce((total, count) => total + count, 0);
-        },
-        scannedItemsList() {
-            if (!this.orderToFulfill || !this.orderToFulfill.order_items) return [];
+  /* ============================================================
+     METHODS
+  ============================================================ */
+  methods: {
 
-            return this.orderToFulfill.order_items.map(item => {
-                const productName = item.products ? item.products.brand : 'Unknown Product';
-                const required = item.quantity;
-                const scanned = this.orderItemsScanned[item.products.id] || 0; 
-                
-                return {
-                    name: productName,
-                    required: required,
-                    scanned: scanned,
-                    isComplete: scanned >= required
-                };
-            });
-        },
-        // Keeping this helper function for template compatibility
-        getOrderProductDetails() {
-             return (items) => {
-                if (!items || items.length === 0) return 'No items found.';
-                return items.map(item => {
-                    const brand = item.products ? item.products.brand : 'Unknown Product';
-                    const size = item.products ? item.products.size : 'N/A';
-                    return `${brand} (${size}) x${item.quantity}`;
-                }).join(', ');
-            };
-        }
-    },
+    /* ============================
+       --- QUAGGA BARCODE SCANNER ---
+       ============================ */
+initQuagga() {
+  if (typeof Quagga === 'undefined' || !Quagga.init) {
+    this.scanStatusMessage = 'Error: Barcode scanner library not loaded.';
+    return;
+  }
 
-    /* ============================================================
-      METHODS
-    ============================================================ */
-    methods: {
+  Quagga.init({
+  inputStream: {
+    name: "Live",
+    type: "LiveStream",
+    target: document.querySelector('#scanner-container'),
+    constraints: {
+      width: 640,
+      height: 480,
+      facingMode: "environment"
+    }
+  },
+  decoder: { readers: ['code_128_reader'] },
+  locator: {
+    halfSample: false,
+    patchSize: "medium"
+  },
+  locate: true
+}, (err) => {
+  if (err) {
+    console.error("Quagga init failed:", err);
+    return;
+  }
 
-        /* ============================
-          --- QUAGGA BARCODE SCANNER (STABLE SINGLE-SCAN) ---
-          ============================ */
-        initQuagga() {
-            if (typeof Quagga === 'undefined' || !Quagga.init) {
-                this.scanStatusMessage = 'Error: Barcode scanner library not loaded.';
-                return;
-            }
+  Quagga.start();
+  this.scanStatusMessage = "Camera ready. Align barcode clearly in view.";
 
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-container'),
-                    constraints: {
-                        facingMode: "environment" 
-                    }
-                },
-                decoder: { readers: ['code_128_reader'] },
-                locator: {
-                    halfSample: false,
-                    patchSize: "medium"
-                },
-                locate: true
-            }, (err) => {
-                if (err) {
-                    console.error("Quagga init failed:", err);
-                    this.scanStatusMessage = `Camera failed to start. Check permissions/HTTPS. Details: ${err.message || err}`; 
-                    return;
-                }
-
-                Quagga.start();
-                this.scanStatusMessage = "Camera ready. Align barcode clearly in view.";
-
-                Quagga.onDetected((result) => {
-                    // Reverted to simple single-scan handling
-                    const code = result.codeResult.code;
-                    this.handleBarcodeScanned(code);
-                });
-            });
-        },
+  Quagga.onDetected((result) => {
+    const code = result.codeResult.code;
+    console.log("Detected:", code);
+    this.handleBarcodeScanned(code);
+  });
+});
+},
 
 
-        stopQuagga() {
-            try {
-                if (Quagga && Quagga.stop) {
-                    Quagga.stop();
-                    Quagga.offDetected && Quagga.offDetected();
-                }
-            } catch (err) {
-                console.warn('Error stopping Quagga:', err);
-            }
-        },
+stopQuagga() {
+  try {
+    if (Quagga && Quagga.stop) {
+      Quagga.stop();
+      Quagga.offDetected && Quagga.offDetected();
+    }
+  } catch (err) {
+    console.warn('Error stopping Quagga:', err);
+  }
+},
 
 
-        startScanForOrder(order) {
-            // Reverted to simple single-scan initialization logic
-            if (order.status !== 'Order Processed') return; 
-            
-            this.orderToFulfill = order;
-            this.isProductScanned = false; 
-            this.scanStatusMessage = 'Awaiting camera initialization...';
-            this.showScanModal = true;
-            
-            // Wait for DOM to be ready before initializing Quagga
-            nextTick(() => {
-                setTimeout(() => {
-                    this.initQuagga();
-                }, 100);
-            });
-        },
+    startScanForOrder(order) {
+      this.orderToFulfill = order;
+      this.isProductScanned = false;
+      this.scanStatusMessage = 'Awaiting camera initialization...';
+      this.showScanModal = true;
+
+      nextTick(() => this.initQuagga());
+    },
 
 
-        async handleBarcodeScanned(scannedCode) {
-            if (!scannedCode) return; 
-            
-            try {
-                // For stable single-scan, we assume validation is successful and proceed to confirmation modal
-                
-                this.stopQuagga(); 
-                this.isProductScanned = true; 
-                this.scanStatusMessage = `✅ Barcode validated. Ready for shipment confirmation.`;
-                this.showScanModal = false; // Hide scanner modal to show confirmation modal
-                
-            } catch (err) {
-                console.error('Scan error:', err);
-                alert('⚠️ Failed to process scan: ' + (err.message || err));
-            }
-        },
+async handleBarcodeScanned(scannedCode) {
+  if (!scannedCode) {
+    this.scanStatusMessage = 'No barcode captured.';
+    return;
+  }
+
+  // ✅ Normalize scanned value
+  let raw = String(scannedCode).trim().replace(/\s+/g, '');
+  const rawUpper = raw.toUpperCase();
+
+  // ⚙️ If numeric-only (UPC/EAN), it's not one of your generated codes
+  if (/^\d+$/.test(rawUpper)) {
+    this.scanStatusMessage = `⚠️ Barcode [${rawUpper}] looks like a UPC/EAN, not your system code.`;
+    alert(`⚠️ Invalid barcode format detected.\n\nDetected: ${rawUpper}\nYour system uses codes like ADVE-1234567890`);
+    return;
+  }
+
+  // ✅ Extract base code (PREFIX-<timestamp>)
+  let baseCode = rawUpper;
+  const parts = rawUpper.split('-');
+  if (parts.length >= 2) baseCode = parts.slice(0, 2).join('-');
+  console.log('🔎 Scanned raw:', raw, '| Base:', baseCode);
+
+  this.scanStatusMessage = `Scanning: ${raw} — trying base: ${baseCode}`;
+
+  try {
+    // ✅ Step 1: Lookup item in stock_in
+    const { data: item, error } = await supabase
+      .from('stock_in')
+      .select('barcode_id, product_name, size, quantity')
+      .ilike('barcode_id', `%${baseCode}%`)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!item) {
+      this.scanStatusMessage = '❌ Barcode not found in stock.';
+      alert(`❌ Barcode not found in stock.\n\nScanned: ${raw}\nTried: ${baseCode}`);
+      return;
+    }
+
+    // ✅ Step 2: Validate product fields
+    if (!item.product_name || !item.size) {
+      alert('⚠️ Product record incomplete for barcode: ' + item.barcode_id);
+      return;
+    }
+
+    // ✅ Step 3: Handle quantity
+    const currentQty = Number(item.quantity) || 0;
+    if (currentQty <= 0) {
+      alert(`⚠️ Out of stock!\n\nProduct: ${item.product_name}\nSize: ${item.size}`);
+      return;
+    }
+
+    const newQty = Math.max(currentQty - 1, 0);
+
+    const { error: updateError } = await supabase
+      .from('stock_in')
+      .update({ quantity: newQty })
+      .eq('barcode_id', item.barcode_id);
+
+    if (updateError) throw updateError;
+
+    // ✅ Step 4: Update UI
+    this.stockInHistory = this.stockInHistory.map(row =>
+      row.barcode_id === item.barcode_id ? { ...row, quantity: newQty } : row
+    );
+
+    this.stopQuagga();
+    this.isProductScanned = true;
+    this.scanStatusMessage = `✅ ${item.product_name} updated. Remaining: ${newQty}`;
+    alert(
+      `✅ Scanned Successfully!\n\nProduct: ${item.product_name}\nSize: ${item.size}\nRemaining: ${newQty}`
+    );
+  } catch (err) {
+    console.error('Scan error:', err);
+    alert('⚠️ Failed to process scan: ' + (err.message || err));
+  }
+},
 
 
-        closeScanModal() {
-            this.stopQuagga(); 
-            this.showScanModal = false;
-            this.isProductScanned = false; 
-            this.orderToFulfill = null;
-        },
-        captureBarcode() {
-            // Note: This button is mostly for simulating a successful scan if Quagga's auto-detect fails
-            const codeToProcess = this.lastDetectedCode || "DEFAULT-SCAN-CODE"; 
-            this.handleBarcodeScanned(codeToProcess);
-        },
+    closeScanModal() {
+      this.stopQuagga();
+      this.showScanModal = false;
+      this.orderToFulfill = null;
+      this.isProductScanned = false;
+    },
+      captureBarcode() {
+        if (!this.lastDetectedCode) {
+          alert('Barcode Note detected Please Try Again!');
+          return;
+        }
+        this.handleBarcodeScanned(this.lastDetectedCode);
+      },
 
-        /* ============================
-          --- USER PROFILE METHODS ---
-          ============================ */
-        async fetchCurrentUserProfile() {
-            try {
-                const { data: { user }, error: authError } = await supabase.auth.getUser();
-                if (authError) throw authError;
+    /* ============================
+       --- USER PROFILE METHODS ---
+       ============================ */
+    async fetchCurrentUserProfile() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
 
-                if (user) {
-                    const { data: profileData, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('username')
-                        .eq('id', user.id)
-                        .single();
+        if (user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', user.id)
+            .single();
 
-                    if (profileError) throw profileError;
+          if (profileError) throw profileError;
 
-                    this.currentUser.id = user.id;
-                    this.currentUser.email = user.email || 'N/A';
-                    this.currentUser.username = profileData.username || 'Admin User';
-                    this.editableUser.username = this.currentUser.username;
-                }
-            } catch (error) {
-                console.error('Error fetching user profile:', error.message);
-                this.currentUser.username = 'Admin User';
-                this.currentUser.email = 'admin@ryttire.com';
-                this.editableUser.username = 'Admin User';
-            }
-        },
+          this.currentUser.id = user.id;
+          this.currentUser.email = user.email || 'N/A';
+          this.currentUser.username = profileData.username || 'Admin User';
+          this.editableUser.username = this.currentUser.username;
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error.message);
+        this.currentUser.username = 'Admin User';
+        this.currentUser.email = 'admin@ryttire.com';
+        this.editableUser.username = 'Admin User';
+      }
+    },
 
-        async saveProfile() {
-            try {
-                const { error: updateProfileError } = await supabase
-                    .from('profiles')
-                    .update({ username: this.editableUser.username })
-                    .eq('id', this.currentUser.id);
+    async saveProfile() {
+      try {
+        const { error: updateProfileError } = await supabase
+          .from('profiles')
+          .update({ username: this.editableUser.username })
+          .eq('id', this.currentUser.id);
 
-                if (updateProfileError) throw updateProfileError;
+        if (updateProfileError) throw updateProfileError;
 
-                this.currentUser.username = this.editableUser.username;
-                this.showProfileModal = false;
-                alert('Profile updated successfully!');
-            } catch (error) {
-                console.error('Error saving profile:', error.message);
-                alert('Failed to save profile changes. Error: ' + error.message);
-            }
-        },
+        this.currentUser.username = this.editableUser.username;
+        this.showProfileModal = false;
+        alert('Profile updated successfully!');
+      } catch (error) {
+        console.error('Error saving profile:', error.message);
+        alert('Failed to save profile changes. Error: ' + error.message);
+      }
+    },
 
-        cancelProfileEdit() {
-            this.editableUser.username = this.currentUser.username;
-            this.showProfileModal = false;
-        },
+    cancelProfileEdit() {
+      this.editableUser.username = this.currentUser.username;
+      this.showProfileModal = false;
+    },
 
-        /* ============================
-          --- DASHBOARD & DATA FETCHING ---
-          ============================ */
-        async fetchInitialData() {
-            this.fetchCurrentUserProfile();
-            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, barcode');
-            if (productsError) console.error('Error fetching products:', productsError);
-            else this.availableProducts = products;
+    /* ============================
+       --- DASHBOARD & DATA FETCHING ---
+       ============================ */
+    async fetchInitialData() {
+      this.fetchCurrentUserProfile();
+      const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size');
+      if (productsError) console.error('Error fetching products:', productsError);
+      else this.availableProducts = products;
 
-            this.fetchDashboardData();
-            this.fetchStockInHistory();
-            this.fetchProcessedOrders();
-        },
+      this.fetchDashboardData();
+      this.fetchStockInHistory();
+      this.fetchProcessedOrders();
+    },
 
-        async fetchDashboardData() {
-            const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-            this.totalProductsCount = productsCount;
+    async fetchDashboardData() {
+      const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+      this.totalProductsCount = productsCount;
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-            const { count: stockInCount } = await supabase
-                .from('stock_in')
-                .select('*', { count: 'exact', head: true })
-                .gte('date_and_time', today.toISOString())
-                .lt('date_and_time', tomorrow.toISOString());
-            this.stockInTodayCount = stockInCount;
+      const { count: stockInCount } = await supabase
+        .from('stock_in')
+        .select('*', { count: 'exact', head: true })
+        .gte('date_and_time', today.toISOString())
+        .lt('date_and_time', tomorrow.toISOString());
+      this.stockInTodayCount = stockInCount;
 
-            const { data: activities } = await supabase.from('stock_in')
-                .select('*')
-                .order('date_and_time', { ascending: false })
-                .limit(4);
-            this.recentActivities = activities;
-        },
+      const { data: activities } = await supabase.from('stock_in')
+        .select('*')
+        .order('date_and_time', { ascending: false })
+        .limit(4);
+      this.recentActivities = activities;
+    },
 
-        async fetchStockInHistory() {
-            const { data, error } = await supabase.from('stock_in').select('*').order('date_and_time', { ascending: false });
-            if (error) console.error('Error fetching stock in history:', error);
-            else this.stockInHistory = data;
-        },
+    async fetchStockInHistory() {
+      const { data, error } = await supabase.from('stock_in').select('*').order('date_and_time', { ascending: false });
+      if (error) console.error('Error fetching stock in history:', error);
+      else this.stockInHistory = data;
+    },
 
-        async fetchProcessedOrders() {
-            this.isStockOutLoading = true;
-            try {
-                // Include all necessary states: Order Processed, Shipped, Delivered
-                const { data, error } = await supabase
-                    .from('orders')
-                    .select(`
-                        *, 
-                        order_items (
-                            product_id, 
-                            quantity, 
-                            price_at_purchase,
-                            products!inner(id, brand, size) 
-                        )
-                    `)
-                    .in('status', ['Order Processed', 'Shipped', 'Delivered']) 
-                    .order('created_at', { ascending: true });
+    async fetchProcessedOrders() {
+      this.isStockOutLoading = true;
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('status', 'Order Processed')
+          .order('created_at', { ascending: true });
 
-                if (error) throw error;
-                this.activeOrders = data;
-            } catch (error) {
-                console.error('Error fetching processed orders:', error.message);
-                this.activeOrders = [];
-            } finally {
-                this.isStockOutLoading = false;
-            }
-        },
+        if (error) throw error;
+        this.activeOrders = data;
+      } catch (error) {
+        console.error('Error fetching processed orders:', error.message);
+        this.activeOrders = [];
+      } finally {
+        this.isStockOutLoading = false;
+      }
+    },
 
-        getOrderProductDetails(items) {
-            if (!items || items.length === 0) return 'No items found.';
+    /* ============================
+       --- STOCK OUT METHODS ---
+       ============================ */
+  async updateStockOut() {
+  if (!this.orderToFulfill || !this.isProductScanned) {
+    alert('Cannot confirm shipment: Scan required or order data missing.');
+    return;
+  }
 
-            return items.map(item => {
-                const brand = item.products ? item.products.brand : 'Unknown Product';
-                const size = item.products ? item.products.size : 'N/A';
-                
-                return `${brand} (${size}) x${item.quantity}`;
-            }).join(', ');
-        },
+  const orderId = this.orderToFulfill.order_id;
+  let productId = this.orderToFulfill.product_id;
+  const quantityToShip = this.orderToFulfill.quantity;
 
-        /* ============================
-          --- STOCK OUT METHODS (SHIPPING) ---
-          ============================ */
-        async updateStockOut() {
-            if (!this.orderToFulfill) return;
-            
-            const orderId = this.orderToFulfill.order_id;
-            const items = this.orderToFulfill.order_items;
-            let totalSalesAmount = 0;
-            let totalOrdersCount = 1; 
-            
-            // Map to aggregate product sales for the JSONB field in sales_report
-            const productTrendMap = new Map(); 
+  try {
+    // find product by ID or name
+    if (!productId) {
+      const { data: found, error: findErr } = await supabase
+        .from('products')
+        .select('id, quantity')
+        .ilike('brand', this.orderToFulfill.product_name)
+        .limit(1)
+        .single();
 
-            try {
-                // 1. Calculate sales and log individual stock-out transactions
-                for (const item of items) {
-                    const { product_id, quantity, price_at_purchase } = item;
-                    totalSalesAmount += (quantity * price_at_purchase);
+      if (findErr || !found) {
+        throw new Error('Product not linked in order and cannot be found by name.');
+      }
+      productId = found.id;
+    }
 
-                    const product = this.availableProducts.find(p => p.id === product_id);
-                    const productName = product ? product.brand : `Product ID: ${product_id}`;
-                    
-                    // Aggregate product trend data
-                    const currentTrend = productTrendMap.get(productName) || { sales: 0, count: 0 };
-                    currentTrend.sales += (quantity * price_at_purchase);
-                    currentTrend.count += quantity;
-                    productTrendMap.set(productName, currentTrend);
-                    
-                    // Log individual stock-out transaction
-                    const { error: logError } = await supabase.from('stock_out').insert({
-                        order_id: orderId,
-                        product_id: product_id,
-                        product_name: productName,
-                        quantity: quantity,
-                        date_and_time: new Date().toISOString()
-                    });
-                    if (logError) console.warn('Failed to log stock-out for item:', logError);
-                }
+    const { data: currentProduct, error: prodErr } = await supabase
+      .from('products')
+      .select('quantity')
+      .eq('id', productId)
+      .single();
 
-                // Convert map to object for JSONB insertion
-                const dailyProductTrend = Object.fromEntries(productTrendMap);
-                
-                // 2. Update Order Status to Shipped
-                const { error: updateOrderError } = await supabase
-                    .from('orders')
-                    .update({ status: 'Shipped' }) 
-                    .eq('order_id', orderId);
-                if (updateOrderError) throw updateOrderError;
+    if (prodErr || !currentProduct) throw new Error('Could not retrieve product stock.');
 
-                // 3. 💥 CRITICAL STEP: IMPORT SALES DATA via RPC
-                const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
-                    p_sales_amount: totalSalesAmount,
-                    p_orders_count: totalOrdersCount,
-                    p_product_trend: dailyProductTrend // Pass the aggregated JSON object
-                });
-                
-                if (salesReportError) {
-                    // Log error but don't halt, as the order update succeeded
-                    console.error('Failed to update sales report:', salesReportError);
+    const newQuantity = currentProduct.quantity - quantityToShip;
+    if (newQuantity < 0) {
+      alert('Error: Not enough stock to fulfill this order.');
+      return;
+    }
+
+    let newStatus = '';
+    if (newQuantity >= 12) newStatus = 'In Stock';
+    else if (newQuantity >= 1) newStatus = 'Low Stock';
+    else newStatus = 'Out of Stock';
+
+    const { error: updateProductError } = await supabase
+      .from('products')
+      .update({ quantity: newQuantity, status: newStatus })
+      .eq('id', productId);
+    if (updateProductError) throw updateProductError;
+
+    const { error: updateOrderError } = await supabase
+      .from('orders')
+      .update({ status: 'Shipped', date_shipped: new Date().toISOString() })
+      .eq('order_id', orderId);
+    if (updateOrderError) throw updateOrderError;
+
+    const { error: logError } = await supabase.from('stock_out').insert({
+      order_id: orderId,
+      product_id: productId,
+      product_name: this.orderToFulfill.product_name,
+      quantity: quantityToShip,
+      date_and_time: new Date().toISOString()
+    });
+    if (logError) console.warn('Failed to log stock-out:', logError);
+
+    alert(`✅ Order #${orderId.slice(0    , 8)} shipped — stock updated.`);
+    this.isProductScanned = false;
+    this.orderToFulfill = null;
+    this.fetchProcessedOrders();
+    this.fetchDashboardData();
+
+  } catch (error) {
+    console.error('Stock Out/Shipping Error:', error);
+    alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
+  }
+},
+
+
+    /* ============================
+       --- STOCK IN METHODS ---
+       ============================ */
+    async addStockIn() {
+      if (!this.stockIn.productName) {
+        alert('Please select a product from the dropdown.');
+        return;
+      }
+
+      const product = this.availableProducts.find(p => p.brand === this.stockIn.productName);
+      if (!product) { alert('Could not find selected product.'); return; }
+
+      const { data: currentProduct, error: findError } = await supabase.from('products')
+        .select('quantity').eq('id', product.id).single();
+      if (findError) { alert('Could not retrieve current stock.'); return; }
+
+      const newQuantity = currentProduct.quantity + this.stockIn.quantity;
+      let newStatus = '';
+      if (newQuantity >= 12) newStatus = 'In Stock';
+      else if (newQuantity >= 1) newStatus = 'Low Stock';
+      else newStatus = 'Out of Stock';
+
+      const { error: updateError } = await supabase.from('products')
+        .update({ size: this.stockIn.size, quantity: newQuantity, status: newStatus })
+        .eq('id', product.id);
+      if (updateError) { alert('Error updating product: ' + updateError.message); return; }
+
+      const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
+            const { data: insertedStock, error: logError } = await supabase.from('stock_in').insert({
+              barcode_id: barcodeBase,
+              product_name: this.stockIn.productName,
+              size: this.stockIn.size,
+              quantity: this.stockIn.quantity,
+              supplier: this.stockIn.supplier,
+              date_and_time: this.stockIn.dateTime
+          }).select().single();
+
+                      if (logError) {
+                  alert('Warning: Failed to log transaction. ' + logError.message);
+                } else {
+                  console.log('✅ Stock-In Logged:', insertedStock);
+                  this.scanStatusMessage = `Stock In added for ${this.stockIn.productName}`;
                 }
-                
-                // 4. Update Stock Quantity (Implementation depends on availableProducts and stock reduction logic)
-                // This step is critical but is kept simple here. You would typically call another RPC (e.g., decrement_stock)
-                // for each item here.
-
-                // --- TRANSACTION SUCCESS ---
-                alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery! Sales report updated.`);
-                
-                // Clear state
-                this.isProductScanned = false;
-                this.showScanModal = false;
-                this.orderToFulfill = null;
-                
-                this.fetchProcessedOrders(); 
-                this.fetchDashboardData();
-
-            } catch (error) {
-                console.error('Stock Out/Shipping Error:', error);
-                alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
-            }
-        },
-        
-        /* ============================
-          --- ADMIN DELIVERY CONFIRMATION ---
-          ============================ */
-        openConfirmDeliveryModal(order) {
-            // FIX: Allow only if the order is Shipped
-            if (order.status !== 'Shipped') return; 
-            
-            this.orderToFulfill = order;
-            this.showDeliveryConfirmationModal = true;
-        },
-
-        closeConfirmDeliveryModal() {
-            this.showDeliveryConfirmationModal = false;
-            this.orderToFulfill = null;
-            this.isDelivering = null; // Ensure loading state is cleared
-        },
-
-        async confirmDeliverySuccessAdmin() {
-            const orderId = this.orderToFulfill.order_id;
-            this.isDelivering = orderId; 
-
-            try {
-                const { error } = await supabase
-                    .from('orders')
-                    .update({ status: 'Delivered' })
-                    .eq('order_id', orderId);
-
-                if (error) throw error;
-                
-                alert(`Order #${orderId.slice(0, 8)} successfully marked as DELIVERED.`);
-
-            } catch (error) {
-                console.error("Error confirming delivery:", error.message);
-                alert(`Failed to mark order as delivered. Details: ${error.message}`);
-            } finally {
-                // FIX: Close modal and reset state
-                this.closeConfirmDeliveryModal();
-                // Refresh the list to update status/disable button
-                await this.fetchProcessedOrders(); 
-            }
-        },
 
 
-        /* ============================
-          --- STOCK IN METHODS ---
-          ============================ */
-        async addStockIn() {
-            if (!this.stockIn.productName) {
-                alert('Please select a product from the dropdown.');
-                return;
-            }
 
-            const product = this.availableProducts.find(p => p.brand === this.stockIn.productName);
-            if (!product) { alert('Could not find selected product.'); return; }
+      this.itemToPrint = { barcodeBase, productName: this.stockIn.productName, size: this.stockIn.size, quantity: this.stockIn.quantity };
+      this.openBarcodePrintModal();
 
-            const { data: currentProduct, error: findError } = await supabase.from('products')
-                .select('quantity').eq('id', product.id).single();
-            if (findError) { alert('Could not retrieve current stock.'); return; }
+      // Reset stockIn form
+      this.stockIn = {
+        productName: '', size: '', quantity: 1, supplier: '',
+        dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+      };
 
-            const newQuantity = currentProduct.quantity + this.stockIn.quantity;
-            let newStatus = '';
-            if (newQuantity >= 12) newStatus = 'In Stock';
-            else if (newQuantity >= 1) newStatus = 'Low Stock';
-            else newStatus = 'Out of Stock';
+      this.fetchInitialData();
+    },
 
-            const { error: updateError } = await supabase.from('products')
-                .update({ size: this.stockIn.size, quantity: newQuantity, status: newStatus })
-                .eq('id', product.id);
-            if (updateError) { alert('Error updating product: ' + updateError.message); return; }
+    printLabel() {
+      const { productName, size, quantity, barcodeBase } = this.itemToPrint;
+      if (!quantity || quantity < 1) return;
 
-            const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
-            const { data: insertedStock, error: logError } = await supabase.from('stock_in').insert({
-                barcode_id: barcodeBase,
-                product_name: this.stockIn.productName,
-                size: this.stockIn.size,
-                quantity: this.stockIn.quantity,
-                supplier: this.stockIn.supplier,
-                date_and_time: this.stockIn.dateTime
-            }).select().single();
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write('<html><head><title>Print Labels</title>');
+      printWindow.document.write('<style>@media print{@page{size:auto;margin:0.1in}body{margin:0}.label{page-break-after:always;text-align:center;font-family:sans-serif}.product-name{font-size:1.1em;font-weight:700;margin-bottom:5px}svg{margin:0 auto}.size,.barcode-id{margin-top:5px}}</style>');
+      printWindow.document.write('</head><body>');
 
-            if (logError) {
-                alert('Warning: Failed to log transaction. ' + logError.message);
-            } else {
-                console.log('✅ Stock-In Logged:', insertedStock);
-                this.scanStatusMessage = `Stock In added for ${this.stockIn.productName}`;
-            }
+      for (let i = 1; i <= quantity; i++) {
+        const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
+        const svgId = `barcode-${i}`;
+        printWindow.document.body.innerHTML += `<div class="label"><p class="product-name">${productName}</p><svg id="${svgId}"></svg><p class="size">SIZE: ${size}</p><p class="barcode-id">ID: ${uniqueBarcodeId}</p></div>`;
+      }
+
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+
+      printWindow.onload = function () {
+        for (let i = 1; i <= quantity; i++) {
+          const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
+          const svgId = `barcode-${i}`;
+          const svgElement = printWindow.document.getElementById(svgId);
+          if (svgElement) {
+            JsBarcode(svgElement, uniqueBarcodeId, { 
+              format: "CODE128", 
+              displayValue: true, 
+              textMargin: 2,
+              fontSize: 12,
+              height: 60,
+              margin: 8,
+              width: 2.5, 
+              lineColor: '#000'
+            });
+
+          }
+        }
+        printWindow.focus();
+        printWindow.print();
+      };
+
+      this.closeBarcodePrintModal();
+    },
+
+    openBarcodePrintModal() { this.showBarcodeModal = true; },
+    closeBarcodePrintModal() { this.showBarcodeModal = false; this.itemToPrint = null; },
+
+    /* ============================
+       --- UI & NAVIGATION METHODS ---
+       ============================ */
+    selectView(label) {
+      this.currentView = label;
+      if (label === 'Stock Out') this.fetchProcessedOrders();
+      if (this.isMobile) this.closeSidebar();
+    },
+
+      checkMobile() {
+        const isNowMobile = window.innerWidth < 992;
+
+        if (isNowMobile && !this.isMobile) {
+          this.isSidebarVisible = false;
+        }
+
+        this.isMobile = isNowMobile;
+      },
+
+      toggleSidebar() {
+        this.isSidebarVisible = !this.isSidebarVisible;
+      },
 
 
-            this.itemToPrint = { barcodeBase, productName: this.stockIn.productName, size: this.stockIn.size, quantity: this.stockIn.quantity };
-            this.openBarcodePrintModal();
+    closeSidebar() { this.isSidebarVisible = false; this.adminMenuOpen = false; },
+    toggleAdminMenu() { this.adminMenuOpen = !this.adminMenuOpen; },
+    toggleDesktopAdminMenu() { this.desktopAdminDropdownOpen = !this.desktopAdminDropdownOpen; },
 
-            // Reset stockIn form
-            this.stockIn = {
-                productName: '', size: '', quantity: 1, supplier: '',
-                dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
-            };
+    logout() { this.showLogoutModal = true; },
 
-            this.fetchInitialData();
-        },
+    async confirmLogout() {
+      this.showLogoutModal = false;
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) { alert(`Logout failed: ${error.message}`); return; }
 
-        printLabel() {
-            const { productName, size, quantity, barcodeBase } = this.itemToPrint;
-            if (!quantity || quantity < 1) return;
+        await this.$router.push('/');
+        window.location.reload();
+      } catch (e) {
+        console.error('Unexpected logout error:', e);
+        alert('An unexpected error occurred. Check console.');
+      }
+    },
 
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write('<html><head><title>Print Labels</title>');
-            printWindow.document.write('<style>@media print{@page{size:auto;margin:0.1in}body{margin:0}.label{page-break-after:always;text-align:center;font-family:sans-serif}.product-name{font-size:1.1em;font-weight:700;margin-bottom:5px}svg{margin:0 auto}.size,.barcode-id{margin-top:5px}}</style>');
-            printWindow.document.write('</head><body>');
+    cancelLogout() { this.showLogoutModal = false; }
+  },
 
-            for (let i = 1; i <= quantity; i++) {
-                const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
-                const svgId = `barcode-${i}`;
-                printWindow.document.body.innerHTML += `<div class="label"><p class="product-name">${productName}</p><svg id="${svgId}"></svg><p class="size">SIZE: ${size}</p><p class="barcode-id">ID: ${uniqueBarcodeId}</p></div>`;
-            }
+  /* ============================================================
+     LIFECYCLE HOOKS
+  ============================================================ */
+  mounted() {
+    this.checkMobile();
+    window.addEventListener('resize', this.checkMobile);
+    this.fetchInitialData();
+  },
 
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-
-            printWindow.onload = function () {
-                for (let i = 1; i <= quantity; i++) {
-                    const uniqueBarcodeId = `${barcodeBase}-${String(i).padStart(3, '0')}`;
-                    const svgId = `barcode-${i}`;
-                    const svgElement = printWindow.document.getElementById(svgId);
-                    if (svgElement) {
-                        JsBarcode(svgElement, uniqueBarcodeId, {
-                            format: "CODE128",
-                            displayValue: true,
-                            textMargin: 2,
-                            fontSize: 12,
-                            height: 60,
-                            margin: 8,
-                            width: 2.5,
-                            lineColor: '#000'
-                        });
-
-                    }
-                }
-                printWindow.focus();
-                printWindow.print();
-            };
-
-            this.closeBarcodePrintModal();
-        },
-
-        openBarcodePrintModal() { this.showBarcodeModal = true; },
-        closeBarcodePrintModal() { this.showBarcodeModal = false; this.itemToPrint = null; },
-
-        /* ============================
-          --- UI & NAVIGATION METHODS ---
-          ============================ */
-        selectView(label) {
-            this.currentView = label;
-            if (label === 'Stock Out') this.fetchProcessedOrders();
-            if (this.isMobile) this.closeSidebar();
-        },
-
-        checkMobile() { this.isMobile = window.innerWidth < 992; },
-        toggleSidebar() {
-            if (this.isMobile) this.isSidebarVisible = !this.isSidebarVisible;
-            else this.isCollapsed = !this.isCollapsed;
-        },
-        closeSidebar() { this.isSidebarVisible = false; this.adminMenuOpen = false; },
-        toggleAdminMenu() { this.adminMenuOpen = !this.adminMenuOpen; },
-        toggleDesktopAdminMenu() { this.desktopAdminDropdownOpen = !this.desktopAdminDropdownOpen; },
-
-        logout() { this.showLogoutModal = true; },
-
-        async confirmLogout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) { alert(`Logout failed: ${error.message}`); return; }
-
-                await this.$router.push('/');
-                window.location.reload();
-            } catch (e) {
-                console.error('Unexpected logout error:', e);
-                alert('An unexpected error occurred. Check console.');
-            }
-        },
-
-        cancelLogout() { this.showLogoutModal = false; }
-    },
-
-    /* ============================================================
-      LIFECYCLE HOOKS
-    ============================================================ */
-    mounted() {
-        this.checkMobile();
-        window.addEventListener('resize', this.checkMobile);
-        this.fetchInitialData();
-    },
-
-    beforeUnmount() {
-        window.removeEventListener('resize', this.checkMobile);
-        this.stopQuagga();
-    }
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkMobile);
+    this.stopQuagga();
+  }
 };
 </script>
 
@@ -1156,15 +1076,23 @@ export default {
 }
 
 /* Existing styles for the rest of the dashboard components */
+/* --- SIDEBAR STYLES --- */
 .sidebar {
-  width: 250px;
-  transition: all 0.3s ease-in-out;
-  overflow-x: hidden;
-  height: 100vh;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #0d6efd; 
+  color: white;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
   z-index: 1050;
-  flex-shrink: 0;
+}
+
+.sidebar.sidebar-visible {
+  transform: translateX(0);
 }
 
 .sidebar.collapsed {
@@ -1179,6 +1107,7 @@ export default {
   display: none;
 }
 
+/* --- SIDEBAR OVERLAY --- */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -1187,7 +1116,26 @@ export default {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
 }
+
+/* Sidebar on mobile takes full height */
+@media (max-width: 991.98px) {
+  .sidebar {
+    width: 250px;
+  }
+}
+.sidebar-overlay {
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 
 .nav-item.active > .nav-link {
   background-color: #0d6efd;
@@ -1295,4 +1243,124 @@ ul.ps-4 li a {
     margin: 5px 0 !important; 
     line-height: 1.2;
 }
+
+.navbar .nav-link i {
+  font-size: 1.4rem;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.sidebar .nav-link i {
+  font-size: 1.3rem;
+  width: 26px;
+  text-align: center;
+}
+
+.card-body i.fa-3x {
+  font-size: 3.5rem !important;
+}
+
+.custom-modal-card .card-header i {
+  font-size: 1.6rem;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.btn i {
+  font-size: 1.2rem;
+  vertical-align: middle;
+}
+
+i.fas, i.far {
+  color: inherit;
+  line-height: 1;
+}
+
+i.fas {
+  font-weight: 600;
+}
+
+/* Navbar layout fix for mobile */
+@media (max-width: 991.98px) {
+  .navbar .container-fluid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .navbar .btn {
+    order: 1;
+  }
+
+  .navbar .navbar-brand {
+    order: 2;
+    margin-left: 0;
+  }
+
+  .navbar .collapse {
+    order: 3;
+  }
+
+  .navbar-nav {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .navbar .nav-link {
+    padding: 0.5rem;
+  }
+
+  /* Hide Administrator text on small screens */
+@media (max-width: 767.98px) {
+  .navbar .navbar-brand {
+    display: none !important;
+  }
+}
+
+/* Hide "Administrator" on small screens */
+@media (max-width: 767.98px) {
+  .navbar-brand {
+    display: none !important;
+  }
+}
+
+/* Align icons perfectly and balance spacing */
+.navbar .d-flex.align-items-center.gap-3 {
+  gap: 1rem;
+}
+
+.navbar .nav-link i {
+  font-size: 1.4rem;
+  vertical-align: middle;
+}
+
+.navbar .btn i {
+  font-size: 1.6rem;
+  vertical-align: middle;
+}
+
+/* Make Stock In form responsive and tidy */
+@media (min-width: 768px) {
+  form .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+form .form-label {
+  font-weight: 500;
+}
+
+form .btn-success {
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 0.75rem 2rem;
+}
+
+
+}
+
+
+
 </style>
