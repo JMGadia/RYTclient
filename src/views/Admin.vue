@@ -86,7 +86,7 @@
       ></div>
       <main class="flex-grow-1 p-4">
         <h2 class="text-primary mb-4">{{ currentView }}</h2>
-        
+
         <div v-if="currentView === 'Dashboard'">
           <div class="row">
             <div class="col-md-4 mb-4">
@@ -129,7 +129,7 @@
             </div>
           </div>
         </div>
-        
+
         <div v-if="currentView === 'Stock In'">
           <div class="card shadow-sm border-0 rounded-lg mb-4">
             <div class="card-header bg-white text-dark fw-bold">Record New Stock In</div>
@@ -203,21 +203,21 @@
             <h4 class="fw-bold">No Processed Orders Awaiting Shipment</h4>
             <p class="text-muted">Orders with 'Order Processed' or 'Shipped' status will appear here.</p>
           </div>
-          
+
           <div v-if="isStockOutLoading" class="text-center p-5">
             <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
           </div>
 
           <div v-else class="row">
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
-              <div 
+              <div
                 class="card h-100 shadow-sm border-warning"
                 :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered'}"
               >
-                <div 
+                <div
                   class="card-header fw-bold"
                   :class="{
-                    'bg-warning text-dark': order.status === 'Order Processed', 
+                    'bg-warning text-dark': order.status === 'Order Processed',
                     'bg-success text-white': order.status === 'Shipped',
                     'bg-danger text-white': order.status === 'Delivered'
                   }"
@@ -226,7 +226,7 @@
                 </div>
                 <div class="card-body">
                   <h5 class="card-title fw-bold text-primary mb-3">
-                    <i class="fas fa-box me-2"></i> 
+                    <i class="fas fa-box me-2"></i>
                     {{ getOrderProductDetails(order.order_items) }}
                   </h5>
                   <p class="card-text mb-1">
@@ -242,31 +242,31 @@
                     {{ order.shipping_address ? order.shipping_address.substring(0, 40) : 'Address Missing' }}
                     <span v-if="order.shipping_address && order.shipping_address.length > 40">...</span>
                   </p>
-                  
-                  <button 
-                      class="btn w-100 mt-2" 
+
+                  <button
+                      class="btn w-100 mt-2"
                       :class="{
                         'btn-primary': order.status === 'Order Processed',
                         'btn-success': order.status === 'Shipped',
                         'btn-danger': order.status === 'Delivered'
                       }"
                       @click="
-                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) : 
+                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
                         order.status === 'Order Processed' ? startScanForOrder(order) : null
                       "
                       :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
                   >
-                    <i 
+                    <i
                         :class="{
                             'fas fa-barcode me-2': order.status === 'Order Processed',
                             'fas fa-truck me-2': order.status === 'Shipped',
                             'fas fa-check-circle me-2': order.status === 'Delivered'
                         }"
                     ></i>
-                    {{ 
-                        order.status === 'Delivered' ? 'Delivered Completed' : 
-                        order.status === 'Shipped' ? 'Ready to Deliver' : 
-                        'Take Order & Scan' 
+                    {{
+                        order.status === 'Delivered' ? 'Delivered Completed' :
+                        order.status === 'Shipped' ? 'Ready to Deliver' :
+                        'Take Order & Scan'
                     }}
                   </button>
                   </div>
@@ -276,7 +276,7 @@
         </div>
         </main>
     </div>
-    
+
     <div v-if="showProfileModal" class="custom-modal-overlay">
       <div class="custom-modal-card card shadow-lg">
         <div class="card-header bg-primary text-white text-center">
@@ -338,12 +338,12 @@
             </div>
             <div class="card-body">
               <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
-              
+
               <div id="scanner-container" class="mb-3">
                 <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
               </div>
               <div class="alert alert-warning" v-if="scanStatusMessage">{{ scanStatusMessage }}</div>
-              
+
               <div class="d-flex justify-content-center gap-3 mt-4">
                 <button class="btn btn-secondary" @click="closeScanModal">
                     <i class="fas fa-times me-2"></i> Cancel Scan
@@ -372,7 +372,7 @@
             </div>
         </div>
     </div>
-    
+
     <div v-if="showDeliveryConfirmationModal" class="custom-modal-overlay" style="z-index: 1060;"></div>
     <div class="modal fade" :class="{ 'show': showDeliveryConfirmationModal }" style="display: block; z-index: 1070;" v-if="showDeliveryConfirmationModal">
         <div class="modal-dialog modal-dialog-centered">
@@ -390,10 +390,10 @@
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" class="btn btn-secondary" @click="closeConfirmDeliveryModal">Cancel</button>
-                    <button 
-                        type="button" 
-                        class="btn btn-success" 
-                        @click="confirmDeliverySuccessAdmin" 
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="confirmDeliverySuccessAdmin"
                         :disabled="isDelivering === orderToFulfill?.order_id"
                     >
                         <span v-if="isDelivering === orderToFulfill?.order_id" class="spinner-border spinner-border-sm me-2"></span>
@@ -471,14 +471,14 @@ export default {
             showBarcodeModal: false,
             showScanModal: false,
             showDeliveryConfirmationModal: false,
-            isDelivering: null, 
+            isDelivering: null,
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
-            isProcessingScan: false, 
-            orderItemsScanned: {}, 
+            isProcessingScan: false,
+            orderItemsScanned: {},
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -486,7 +486,7 @@ export default {
             stockInTodayCount: 0,
             stockOutTodayCount: 0,
             recentActivities: [],
-            availableProducts: [], 
+            availableProducts: [],
             activeOrders: [],
             menuItems: [
                 { icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -530,8 +530,8 @@ export default {
             return this.orderToFulfill.order_items.map(item => {
                 const productName = item.products ? item.products.brand : 'Unknown Product';
                 const required = item.quantity;
-                const scanned = this.orderItemsScanned[item.products.id] || 0; 
-                
+                const scanned = this.orderItemsScanned[item.products.id] || 0;
+               
                 return {
                     name: productName,
                     required: required,
@@ -573,7 +573,7 @@ export default {
                     type: "LiveStream",
                     target: document.querySelector('#scanner-container'),
                     constraints: {
-                        facingMode: "environment" 
+                        facingMode: "environment"
                     }
                 },
                 decoder: { readers: ['code_128_reader'] },
@@ -585,7 +585,7 @@ export default {
             }, (err) => {
                 if (err) {
                     console.error("Quagga init failed:", err);
-                    this.scanStatusMessage = `Camera failed to start. Check permissions/HTTPS. Details: ${err.message || err}`; 
+                    this.scanStatusMessage = `Camera failed to start. Check permissions/HTTPS. Details: ${err.message || err}`;
                     return;
                 }
 
@@ -615,13 +615,13 @@ export default {
 
         startScanForOrder(order) {
             // Reverted to simple single-scan initialization logic
-            if (order.status !== 'Order Processed') return; 
-            
+            if (order.status !== 'Order Processed') return;
+           
             this.orderToFulfill = order;
-            this.isProductScanned = false; 
+            this.isProductScanned = false;
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
-            
+           
             // Wait for DOM to be ready before initializing Quagga
             nextTick(() => {
                 setTimeout(() => {
@@ -632,16 +632,16 @@ export default {
 
 
         async handleBarcodeScanned(scannedCode) {
-            if (!scannedCode) return; 
-            
+            if (!scannedCode) return;
+           
             try {
                 // For stable single-scan, we assume validation is successful and proceed to confirmation modal
-                
-                this.stopQuagga(); 
-                this.isProductScanned = true; 
+               
+                this.stopQuagga();
+                this.isProductScanned = true;
                 this.scanStatusMessage = `✅ Barcode validated. Ready for shipment confirmation.`;
                 this.showScanModal = false; // Hide scanner modal to show confirmation modal
-                
+               
             } catch (err) {
                 console.error('Scan error:', err);
                 alert('⚠️ Failed to process scan: ' + (err.message || err));
@@ -650,14 +650,14 @@ export default {
 
 
         closeScanModal() {
-            this.stopQuagga(); 
+            this.stopQuagga();
             this.showScanModal = false;
-            this.isProductScanned = false; 
+            this.isProductScanned = false;
             this.orderToFulfill = null;
         },
         captureBarcode() {
             // Note: This button is mostly for simulating a successful scan if Quagga's auto-detect fails
-            const codeToProcess = this.lastDetectedCode || "DEFAULT-SCAN-CODE"; 
+            const codeToProcess = this.lastDetectedCode || "DEFAULT-SCAN-CODE";
             this.handleBarcodeScanned(codeToProcess);
         },
 
@@ -764,15 +764,15 @@ export default {
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
-                        *, 
+                        *,
                         order_items (
-                            product_id, 
-                            quantity, 
+                            product_id,
+                            quantity,
                             price_at_purchase,
-                            products!inner(id, brand, size) 
+                            products!inner(id, brand, size)
                         )
                     `)
-                    .in('status', ['Order Processed', 'Shipped', 'Delivered']) 
+                    .in('status', ['Order Processed', 'Shipped', 'Delivered'])
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
@@ -791,7 +791,7 @@ export default {
             return items.map(item => {
                 const brand = item.products ? item.products.brand : 'Unknown Product';
                 const size = item.products ? item.products.size : 'N/A';
-                
+               
                 return `${brand} (${size}) x${item.quantity}`;
             }).join(', ');
         },
@@ -801,14 +801,14 @@ export default {
           ============================ */
         async updateStockOut() {
             if (!this.orderToFulfill) return;
-            
+           
             const orderId = this.orderToFulfill.order_id;
             const items = this.orderToFulfill.order_items;
             let totalSalesAmount = 0;
-            let totalOrdersCount = 1; 
-            
+            let totalOrdersCount = 1;
+           
             // Map to aggregate product sales for the JSONB field in sales_report
-            const productTrendMap = new Map(); 
+            const productTrendMap = new Map();
 
             try {
                 // 1. Calculate sales and log individual stock-out transactions
@@ -818,13 +818,13 @@ export default {
 
                     const product = this.availableProducts.find(p => p.id === product_id);
                     const productName = product ? product.brand : `Product ID: ${product_id}`;
-                    
+                   
                     // Aggregate product trend data
                     const currentTrend = productTrendMap.get(productName) || { sales: 0, count: 0 };
                     currentTrend.sales += (quantity * price_at_purchase);
                     currentTrend.count += quantity;
                     productTrendMap.set(productName, currentTrend);
-                    
+                   
                     // Log individual stock-out transaction
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
@@ -838,11 +838,11 @@ export default {
 
                 // Convert map to object for JSONB insertion
                 const dailyProductTrend = Object.fromEntries(productTrendMap);
-                
+
                 // 2. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
-                    .update({ status: 'Shipped' }) 
+                    .update({ status: 'Shipped' })
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
@@ -852,25 +852,25 @@ export default {
                     p_orders_count: totalOrdersCount,
                     p_product_trend: dailyProductTrend // Pass the aggregated JSON object
                 });
-                
+
                 if (salesReportError) {
                     // Log error but don't halt, as the order update succeeded
                     console.error('Failed to update sales report:', salesReportError);
                 }
-                
+
                 // 4. Update Stock Quantity (Implementation depends on availableProducts and stock reduction logic)
                 // This step is critical but is kept simple here. You would typically call another RPC (e.g., decrement_stock)
                 // for each item here.
 
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery! Sales report updated.`);
-                
+               
                 // Clear state
                 this.isProductScanned = false;
                 this.showScanModal = false;
                 this.orderToFulfill = null;
-                
-                this.fetchProcessedOrders(); 
+               
+                this.fetchProcessedOrders();
                 this.fetchDashboardData();
 
             } catch (error) {
@@ -878,14 +878,14 @@ export default {
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
             }
         },
-        
+       
         /* ============================
           --- ADMIN DELIVERY CONFIRMATION ---
           ============================ */
         openConfirmDeliveryModal(order) {
             // FIX: Allow only if the order is Shipped
-            if (order.status !== 'Shipped') return; 
-            
+            if (order.status !== 'Shipped') return;
+           
             this.orderToFulfill = order;
             this.showDeliveryConfirmationModal = true;
         },
@@ -898,7 +898,7 @@ export default {
 
         async confirmDeliverySuccessAdmin() {
             const orderId = this.orderToFulfill.order_id;
-            this.isDelivering = orderId; 
+            this.isDelivering = orderId;
 
             try {
                 const { error } = await supabase
@@ -907,7 +907,7 @@ export default {
                     .eq('order_id', orderId);
 
                 if (error) throw error;
-                
+               
                 alert(`Order #${orderId.slice(0, 8)} successfully marked as DELIVERED.`);
 
             } catch (error) {
@@ -917,7 +917,7 @@ export default {
                 // FIX: Close modal and reset state
                 this.closeConfirmDeliveryModal();
                 // Refresh the list to update status/disable button
-                await this.fetchProcessedOrders(); 
+                await this.fetchProcessedOrders();
             }
         },
 
@@ -1122,7 +1122,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999; 
+  z-index: 9999;
   transition: opacity 0.3s ease;
 }
 
@@ -1281,7 +1281,7 @@ ul.ps-4 li a {
   /* Ensure SVG takes up vertical space */
   height: 60px; /* Give it a definite height */
   width: 100%; /* Ensure it spans the container */
-  display: block; 
+  display: block;
   margin: 0 auto;
 }
 
@@ -1292,7 +1292,7 @@ ul.ps-4 li a {
 
 .barcode-label-area p {
     /* Set explicit margins for separation */
-    margin: 5px 0 !important; 
+    margin: 5px 0 !important;
     line-height: 1.2;
 }
 </style>
