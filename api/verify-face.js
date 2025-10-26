@@ -1,72 +1,69 @@
-// Add this helper function below your imports
-const setCorsHeaders = (response) => {
-    // Allows requests from any origin (easiest for testing and common for APIs)
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-};
+import { RekognitionClient, DetectFacesCommand } from '@aws-sdk/client-rekognition';
+
+// Initialize the AWS Rekognition client
+const rekognitionClient = new RekognitionClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 // This is the main function Vercel will run
 export default async function handler(request, response) {
-    // 1. Handle OPTIONS preflight request (REQUIRED by browsers for CORS)
-    if (request.method === 'OPTIONS') {
-        setCorsHeaders(response);
-        return response.status(200).end(); // End the request successfully after setting headers
+  if (request.method !== 'POST') {
+    return response.status(405).json({ success: false, message: 'Method Not Allowed' });
+  }
+
+  const { imageBase64 } = request.body;
+  if (!imageBase64) {
+    return response.status(400).json({ success: false, message: 'Image data is required.' });
+  }
+
+  try {
+    const imageBuffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+    const command = new DetectFacesCommand({
+      Image: { Bytes: imageBuffer },
+      Attributes: ['ALL'], // 'ALL' includes the Quality attribute we need
+    });
+
+    const rekognitionResponse = await rekognitionClient.send(command);
+    const faceDetails = rekognitionResponse.FaceDetails;
+
+    // --- START OF Implement ---
+
+    // Step 1: Check if any face was detected at all
+    if (!faceDetails || faceDetails.length === 0) {
+      return response.status(400).json({ success: false, message: 'No face was detected. Please try again.' });
     }
 
-    // 2. Continue with POST logic
-    if (request.method !== 'POST') {
-        setCorsHeaders(response);
-        return response.status(405).json({ success: false, message: 'Method Not Allowed' });
+    // Step 2: Check for multiple faces
+    if (faceDetails.length !== 1) {
+      return response.status(400).json({ success: false, message: 'Please ensure only one person is in the photo.' });
     }
 
-    const { imageBase64 } = request.body;
-    if (!imageBase64) {
-        setCorsHeaders(response); // Set headers on error response
-        return response.status(400).json({ success: false, message: 'Image data is required.' });
+    const face = faceDetails[0];
+
+    // Step 3: Check Confidence Level (Must be very high)
+    // This ensures Rekognition is very sure it's a well-defined face.
+    const confidenceThreshold = 99.5;
+    if (face.Confidence < confidenceThreshold) {
+      return response.status(400).json({ success: false, message: 'Face is not clear enough. Please ensure good lighting.' });
     }
 
-    try {
-        const imageBuffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ""), 'base64');
-        const command = new DetectFacesCommand({
-            Image: { Bytes: imageBuffer },
-            Attributes: ['ALL'],
-        });
-
-        const rekognitionResponse = await rekognitionClient.send(command);
-        const faceDetails = rekognitionResponse.FaceDetails;
-
-        // --- Start of Verification Logic ---
-        if (!faceDetails || faceDetails.length === 0) {
-            setCorsHeaders(response);
-            return response.status(400).json({ success: false, message: 'No face was detected. Please try again.' });
-        }
-        if (faceDetails.length !== 1) {
-            setCorsHeaders(response);
-            return response.status(400).json({ success: false, message: 'Please ensure only one person is in the photo.' });
-        }
-
-        const face = faceDetails[0];
-        const confidenceThreshold = 99.5;
-        if (face.Confidence < confidenceThreshold) {
-            setCorsHeaders(response);
-            return response.status(400).json({ success: false, message: 'Face is not clear enough. Please ensure good lighting.' });
-        }
-
-        const sharpnessThreshold = 95.0;
-        if (face.Quality.Sharpness < sharpnessThreshold) {
-            setCorsHeaders(response);
-            return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
-        }
-        // --- End of Verification Logic ---
-
-        // Success response
-        setCorsHeaders(response);
-        return response.status(200).json({ success: true, message: 'Face verified successfully.' });
-
-    } catch (error) {
-        console.error('AWS Rekognition error:', error);
-        setCorsHeaders(response);
-        return response.status(500).json({ success: false, message: 'An error occurred during face verification.' });
+    // Step 4: Check Sharpness Level (Key anti-spoofing check)
+    // Photos of other photos or screens are often less sharp.
+    const sharpnessThreshold = 95.0;
+    if (face.Quality.Sharpness < sharpnessThreshold) {
+        return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
     }
+
+    // --- END OF IMPLEMENT ---
+
+    return response.status(200).json({ success: true, message: 'Face verified successfully.' });
+
+  } catch (error) {
+    console.error('AWS Rekognition error:', error);
+    return response.status(500).json({ success: false, message: 'An error occurred during face verification.' });
+  }
 }
