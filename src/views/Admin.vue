@@ -230,12 +230,12 @@
                     {{ getOrderProductDetails(order.order_items) }}
                   </h5>
                   <p class="card-text mb-1">
-                    <i class="fas fa-user me-2 text-muted"></i>
-                    <strong>{{ order.username || 'Name Missing' }}</strong>
-                  </p>
-                  <p class="card-text mb-1">
                     <i class="fas fa-phone me-2 text-muted"></i>
                     {{ order.contact || 'Phone Missing' }}
+                  </p>
+                  <p class="card-text mb-2">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+                    <strong class="text-dark">{{ order.payment_method || 'N/A' }}</strong>
                   </p>
                   <p class="card-text mb-2 small text-muted">
                     <i class="fas fa-map-marker-alt me-2"></i>
@@ -776,6 +776,7 @@ export default {
                     .from('orders')
                     .select(`
                         *,
+                        payment_method,
                         order_items (
                             product_id,
                             quantity,

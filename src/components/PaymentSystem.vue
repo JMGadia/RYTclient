@@ -19,7 +19,7 @@
                   <i class="fas fa-shield-alt me-2 text-primary"></i>Secure Payment
                 </h2>
                 <p class="text-muted">Complete your purchase</p>
-          </div>
+              </div>
 
               <div class="mb-4">
                 <h5 class="fw-semibold">Select Customer Type</h5>
@@ -58,9 +58,17 @@
                       <strong class="h5 text-primary">₱{{ grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
 
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
+                    <li
+                      v-if="customerType === 'Regular' && selectedPaymentMethod !== 'cod'"
+                      class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
                       <strong class="h6">Required Partial Payment</strong>
                       <strong class="h6">₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
+                    </li>
+                    <li
+                      v-if="customerType === 'Regular' && selectedPaymentMethod === 'cod'"
+                      class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
+                      <strong class="h6 text-success">Payment on Delivery</strong>
+                      <strong class="h6 text-success">₱{{ grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
                   </ul>
 
@@ -76,12 +84,23 @@
                 <div class="d-grid gap-3">
 
                   <template v-if="customerType === 'Regular'">
-                                        <label class="payment-option-label">
+                    <label class="payment-option-label">
+                      <input type="radio" class="form-check-input" name="paymentMethod" value="cod" v-model="selectedPaymentMethod">
+                      <div class="d-flex align-items-center">
+                        <i class="fas fa-money-bill-wave fa-2x text-success me-3" style="width: 40px; text-align: center;"></i>
+                        <div>
+                          <span class="fw-bold d-block">Cash on Delivery (COD)</span>
+                          <small class="text-muted">Pay the full amount upon delivery.</small>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label class="payment-option-label">
                       <input type="radio" class="form-check-input" name="paymentMethod" value="gcash" v-model="selectedPaymentMethod">
                       <div class="d-flex align-items-center">
                         <img src="/src/assets/gcash-logow.png" alt="GCash Logo" class="payment-logo me-3">
                         <div>
-                          <span class="fw-bold d-block">Pay with GCash</span>
+                          <span class="fw-bold d-block">Pay with GCash (Partial)</span>
                           <small class="text-muted">Pay the partial payment via GCash transfer.</small>
                         </div>
                       </div>
@@ -116,7 +135,7 @@
                           />
                           <button class="close-btn" @click="isQrModalOpen = false">&times;</button>
                         </div>
-                    </div>
+                      </div>
                     </div>
 
                     <div class="mb-3">
@@ -146,7 +165,7 @@
                 </div>
 
                 <div v-if="selectedPaymentMethod === 'gcash'" class="mt-4 p-3 bg-light rounded-3">
-                  <h6 class="fw-bold">GCash Partial Payment</h6>
+                  <h6 class="fw-bold">GCash Partial Payment Required</h6>
                   <p class="small text-muted">
                     Send the partial payment of
                     <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
@@ -176,20 +195,38 @@
                   </div>
                 </div>
 
+                <div v-if="selectedPaymentMethod === 'cod'" class="mt-4 p-3 bg-light rounded-3">
+                  <h6 class="fw-bold text-success">Cash on Delivery Selected</h6>
+                  <p class="small text-muted">
+                    You will pay the full amount of **₱{{ grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}) }}** upon delivery. No partial payment is required now.
+                  </p>
+                  <p class="small text-danger fw-bold">
+                    ⚠️ Please ensure you have the exact cash amount ready for the courier.
+                  </p>
+                </div>
+
                 <div class="d-grid mt-4">
                   <button
                     class="btn btn-primary btn-lg fw-semibold"
                     @click="handleSubmit"
-                    :disabled="!isPreOrderEnabled"
+                    :disabled="!isPreOrderEnabled || isProcessing"
                   >
-                    <template v-if="customerType === 'Regular'">
-                        <i class="fas fa-money-check-alt me-2"></i> Confirm Payment
+                    <span v-if="isProcessing" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <i v-else-if="customerType === 'Regular'" class="fas fa-money-check-alt me-2"></i>
+                    <i v-else-if="customerType === 'B2B'" class="fas fa-file-invoice me-2"></i>
+                    <i v-else class="fas fa-shopping-cart me-2"></i>
+
+                    <template v-if="isProcessing">
+                        Processing...
+                    </template>
+                    <template v-else-if="customerType === 'Regular'">
+                        Confirm Payment
                     </template>
                     <template v-else-if="customerType === 'B2B'">
-                        <i class="fas fa-file-invoice me-2"></i> Confirm Pre-Order
+                        Confirm Pre-Order
                     </template>
                     <template v-else>
-                        <i class="fas fa-shopping-cart me-2"></i> Place Order
+                        Place Order
                     </template>
                   </button>
                 </div>
@@ -219,7 +256,7 @@ const selectedPaymentMethod = ref(null)
 const gcashNumber = ref('')
 const paymentProofFile = ref(null)
 const b2bPermitFile = ref(null)
-const isProcessing = ref(false)
+const isProcessing = ref(false) // **NEW: State for button disabling**
 const serviceFee = ref(0)
 const isQrModalOpen = ref(false)
 
@@ -245,12 +282,6 @@ const setCustomerType = (type) => {
     selectedPaymentMethod.value = null
     paymentProofFile.value = null
     b2bPermitFile.value = null
-
-    // NEW: If 'Regular' is selected, automatically set 'gcash' as default,
-    // since it's the only option now.
-    if (type === 'Regular') {
-        selectedPaymentMethod.value = 'gcash'
-    }
 }
 
 // ----------------------------
@@ -276,10 +307,16 @@ const goToAddressBook = () => {
 // ----------------------------
 const isPreOrderEnabled = computed(() => {
     if (customerType.value === 'Regular') {
-        // NOTE: Only GCash remains, so check for method selected ('gcash') and proof uploaded
-        return selectedPaymentMethod.value === 'gcash' && !!paymentProofFile.value
+        if (selectedPaymentMethod.value === 'cod') {
+            // **COD does not require partial payment proof, so only selection is enough**
+            return true
+        } else if (selectedPaymentMethod.value === 'gcash') {
+            // GCash still requires proof
+            return !!paymentProofFile.value
+        }
+        return false // If no payment method is selected
     } else if (customerType.value === 'B2B') {
-        // NOTE: Checks for payment proof and business permit for B2B
+        // B2B remains the same (requires payment proof and business permit)
         return !!paymentProofFile.value && !!b2bPermitFile.value
     }
     return false
@@ -294,14 +331,14 @@ const handleSubmit = async () => {
         return
     }
 
+    // --- Validation Checks ---
     if (customerType.value === 'Regular') {
-        // Only check for GCash now since COD is removed
-        if (selectedPaymentMethod.value !== 'gcash') {
-            alert('Please select a payment method.')
+        if (!selectedPaymentMethod.value) {
+            alert('Please select a payment method (COD or GCash).')
             return
         }
-        if (!paymentProofFile.value) {
-            alert('Please upload your payment proof.')
+        if (selectedPaymentMethod.value === 'gcash' && !paymentProofFile.value) {
+            alert('Please upload your GCash payment proof.')
             return
         }
     }
@@ -312,18 +349,28 @@ const handleSubmit = async () => {
             return
         }
     }
+    // --- End Validation Checks ---
 
+    // **IMPORTANT: Disable the button immediately**
     isProcessing.value = true
     let paymentProofUrl = null
     let b2bPermitUrl = null
-    let totalSalesAmount = grandTotal.value; // Total sale for this order
+    let totalSalesAmount = grandTotal.value;
+    let orderStatus = 'Pending' // Default for new orders
+
+    // **Set status based on COD or GCash/B2B (Partial payment)**
+    if (selectedPaymentMethod.value === 'cod') {
+        orderStatus = 'Order Processed' // Ready for processing immediately
+    } else if (customerType.value === 'Regular' || customerType.value === 'B2B') {
+        orderStatus = 'Payment Verification' // Needs staff to check proof
+    }
+
 
     try {
-        // 🔹 Get current user
+        // 🔹 Get current user and default address (address logic remains the same)
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         if (userError || !user) throw new Error('You must be logged in to place an order.')
 
-        // 🔹 Get default address
         const { data: addressData, error: addressError } = await supabase
             .from('addresses')
             .select('full_address, name, phone')
@@ -345,8 +392,8 @@ const handleSubmit = async () => {
             b2bPermitUrl = data.publicUrl
         }
 
-        // 🔹 Upload Payment Proof
-        if (paymentProofFile.value) {
+        // 🔹 Upload Payment Proof (Only for GCash and B2B)
+        if (selectedPaymentMethod.value !== 'cod' && paymentProofFile.value) {
             const fileExt = paymentProofFile.value.name.split('.').pop()
             const filePath = `${user.id}/${Date.now()}_pay.${fileExt}`
             const { error: uploadError } = await supabase.storage
@@ -364,33 +411,30 @@ const handleSubmit = async () => {
             shipping_address: addressData.full_address,
             contact: addressData.phone,
             total_price: grandTotal.value,
-            // Status is 'Pre-Ordered' after payment confirmation from user side
-            status: 'Order Processed',
-            // selectedPaymentMethod.value will be 'gcash' or 'null' for B2B (defaulted to 'GCash' below)
-            payment_method: selectedPaymentMethod.value || 'GCash',
+            status: orderStatus, // Use determined status
+            payment_method: selectedPaymentMethod.value || 'GCash', // 'gcash', 'cod', or 'GCash' for B2B
             payment_proof_url: paymentProofUrl
         }
 
-        // Only add this if the column exists and value is available
         if (customerType.value === 'B2B' && b2bPermitUrl) {
             orderData.b2b_permit_url = b2bPermitUrl
         }
 
-        // 🔹 Save order
+        // 🔹 Save order (order items, stock update, and sales report logic remains the same)
         const { data: newOrder, error: orderError } = await supabase
             .from('orders')
             .insert(orderData)
             .select('order_id')
             .single()
 
-        if (orderError) throw error
+        if (orderError) throw orderError
 
         // 🔹 Save order items
         const orderItems = cart.value.map(item => ({
             order_id: newOrder.order_id,
             product_id: item.id,
             quantity: item.quantity,
-            price_at_purchase: item.price // Use item price, not cart price
+            price_at_purchase: item.price
         }))
 
         const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
@@ -405,31 +449,29 @@ const handleSubmit = async () => {
             if (stockError) console.warn('Stock update failed for:', item.id, stockError.message)
         }
 
-        // ==========================================================
-        // 💰 SALES DATA UPDATE: SIMPLIFIED TO ONLY AFFECT SALES COLUMNS
-        // ==========================================================
+        // 💰 SALES DATA UPDATE: Record sale *only if it's a paid order*
+        // COD is typically recorded as sales when paid, but for simplicity/tracking,
+        // we'll record the sale amount if the order is confirmed to proceed.
+        if (orderStatus !== 'Payment Verification') {
+             const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
+                p_sales_amount: totalSalesAmount
+            })
 
-        // Call the new, simple RPC to update only daily_sales, weekly_sales, and monthly_sales
-        const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
-            p_sales_amount: totalSalesAmount
-        })
-
-        if (salesReportError) {
-            console.warn('Failed to update sales data:', salesReportError.message)
+            if (salesReportError) {
+                console.warn('Failed to update sales data (COD/B2B):', salesReportError.message)
+            }
         }
 
-        // Removed: All prior logic related to upsert_daily_sales_report and update_cumulative_sales
-
-        // ==========================================================
 
         // 🔹 Clear cart and redirect
         await clearCart()
-        alert('✅ Order placed successfully! Payment recorded.')
+        alert('✅ Order placed successfully! You will be redirected to the order tracking page.')
         router.push('/order-tracking')
     } catch (err) {
         console.error('Order error:', err.message)
         alert('⚠️ Failed to place order: ' + err.message)
     } finally {
+        // **Re-enable the button if an error occurred**
         isProcessing.value = false
     }
 }
@@ -441,7 +483,7 @@ onMounted(fetchCart)
 </script>
 
 <style scoped>
-/* (The style block remains unchanged) */
+/* (The style block remains unchanged - COD icon styling is added inline for convenience) */
 .payment-page-background {
   background-color: #f4f7f9;
   font-family: 'Segoe UI', sans-serif;
