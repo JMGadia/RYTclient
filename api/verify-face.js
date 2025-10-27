@@ -30,7 +30,7 @@ export default async function handler(request, response) {
     const rekognitionResponse = await rekognitionClient.send(command);
     const faceDetails = rekognitionResponse.FaceDetails;
 
-    // --- START OF Implement (Your existing verification logic) ---
+    // --- START OF Implement ---
 
     // Step 1: Check if any face was detected at all
     if (!faceDetails || faceDetails.length === 0) {
@@ -45,12 +45,14 @@ export default async function handler(request, response) {
     const face = faceDetails[0];
 
     // Step 3: Check Confidence Level (Must be very high)
+    // This ensures Rekognition is very sure it's a well-defined face.
     const confidenceThreshold = 99.5;
     if (face.Confidence < confidenceThreshold) {
       return response.status(400).json({ success: false, message: 'Face is not clear enough. Please ensure good lighting.' });
     }
 
     // Step 4: Check Sharpness Level (Key anti-spoofing check)
+    // Photos of other photos or screens are often less sharp.
     const sharpnessThreshold = 95.0;
     if (face.Quality.Sharpness < sharpnessThreshold) {
         return response.status(400).json({ success: false, message: 'Image is too blurry. Please hold the camera steady.' });
@@ -58,7 +60,6 @@ export default async function handler(request, response) {
 
     // --- END OF IMPLEMENT ---
 
-    // Verification successful. The client (Vue) handles the storage and profile update.
     return response.status(200).json({ success: true, message: 'Face verified successfully.' });
 
   } catch (error) {
