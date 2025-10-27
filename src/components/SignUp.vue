@@ -163,7 +163,7 @@ const isLoading = ref(false) // Global loading indicator
 const showCameraModal = ref(false) // Controls visibility of the facial recognition modal
 const videoRef = ref(null) // Reference to the HTML <video> element
 let stream = null; // Holds the MediaStream object from the camera
-let capturedImageBase64 = null; // NEW: To store the image data after capture
+let capturedImageBase64 = null; // To store the image data after capture
 
 // Facial recognition control state
 const facingMode = ref('user'); // Tracks the current camera direction ('user' or 'environment')
@@ -271,7 +271,7 @@ const captureAndVerify = async () => {
     }
 
     console.log('Face verification successful!');
-    // NEW: Proceed with sign-up and image storage
+    // Proceed with sign-up and image storage ONLY IF face verification succeeds
     await uploadImageAndSignUp(capturedImageBase64);
 
   } catch (error) {
@@ -287,43 +287,47 @@ const captureAndVerify = async () => {
 }
 
 /**
- * NEW: Registers the user with Supabase, uploads the face image, and updates the profiles table.
+ * Registers the user with Supabase, uploads the face image, and updates the profiles table.
  * @param {string} imageBase64 - The base64 string of the captured image.
  */
 const uploadImageAndSignUp = async (imageBase64) => {
     isLoading.value = true;
+    let user = null; // Variable to hold the user object for cleanup if needed
+
     try {
-        // 1. Create the user account first (Supabase Auth)
+        // 1. Create the user account first, but DISABLE THE EMAIL CONFIRMATION
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: form.email,
             password: form.password,
             options: {
                 data: {
                     username: form.username
-                }
+                },
+                // NEW: Prevents automatic email sending
+                disableEmailConfirmation: true
             }
         });
 
         if (authError) throw authError;
 
-        const user = authData.user;
+        user = authData.user;
         if (!user) throw new Error('User object not returned after sign up.');
 
         // 2. Upload the image to Supabase Storage
-        const file = dataURLtoFile(imageBase64, `${user.id}.jpeg`); // Convert base64 to File object
-        const filePath = `face_images/${user.id}.jpeg`; // Path in the bucket, using user ID for uniqueness
+        const file = dataURLtoFile(imageBase64, `face.jpeg`); // Name the file generically
+        // UPDATED: Use the folder structure face_images/user_id/face.jpeg
+        const filePath = `face_images/${user.id}/face.jpeg`;
 
         const { error: storageError } = await supabase.storage
-            .from('store_face') // Your newly created bucket
+            .from('store_face')
             .upload(filePath, file, {
                 cacheControl: '3600',
-                upsert: false // We don't expect a file to exist yet
+                upsert: false
             });
 
         if (storageError) {
-            // It is critical to log this error, but we might let the sign-up proceed if possible,
-            // or perhaps delete the user and ask them to try again depending on business rules.
             console.error('Storage upload failed:', storageError.message);
+            // Throw a specific error that will be caught below for cleanup
             throw new Error(`Account created, but image upload failed: ${storageError.message}`);
         }
 
@@ -335,28 +339,45 @@ const uploadImageAndSignUp = async (imageBase64) => {
         const image_url = publicUrlData.publicUrl;
 
         // 4. Update the profiles table with the image URL
-        // NOTE: This step relies on the 'handle_new_user' trigger function running *before* this script updates the 'profiles' table.
-        // If your trigger handles profile creation, this will be an UPDATE.
         const { error: updateError } = await supabase
             .from('profiles')
             .update({ image_url: image_url })
-            .eq('id', user.id) // Assuming your profiles table 'id' links to the auth.uid
+            .eq('id', user.id)
             .select();
 
         if (updateError) {
             console.error('Profile URL update failed:', updateError.message);
-            throw new Error(`Account created, but profile update with image URL failed: ${updateError.message}`);
+            // Throw a specific error that will be caught below for cleanup
+            throw new Error(`Account created, image uploaded, but profile update failed: ${updateError.message}`);
         }
+
+        // 5. NEW: MANUALLY TRIGGER THE EMAIL ONLY AFTER ALL STEPS SUCCEED
+        const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: user.email
+        });
+
+        if (resendError) throw resendError;
 
         // Success feedback and redirect
         alert('Account created! Please check your email for a verification link.');
         router.push({ name: 'login' });
 
     } catch (error) {
+        // If the error occurred AFTER auth.signUp, the user account exists but is unconfirmed.
+        // It's often best to clean up the user or the uploaded file here, but for now,
+        // we'll focus on error reporting.
+
+        // This handles errors that occur after account creation (storage/profile update failure)
+        if (error.message.includes('Account created')) {
+            // The user exists, but the sign-up flow failed. We alert the specific failure.
+            alert(`Sign-up failed: ${error.message}`);
+        }
         // Custom error handling for existing users (may happen during the initial auth.signUp)
-        if (error.message.includes('User already registered') || error.message.includes('duplicate key value violates unique constraint')) {
+        else if (error.message.includes('User already registered') || error.message.includes('duplicate key value violates unique constraint')) {
             errors.email = 'User Account Already Exist';
         } else {
+            // General failure, e.g., resend error, network error, etc.
             alert(`Sign-up failed: ${error.message}`);
         }
         console.error('Sign-up failed:', error.message);
@@ -383,15 +404,6 @@ function dataURLtoFile(dataurl, filename) {
     return new File([u8arr], filename, {type:mime});
 }
 
-/**
- * Registers the user with Supabase after successful verification.
- * OLD FUNCTION - REPLACED BY uploadImageAndSignUp
- */
-/*
-const proceedWithSupabaseSignUp = async () => {
-    // ... (This function is now obsolete and replaced by uploadImageAndSignUp)
-};
-*/
 
 /**
  * Basic email format validation utility.
@@ -475,8 +487,6 @@ const handleSignUp = async () => {
         startCamera(); // Starts the default (front) camera
     } else {
         // Fallback (though the checkbox is mandatory, this keeps the logic clean)
-        // Since face verification is required, we won't call proceedWithSupabaseSignUp here.
-        // alert('Face recognition is mandatory.');
         isLoading.value = false;
     }
 }
