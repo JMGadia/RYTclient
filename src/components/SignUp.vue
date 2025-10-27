@@ -114,28 +114,28 @@
     </div>
 
     <div v-if="showCameraModal" class="camera-modal">
-      <div class="camera-modal-content">
-        <h4 class="text-center mb-3">Face Verification</h4>
-        <p class="text-center text-muted mb-3">Please center your face in the frame and capture a photo.</p>
-        <video ref="videoRef" autoplay playsinline class="w-100 rounded-3 mb-3"></video>
-        <div class="d-grid gap-2">
-           <button v-if="hasMultipleCameras" @click="flipCamera" class="btn btn-outline-primary">
-             <i class="fas fa-sync-alt me-2"></i>Flip Camera
-           </button>
-           <button @click="captureAndVerify" class="btn btn-success btn-lg">
-             <i class="fas fa-camera me-2"></i>Capture Photo
-           </button>
-           <button @click="closeCamera" class="btn btn-secondary btn-sm">Cancel</button>
-        </div>
-      </div>
+  <div class="camera-modal-content">
+    <h4 class="text-center mb-3">Face Verification</h4>
+    <p class="text-center text-muted mb-3">Please center your face in the frame and capture a photo.</p>
+    <video ref="videoRef" autoplay playsinline class="w-100 rounded-3 mb-3"></video>
+    <div class="d-grid gap-2">
+       <button v-if="hasMultipleCameras" @click="flipCamera" class="btn btn-outline-primary">
+         <i class="fas fa-sync-alt me-2"></i>Flip Camera
+       </button>
+       <button @click="captureAndVerify" class="btn btn-success btn-lg">
+         <i class="fas fa-camera me-2"></i>Capture Photo
+       </button>
+       <button @click="closeCamera" class="btn btn-secondary btn-sm">Cancel</button>
     </div>
+  </div>
+</div>
   </div>
 </template>
 
 <script setup>
 // --- IMPORTS & SETUP ---
-import { ref, reactive, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onUnmounted, computed } from 'vue' // Core Vue functions for state, reactivity, and cleanup
+import { useRouter } from 'vue-router' // Vue Router hook for navigation
 import { supabase } from '../server/supabase' // Supabase client for authentication and database calls
 
 // Initialize the router
@@ -143,6 +143,7 @@ const router = useRouter()
 
 // --- REACTIVE FORM STATE ---
 
+// Data binding for the sign-up form inputs
 const form = reactive({
   username: '',
   email: '',
@@ -150,6 +151,7 @@ const form = reactive({
   facialRecognition: false // Checkbox state for enabling face verification
 })
 
+// State for validation errors
 const errors = reactive({
   username: '',
   email: '',
@@ -157,115 +159,94 @@ const errors = reactive({
 })
 
 // UI state management
-const isLoading = ref(false)
-const showCameraModal = ref(false)
-const videoRef = ref(null)
-let stream = null;
+const isLoading = ref(false) // Global loading indicator
+const showCameraModal = ref(false) // Controls visibility of the facial recognition modal
+const videoRef = ref(null) // Reference to the HTML <video> element
+let stream = null; // Holds the MediaStream object from the camera
 
 // Facial recognition control state
-const facingMode = ref('user');
-const hasMultipleCameras = ref(false);
-
-// **NEW STATE**: Temporary storage for the captured image data after successful verification
-const capturedImageBase64 = ref(null);
+const facingMode = ref('user'); // Tracks the current camera direction ('user' or 'environment')
+const hasMultipleCameras = ref(false); // Controls the visibility of the "Flip Camera" button
 
 // --- PASSWORD VISIBILITY LOGIC ---
-// ... (Your existing logic) ...
+
 const isPasswordVisible = ref(false)
 
+// Computed property to switch the password input type
 const passwordFieldType = computed(() => {
   return isPasswordVisible.value ? 'text' : 'password'
 })
 
+// Computed property to switch the eye icon
 const passwordIcon = computed(() => {
   return isPasswordVisible.value ? '/images/passHide.png' : '/images/passShow.png'
 })
 
+/**
+ * Toggles the state of password visibility.
+ */
 const togglePasswordVisibility = () => {
   isPasswordVisible.value = !isPasswordVisible.value
 }
 
 // --- CAMERA CONTROL FUNCTIONS ---
-// ... (Your existing startCamera, flipCamera, closeCamera logic - no changes needed) ...
-
-const startCamera = async () => {
-   if (stream) {
-     stream.getTracks().forEach(track => track.stop());
-   }
-
-   try {
-     const constraints = {
-       video: { facingMode: facingMode.value },
-       audio: false
-     };
-     stream = await navigator.mediaDevices.getUserMedia(constraints);
-     if (videoRef.value) {
-       videoRef.value.srcObject = stream;
-     }
-   } catch (err) {
-     console.error("Error accessing camera:", err);
-     alert("Could not access the camera. Please ensure you have given permission.");
-     closeCamera();
-   }
-}
-
-const flipCamera = async () => {
-   facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
-   await startCamera();
-}
-
-const closeCamera = () => {
-   if (stream) {
-     stream.getTracks().forEach(track => track.stop());
-   }
-   showCameraModal.value = false
-   isLoading.value = false;
-}
 
 /**
- * **NEW UTILITY FUNCTION**
- * Uploads the base64 image to Supabase Storage and returns the public URL.
- * @param {string} imageBase64 - The image data in base64 format.
- * @param {string} userId - The ID to use for the file path (e.g., user's UUID).
- * @returns {Promise<string>} - The public URL of the uploaded image.
+ * Initiates the camera stream using the currently selected `facingMode`.
+ * Stops any existing stream before starting a new one.
  */
-const uploadFaceImage = async (imageBase64, userId) => {
-    // 1. Convert base64 string to a Blob
-    const fetchRes = await fetch(imageBase64);
-    const blob = await fetchRes.blob();
+const startCamera = async () => {
+ // Stop the previous stream to release the camera resource
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
 
-    // 2. Define the path: people_faces/user_id.jpeg
-    const filePath = `${userId}.jpeg`;
-
-    // 3. Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('people_faces')
-        .upload(filePath, blob, {
-            cacheControl: '3600',
-            upsert: false // Should be a new file on sign up
-        });
-
-    if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
+  try {
+    // Constraints object to select the camera based on `facingMode`
+    const constraints = {
+      video: { facingMode: facingMode.value },
+      audio: false
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (videoRef.value) {
+      videoRef.value.srcObject = stream;
     }
-
-    // 4. Get the public URL
-    const { data: publicUrlData } = supabase.storage
-        .from('people_faces')
-        .getPublicUrl(filePath);
-
-    return publicUrlData.publicUrl;
+  } catch (err) {
+    console.error("Error accessing camera:", err);
+    alert("Could not access the camera. Please ensure you have given permission.");
+    closeCamera();
+  }
 }
 
+/**
+ * Toggles the camera between 'user' (front) and 'environment' (back) and restarts the stream.
+ */
+const flipCamera = async () => {
+  facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+  await startCamera(); // Restart the camera with the new facing mode
+}
 
 /**
- * **MODIFIED** Captures an image, verifies, and stores the image data temporarily.
+ * Stops the camera stream and closes the modal.
+ */
+const closeCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+  showCameraModal.value = false
+  isLoading.value = false;
+}
+
+/**
+ * Captures an image from the video stream and sends it for facial verification.
+ * Proceeds to Supabase sign-up on successful verification.
  */
 const captureAndVerify = async () => {
   if (!videoRef.value) return;
 
   isLoading.value = true;
 
+  // Capture image from video stream into a base64 string
   const canvas = document.createElement('canvas');
   canvas.width = videoRef.value.videoWidth;
   canvas.height = videoRef.value.videoHeight;
@@ -288,16 +269,14 @@ const captureAndVerify = async () => {
         throw new Error(errorData.message || 'Face verification failed.');
     }
 
-    // --- NEW LOGIC ---
-    console.log('Face verification successful! Proceeding to upload and sign up.');
-    capturedImageBase64.value = imageBase64; // **Store the captured image**
+    console.log('Face verification successful!');
     await proceedWithSupabaseSignUp(); // Proceed to create the user account
 
   } catch (error) {
     console.error('Face verification failed:', error.message);
     alert(`Face verification failed: ${error.message}`);
-    capturedImageBase64.value = null; // Clear if verification failed
   } finally {
+    // Only reset global loading if the camera modal isn't still being shown (shouldn't happen here)
     if(showCameraModal.value === false) {
       isLoading.value = false;
     }
@@ -305,16 +284,13 @@ const captureAndVerify = async () => {
 }
 
 /**
- * **MODIFIED** Registers the user, uploads the face image, and updates the profile.
+ * Registers the user with Supabase after successful verification.
  */
 const proceedWithSupabaseSignUp = async () => {
   isLoading.value = true;
-  let newUserId = null;
-  let imageUrl = null;
-
   try {
-    // 1. Create the user account (This triggers handle_new_user to create the profile row)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Create the user account with email, password, and additional data (username)
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -324,33 +300,14 @@ const proceedWithSupabaseSignUp = async () => {
       }
     });
 
-    if (signUpError) throw signUpError;
-
-    // Get the new user's ID
-    newUserId = signUpData.user.id;
-
-    // 2. Upload the face image only if captured/verified
-    if (form.facialRecognition && capturedImageBase64.value && newUserId) {
-        imageUrl = await uploadFaceImage(capturedImageBase64.value, newUserId);
-
-        // 3. Update the profiles table with the new image URL
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ face_image_url: imageUrl })
-            .eq('id', newUserId)
-            .select();
-
-        if (updateError) {
-            // Log a warning, but don't stop the user signup flow
-            console.warn('Failed to update profile with face_image_url:', updateError.message);
-        }
-    }
+    if (error) throw error;
 
     // Success feedback and redirect
     alert('Account created! Please check your email for a verification link.');
     router.push({ name: 'login' });
 
   } catch (error) {
+    // Custom error handling for existing users
     if (error.message.includes('User already registered') || error.message.includes('duplicate key value violates unique constraint')) {
         errors.email = 'User Account Already Exist';
     } else {
@@ -358,14 +315,14 @@ const proceedWithSupabaseSignUp = async () => {
     }
     console.error('Sign-up failed:', error.message);
   } finally {
-    // Clean up temporary state
-    capturedImageBase64.value = null;
     isLoading.value = false;
   }
 };
 
 /**
  * Basic email format validation utility.
+ * @param {string} email - The email string to test.
+ * @returns {boolean} - True if the email format is valid.
  */
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -374,6 +331,7 @@ const isValidEmail = (email) => {
 
 /**
  * Main function to handle form submission.
+ * Validates fields, checks for existing user, and initiates the face verification flow.
  */
 const handleSignUp = async () => {
     // Reset errors
@@ -429,6 +387,7 @@ const handleSignUp = async () => {
 
     // Logic to initiate camera/face verification
     if (form.facialRecognition) {
+        // Enumerate devices to check if the flip button should be visible
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
@@ -439,9 +398,9 @@ const handleSignUp = async () => {
         }
 
         showCameraModal.value = true;
-        startCamera();
+        startCamera(); // Starts the default (front) camera
     } else {
-        // Fallback (though mandatory, keep logic clean)
+        // Fallback (though the checkbox is mandatory, this keeps the logic clean)
         await proceedWithSupabaseSignUp();
     }
 }
@@ -457,7 +416,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* All existing styles remain the same */
+
+/* --- ⬇️ NEW STYLES for Password Toggle --- */
 .password-wrapper {
   position: relative;
 }
@@ -476,7 +436,9 @@ onUnmounted(() => {
   cursor: pointer;
   z-index: 3;
 }
-/* All other styles remain the same as your original code */
+/* --- ⬆️ END OF NEW STYLES --- */
+
+/* All existing styles remain the same */
 .login-page {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
