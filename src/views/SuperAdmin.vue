@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex" id="wrapper" :class="{ toggled: sidebarToggled }">
     <div class="bg-dark border-right" id="sidebar-wrapper">
-      <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">RYT-Tyre Super Admin</div>
+      <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">i-Tyre Super Admin</div>
       <div class="list-group list-group-flush">
         <a
           href="#"

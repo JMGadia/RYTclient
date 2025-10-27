@@ -4,7 +4,7 @@
       <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="#">
           <img src="../assets/background.jpg" alt="RYT-Tyre Logo" height="40" class="me-2 rounded-circle" />
-          <strong class="text-dark fs-5">RYT-Tyre</strong>
+          <strong class="text-dark fs-5">i-Tyre</strong>
         </a>
 
         <form class="d-none d-md-flex mx-auto" style="max-width: 500px;" @submit.prevent>

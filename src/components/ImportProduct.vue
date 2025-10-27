@@ -24,11 +24,11 @@
 
       <div class="detail-box" :class="{ 'error-border': validationErrors.size }">
         <label for="size">Size</label>
-        <input 
-            type="text" 
-            id="size" 
-            v-model="product.size" 
-            placeholder="e.g., 205/55R16" 
+        <input
+            type="text"
+            id="size"
+            v-model="product.size"
+            placeholder="e.g., 205/55R16"
         />
         <p v-if="validationErrors.size" class="error-message">
           {{ validationErrors.size }}
@@ -51,7 +51,7 @@
       <div class="detail-box" :class="{ 'error-border': validationErrors.car_brand }">
         <label for="carBrand">Car Brand</label>
         <select id="carBrand" v-model="product.car_brand">
-          <option disabled value="">Select a brand</option>
+          <option value="">Select a brand (Optional for Non-Tires)</option>
           <option v-for="car in carBrandOptions" :key="car" :value="car">
             {{ car }}
           </option>
@@ -63,12 +63,12 @@
 
       <div class="detail-box" :class="{ 'error-border': validationErrors.price }">
         <label for="price">Price (₱)</label>
-        <input type="number" id="price" v-model.number="product.price" placeholder="e.g., 4500.50" />
+        <input type="number" id="price" v-model.number="product.price" placeholder="e.g., 4500.50" min="0" />
         <p v-if="validationErrors.price" class="error-message">
           {{ validationErrors.price }}
         </p>
       </div>
-      
+
       </div>
 
     <div class="import-button-box">
@@ -84,7 +84,7 @@
 import { ref } from 'vue'; // Core Vue function for reactive state
 import { useRouter } from 'vue-router'; // Vue Router for navigation
 // API service functions for image upload and product creation
-import { uploadProductImage, createProduct } from '../services/apiService'; 
+import { uploadProductImage, createProduct } from '../services/apiService';
 
 // Initialize the router
 const router = useRouter();
@@ -96,10 +96,10 @@ const product = ref({
   brand: '',
   size: '',
   product_type: '',
-  car_brand: '',
+  car_brand: '', // Initialize to an empty string to match the default select option
   price: null,
   // MODIFIED: Status is hardcoded to 'Out of Stock' for imported products
-  status: 'Out of Stock', 
+  status: 'Out of Stock',
   image_url: null // Stores the final cloud path/URL of the uploaded image
 });
 
@@ -110,99 +110,96 @@ const selectedFile = ref(null); // Holds the actual File object selected by the 
 const imageUrl = ref(''); // Local URL to display the selected image preview
 const isSubmitting = ref(false); // Boolean to prevent multiple form submissions
 // NEW: State for validation errors
-const validationErrors = ref({}); 
+const validationErrors = ref({});
 
 
 // --- DROPDOWN OPTIONS DATA ---
-
-// This data is kept but no longer used in the template since 'size' is a manual input field now.
+// ... (tireSizeOptions remains unchanged) ...
 const tireSizeOptions = ref([
   {
     label: 'Passenger Car & Crossover',
     groups: [
-      { 
-        label: '13-Inch Rims', 
+      {
+        label: '13-Inch Rims',
         sizes: [
           '155/80R13', '165/65R13', '175/70R13'
-        ] 
+        ]
       },
-      { 
-        label: '14-Inch Rims', 
+      {
+        label: '14-Inch Rims',
         sizes: [
           '165/65R14', '175/65R14', '185/60R14', '185/65R14', '185/70R14'
-        ] 
+        ]
       },
-      { 
-        label: '15-Inch Rims', 
+      {
+        label: '15-Inch Rims',
         sizes: [
-          '175/65R15', '185/55R15', '185/60R15', '185/65R15', '195/55R15', 
+          '175/65R15', '185/55R15', '185/60R15', '185/65R15', '195/55R15',
           '195/60R15', '195/65R15'
-        ] 
+        ]
       },
-      { 
-        label: '16-Inch Rims', 
+      {
+        label: '16-Inch Rims',
         sizes: [
           '195/55R16', '205/55R16', '205/60R16', '215/60R16', '215/65R16'
-        ] 
+        ]
       },
-      { 
-        label: '17-Inch Rims', 
+      {
+        label: '17-Inch Rims',
         sizes: [
-          '205/45R17', '205/50R17', '215/45R17', '215/50R17', '215/55R17', 
+          '205/45R17', '205/50R17', '215/45R17', '215/50R17', '215/55R17',
           '225/45R17', '225/50R17'
-        ] 
+        ]
       },
-      { 
-        label: '18-Inch Rims', 
+      {
+        label: '18-Inch Rims',
         sizes: [
           '225/40R18', '225/45R18', '235/40R18', '235/45R18'
-        ] 
+        ]
       },
     ]
   },
   {
     label: 'SUV & Light Truck',
     groups: [
-      { 
-        label: '15-Inch Rims', 
+      {
+        label: '15-Inch Rims',
         sizes: [ '205/70R15', '215/70R15', '225/70R15', '235/75R15', '31X10.50R15'
-        ] 
+        ]
       },
-      { 
-        label: '16-Inch Rims', 
+      {
+        label: '16-Inch Rims',
         sizes: [
           '235/70R16', '245/70R16', '265/70R16', '265/75R16'
-        ] 
+        ]
       },
-      { 
-        label: '17-Inch Rims', 
+      {
+        label: '17-Inch Rims',
         sizes: [
           '225/65R17', '245/65R17', '265/65R17', '265/70R17'
-        ] 
+        ]
       },
-      { 
-        label: '18-Inch Rims', 
+      {
+        label: '18-Inch Rims',
         sizes: [
           '265/60R18', '265/65R18', '285/60R18'
-        ] 
+        ]
       },
-      { 
-        label: '20-Inch Rims', 
+      {
+        label: '20-Inch Rims',
         sizes: [
           '265/50R20', '275/55R20'
-        ] 
+        ]
       },
     ]
   }
 ]);
-
-// Options for the car brand dropdown
+// ... (carBrandOptions remains unchanged) ...
 const carBrandOptions = ref([
   'Toyota', 'Mitsubishi', 'Ford', 'Nissan', 'Suzuki',
   'Honda', 'Isuzu', 'Hyundai', 'Kia'
 ]);
-
-// Options for the product type dropdown
+// ... (productTypeOptions remains unchanged) ...
 const productTypeOptions = ref(['Tires', 'Non-Tires']);
 
 
@@ -216,17 +213,17 @@ const productTypeOptions = ref(['Tires', 'Non-Tires']);
 const validateForm = () => {
   validationErrors.value = {}; // Reset errors
   let isValid = true;
-  
+
   // 1. Check for image
   if (!selectedFile.value) {
     validationErrors.value.image = 'Product image is required.';
     isValid = false;
   }
 
-  // MODIFIED: 'status' field removed from required fields
-  const requiredFields = ['brand', 'size', 'product_type', 'car_brand'];
+  // 2. Check general required fields
+  const generalRequiredFields = ['brand', 'size', 'product_type'];
 
-  requiredFields.forEach(field => {
+  generalRequiredFields.forEach(field => {
     // Check if the field is empty (string is empty or only whitespace)
     if (!product.value[field] || (typeof product.value[field] === 'string' && product.value[field].trim() === '')) {
       validationErrors.value[field] = `${field.replace('_', ' ')} is required.`;
@@ -234,11 +231,26 @@ const validateForm = () => {
     }
   });
 
+  // MODIFICATION 2: Conditional check for 'car_brand'
+  // 'car_brand' is required ONLY IF 'product_type' is 'Tires'.
+  const isTyreProduct = product.value.product_type === 'Tires';
+
+  if (isTyreProduct) {
+    if (!product.value.car_brand || product.value.car_brand.trim() === '') {
+      validationErrors.value.car_brand = 'Car Brand is required for Tires.';
+      isValid = false;
+    }
+  }
+  // For 'Non-Tires', car_brand is NOT required. We ensure it's saved as null/empty if not selected.
+  // The 'product.car_brand' model will be an empty string if no option is selected, which is fine for Non-Tires.
+
   // 3. Check Price field (null or positive number)
   if (product.value.price === null || product.value.price === '') {
-    validationErrors.value.price = 'Price is required.';
+    validationErrors.value.price = 'Price is Required, Make sure its Number.';
     isValid = false;
   } else if (isNaN(product.value.price) || product.value.price <= 0) {
+    // The v-model.number ensures product.value.price is a number (or null/empty string if input is invalid),
+    // but the isNaN check is a strong final guard.
     validationErrors.value.price = 'Price must be a positive number.';
     isValid = false;
   }
@@ -269,11 +281,9 @@ const handleImageUpload = (event) => {
  */
 const submitProduct = async () => {
   if (isSubmitting.value) return; // Prevent double submission
-  
+
   // 🛑 STEP 1: Run validation before proceeding
   if (!validateForm()) {
-    // Optionally provide a general alert, but the error messages in the template are more specific.
-    // alert('Please correct the highlighted errors before submitting.');
     return; // STOP execution if validation fails
   }
 
@@ -283,16 +293,19 @@ const submitProduct = async () => {
     // STEP 2: Upload image (we know a file is selected due to validation)
     const imagePath = await uploadProductImage(selectedFile.value);
     // Store the returned image path/URL on the product object
-      product.value.image_url = imagePath; 
+      product.value.image_url = imagePath;
 
-    // NOTE: product.status is automatically 'Out of Stock' as per the initialization above.
-    
+    // MODIFICATION 3 (Cleanup): Ensure car_brand is an empty string for Non-Tires if it's not selected
+    if (product.value.product_type === 'Non-Tires' && !product.value.car_brand) {
+      product.value.car_brand = ''; // Or null, depending on your backend's preference. Empty string is common for DB fields.
+    }
+
     // STEP 3: Create the product record
     await createProduct(product.value);
 
     // Success feedback and redirection
     alert('Product added to catalog successfully! ✅');
-      router.push('/super-admin'); 
+      router.push('/super-admin');
 
   } catch (error) {
     alert(`Error: Failed to add product. Please try again. Details: ${error.message}`);
@@ -321,8 +334,8 @@ h1 { text-align: center; color: #333; margin-bottom: 30px; }
     border-color: #dc3545 !important; /* Red border for the box */
 }
 /* Ensure input/select fields inside an error-bordered detail-box also have a red border */
-.detail-box.error-border input[type="text"], 
-.detail-box.error-border input[type="number"], 
+.detail-box.error-border input[type="text"],
+.detail-box.error-border input[type="number"],
 .detail-box.error-border select {
     border-color: #dc3545;
 }
@@ -339,15 +352,15 @@ h1 { text-align: center; color: #333; margin-bottom: 30px; }
 .product-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
 .detail-box { background-color: #fff; border: 1px solid #eee; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03); }
 .detail-box label { display: block; font-weight: bold; margin-bottom: 8px; color: #555; }
-.detail-box input[type="text"], .detail-box input[type="number"], .detail-box select { 
-    width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; box-sizing: border-box; background-color: #fff; 
+.detail-box input[type="text"], .detail-box input[type="number"], .detail-box select {
+    width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; box-sizing: border-box; background-color: #fff;
 }
-.detail-box select { 
-    appearance: none; 
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); 
-    background-repeat: no-repeat; 
-    background-position: right 1rem center; 
-    background-size: 0.65em auto; 
+.detail-box select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.65em auto;
 }
 .detail-box input:focus, .detail-box select:focus { border-color: #007bff; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); outline: none; }
 .import-button-box { text-align: center; }
