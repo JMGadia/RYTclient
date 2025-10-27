@@ -314,7 +314,7 @@ const uploadImageAndSignUp = async (imageBase64) => {
         if (!user) throw new Error('User object not returned after sign up.');
 
         // 2. Upload the image to Supabase Storage
-        const file = dataURLtoFile(imageBase64, `face.jpeg`); // Name the file generically
+       const file = dataURLtoFile(imageBase64, `face.jpeg`); // Name the file generically
         // UPDATED: Use the folder structure face_images/user_id/face.jpeg
         const filePath = `face_images/${user.id}/face.jpeg`;
 
