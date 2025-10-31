@@ -640,7 +640,7 @@ export default {
         },
 
 
-        // 🔥 MODIFIED: Logic to handle one scan, update counter, and check for completion
+       // 🔥 MODIFIED: Logic to handle one scan, update counter, and check for completion
         async handleBarcodeScanned(scannedCode) {
             if (!scannedCode || this.isProcessingScan) return;
             if (!this.orderToFulfill) {
@@ -653,19 +653,32 @@ export default {
 
             try {
                 // 1. Normalize Code & Find Product/Stock
-                const baseCode = String(scannedCode).trim().toUpperCase();
+                const rawCode = String(scannedCode).trim().toUpperCase();
 
-                // Search in stock_in using the barcode structure (baseCode)
+                // ✅ MODIFIED: Extract the base code (e.g., RYTT-1234567890)
+                // The printLabel function generates codes like BASECODE-001. We only need the BASECODE part.
+                let baseCode = rawCode;
+                const parts = rawCode.split('-');
+                // Assuming your base code is the first two segments (e.g., 'RYTT' and 'TIMESTAMP')
+                if (parts.length >= 3) {
+                    baseCode = parts.slice(0, 2).join('-');
+                } else if (parts.length === 2) {
+                    baseCode = rawCode;
+                }
+
+                console.log(`Scanned: ${rawCode} | Searching with Base Code: ${baseCode}`);
+
+                // Search for the product in the stock_in table using the *base code*
                 const { data: item, error } = await supabase
                     .from('stock_in')
-                    .select('barcode_id, product_name, size, product_id, quantity') // Added product_id
-                    .ilike('barcode_id', `%${baseCode}%`)
+                    .select('barcode_id, product_name, size, product_id, quantity')
+                    .eq('barcode_id', baseCode) // ⬅️ CRITICAL: Use exact match on the base code
                     .maybeSingle();
 
                 if (error) throw error;
                 if (!item) {
                     this.scanStatusMessage = '❌ Barcode not found in stock_in records.';
-                    alert(`❌ Barcode not found in stock. Scanned: ${baseCode}`);
+                    alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock. Scanned: ${rawCode}`);
                     return;
                 }
 
@@ -690,14 +703,13 @@ export default {
                 }
 
                 // 4. Update Order Scan Counter
-                // Use spread syntax to ensure reactivity if adding a new key
                 this.orderItemsScanned = {
                     ...this.orderItemsScanned,
                     [productId]: scannedQty + 1
                 };
 
                 // 5. Update Inventory (Decrement the main product stock immediately by 1)
-                // We rely on the product.id from the stock_in record (item.product_id) to update the main products table.
+                // We must update the quantity in the main 'products' table.
                 const { data: currentProduct, error: prodErr } = await supabase
                     .from('products')
                     .select('quantity')
