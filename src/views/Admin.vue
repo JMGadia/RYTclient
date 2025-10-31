@@ -645,91 +645,94 @@ export default {
 
 
         // 🔥 MODIFIED: Logic to validate scan and update local counter
-        async handleBarcodeScanned(scannedCode) {
-            if (!scannedCode || this.isProcessingScan) return;
-            if (!this.orderToFulfill) {
-                alert('No active order selected. Please select an order first.');
-                return;
-            }
+       async handleBarcodeScanned(scannedCode) {
+      if (!scannedCode || this.isProcessingScan) return;
+      if (!this.orderToFulfill) {
+          alert('No active order selected. Please select an order first.');
+          return;
+      }
 
-            this.isProcessingScan = true;
-            this.scanStatusMessage = `Validating: ${scannedCode}...`;
+      this.isProcessingScan = true;
+      this.scanStatusMessage = `Validating: ${scannedCode}...`;
 
-            try {
-                // 1. Normalize Code & Find Product/Stock ID
-                const rawCode = String(scannedCode).trim().toUpperCase();
+      try {
+          // 1. Normalize Code & Find Product/Stock ID
+          const rawCode = String(scannedCode).trim().toUpperCase();
 
-                // Extract the base code (e.g., from RYTT-1234567890-001 to RYTT-1234567890)
-                let baseCode = rawCode;
-                const parts = rawCode.split('-');
-                if (parts.length >= 3) {
-                    baseCode = parts.slice(0, 2).join('-');
-                } else if (parts.length === 2) {
-                    baseCode = rawCode;
-                }
+          // Extract the base code (e.g., from RYTT-1234567890-001 to RYTT-1234567890)
+          let baseCode = rawCode;
+          const parts = rawCode.split('-');
+          if (parts.length >= 3) {
+              baseCode = parts.slice(0, 2).join('-');
+          } else if (parts.length === 2) {
+              baseCode = rawCode;
+          }
 
-                // Search for the *product information* in stock_in using the base code
-                const { data: item, error } = await supabase
-                    .from('stock_in')
-                    .select('product_name, product_id')
-                    .eq('barcode_id', baseCode)
-                    .maybeSingle();
+          // 🔥 CRITICAL FIX: Search using ILIKE to handle variations (BASECODE or BASECODE-001)
+          // If your stock_in table ONLY stores the base code (e.g., 'RYTT-1234567890'),
+          // using EQ on baseCode is correct. If it's giving the error, we need a flexible search.
+          const { data: item, error } = await supabase
+              .from('stock_in')
+              .select('product_name, product_id')
+              .ilike('barcode_id', `%${baseCode}%`) // Searching for the BASECODE within the field
+              .limit(1) // Only need one match to get product_id
+              .maybeSingle();
 
-                if (error) throw error;
-                if (!item) {
-                    this.scanStatusMessage = '❌ Barcode not found in stock_in records.';
-                    alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock records.`);
-                    return;
-                }
+          if (error) throw error;
+          // The error you are seeing comes directly from this 'if (!item)' check:
+          if (!item) {
+              this.scanStatusMessage = '❌ Barcode not found in stock_in records.';
+              alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock records.`);
+              return;
+          }
 
-                const productId = item.product_id;
-                const orderLineItem = this.orderToFulfill.order_items.find(i => i.product_id === productId);
+          const productId = item.product_id;
+          const orderLineItem = this.orderToFulfill.order_items.find(i => i.product_id === productId);
 
-                // 2. Validate against the Order
-                if (!orderLineItem) {
-                    this.scanStatusMessage = `❌ Scanned wrong product: ${item.product_name}. Not in Order #${this.orderToFulfill.order_id.slice(0, 8)}.`;
-                    alert(`❌ Wrong Product Scanned: ${item.product_name}. This item is not part of the current order.`);
-                    return;
-                }
+          // 2. Validate against the Order
+          if (!orderLineItem) {
+              this.scanStatusMessage = `❌ Scanned wrong product: ${item.product_name}. Not in Order #${this.orderToFulfill.order_id.slice(0, 8)}.`;
+              alert(`❌ Wrong Product Scanned: ${item.product_name}. This item is not part of the current order.`);
+              return;
+          }
 
-                // 3. Check Order Completion Status for this specific item
-                const requiredQty = orderLineItem.quantity;
-                const scannedQty = this.orderItemsScanned[productId] || 0;
+          // 3. Check Order Completion Status for this specific item
+          const requiredQty = orderLineItem.quantity;
+          const scannedQty = this.orderItemsScanned[productId] || 0;
 
-                if (scannedQty >= requiredQty) {
-                    this.scanStatusMessage = `⚠️ All ${requiredQty} units of ${item.product_name} are already scanned for this order.`;
-                    alert(`⚠️ All required units of ${item.product_name} are already scanned.`);
-                    return;
-                }
+          if (scannedQty >= requiredQty) {
+              this.scanStatusMessage = `⚠️ All ${requiredQty} units of ${item.product_name} are already scanned for this order.`;
+              alert(`⚠️ All required units of ${item.product_name} are already scanned.`);
+              return;
+          }
 
-                // 4. Update LOCAL Scan Counter
-                this.orderItemsScanned = {
-                    ...this.orderItemsScanned,
-                    [productId]: scannedQty + 1
-                };
+          // 4. Update LOCAL Scan Counter
+          this.orderItemsScanned = {
+              ...this.orderItemsScanned,
+              [productId]: scannedQty + 1
+          };
 
-                const currentTotalScanned = this.totalItemsScanned;
-                const totalRequired = this.totalItemsToScan;
+          const currentTotalScanned = this.totalItemsScanned;
+          const totalRequired = this.totalItemsToScan;
 
-                // 5. Update Status Message for the user
-                if (currentTotalScanned === totalRequired) {
-                    this.stopQuagga();
-                    this.isProductScanned = true; // Signals completion, triggers confirmation modal
-                    this.scanStatusMessage = `✅ ALL ${totalRequired} ITEMS SCANNED! Click 'Confirm Shipment' below.`;
-                    this.showScanModal = false; // Hide scanner modal to show confirmation modal
-                } else {
-                    this.scanStatusMessage = `✅ Scanned ${item.product_name}. Total: ${currentTotalScanned}/${totalRequired}. Scan next!`;
-                }
+          // 5. Update Status Message for the user
+          if (currentTotalScanned === totalRequired) {
+              this.stopQuagga();
+              this.isProductScanned = true; // Signals completion, triggers confirmation modal
+              this.scanStatusMessage = `✅ ALL ${totalRequired} ITEMS SCANNED! Click 'Confirm Shipment' below.`;
+              this.showScanModal = false; // Hide scanner modal to show confirmation modal
+          } else {
+              this.scanStatusMessage = `✅ Scanned ${item.product_name}. Total: ${currentTotalScanned}/${totalRequired}. Scan next!`;
+          }
 
-            } catch (err) {
-                console.error('Scan error:', err);
-                alert('⚠️ Failed to process scan: ' + (err.message || err));
-            } finally {
-                this.isProcessingScan = false;
-                this.lastDetectedCode = null; // Clear detected code for next scan
-            }
-        },
-
+      } catch (err) {
+          console.error('Scan error:', err);
+          alert('⚠️ Failed to process scan: ' + (err.message || err));
+      } finally {
+          this.isProcessingScan = false;
+          this.lastDetectedCode = null; // Clear detected code for next scan
+      }
+  },
 
         closeScanModal() {
             this.stopQuagga();
