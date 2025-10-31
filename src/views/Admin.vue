@@ -423,8 +423,6 @@ import JsBarcode from 'jsbarcode';
 import Quagga from '@ericblade/quagga2'; // Barcode scanning library
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
-// The 'router' constant declaration is not typically needed outside of setup() or setup script
-
 export default {
     name: 'AdminDashboard',
 
@@ -479,7 +477,7 @@ export default {
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false,
-            // 🔥 CRITICAL NEW/RE-PURPOSED: Tracks scanned quantity for each product ID in the current order
+            // Tracks scanned quantity for each product ID in the current order
             orderItemsScanned: {},
 
             // --- Dashboard / Views ---
@@ -630,7 +628,7 @@ export default {
 
             this.orderToFulfill = order;
             this.isProductScanned = false;
-            // 🔥 CRITICAL: Reset the tracking object for the new order
+            // CRITICAL: Reset the tracking object for the new order
             this.orderItemsScanned = {};
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
@@ -645,94 +643,95 @@ export default {
 
 
         // 🔥 MODIFIED: Logic to validate scan and update local counter
-       async handleBarcodeScanned(scannedCode) {
-      if (!scannedCode || this.isProcessingScan) return;
-      if (!this.orderToFulfill) {
-          alert('No active order selected. Please select an order first.');
-          return;
-      }
+        async handleBarcodeScanned(scannedCode) {
+            if (!scannedCode || this.isProcessingScan) return;
+            if (!this.orderToFulfill) {
+                alert('No active order selected. Please select an order first.');
+                return;
+            }
 
-      this.isProcessingScan = true;
-      this.scanStatusMessage = `Validating: ${scannedCode}...`;
+            this.isProcessingScan = true;
+            this.scanStatusMessage = `Validating: ${scannedCode}...`;
 
-      try {
-          // 1. Normalize Code & Find Product/Stock ID
-          const rawCode = String(scannedCode).trim().toUpperCase();
+            try {
+                // 1. Normalize Code & Find Product ID
+                const rawCode = String(scannedCode).trim().toUpperCase();
 
-          // Extract the base code (e.g., from RYTT-1234567890-001 to RYTT-1234567890)
-          let baseCode = rawCode;
-          const parts = rawCode.split('-');
-          if (parts.length >= 3) {
-              baseCode = parts.slice(0, 2).join('-');
-          } else if (parts.length === 2) {
-              baseCode = rawCode;
-          }
+                // Extract the base code (e.g., from RYTT-1234567890-001 to RYTT-1234567890)
+                let baseCode = rawCode;
+                const parts = rawCode.split('-');
+                if (parts.length >= 3) {
+                    baseCode = parts.slice(0, 2).join('-');
+                } else if (parts.length === 2) {
+                    baseCode = rawCode;
+                }
 
-          // 🔥 CRITICAL FIX: Search using ILIKE to handle variations (BASECODE or BASECODE-001)
-          // If your stock_in table ONLY stores the base code (e.g., 'RYTT-1234567890'),
-          // using EQ on baseCode is correct. If it's giving the error, we need a flexible search.
-          const { data: item, error } = await supabase
-              .from('stock_in')
-              .select('product_name, product_id')
-              .ilike('barcode_id', `%${baseCode}%`) // Searching for the BASECODE within the field
-              .limit(1) // Only need one match to get product_id
-              .maybeSingle();
+                // Search the 'products' table using the barcode (which is more reliable than stock_in log)
+                const { data: productMatch, error } = await supabase
+                    .from('products')
+                    .select('id, brand')
+                    .ilike('barcode', `%${baseCode}%`) // Assuming 'barcode' column holds the base code
+                    .limit(1)
+                    .maybeSingle();
 
-          if (error) throw error;
-          // The error you are seeing comes directly from this 'if (!item)' check:
-          if (!item) {
-              this.scanStatusMessage = '❌ Barcode not found in stock_in records.';
-              alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock records.`);
-              return;
-          }
+                if (error) throw error;
 
-          const productId = item.product_id;
-          const orderLineItem = this.orderToFulfill.order_items.find(i => i.product_id === productId);
+                // 🛑 This check throws the "Barcode not found" error if the product isn't linked via barcode
+                if (!productMatch) {
+                    this.scanStatusMessage = '❌ Invalid Barcode/Product not registered.';
+                    alert(`❌ Barcode (${baseCode}) not found in the product catalog.`);
+                    return;
+                }
 
-          // 2. Validate against the Order
-          if (!orderLineItem) {
-              this.scanStatusMessage = `❌ Scanned wrong product: ${item.product_name}. Not in Order #${this.orderToFulfill.order_id.slice(0, 8)}.`;
-              alert(`❌ Wrong Product Scanned: ${item.product_name}. This item is not part of the current order.`);
-              return;
-          }
+                const productId = productMatch.id;
+                const orderLineItem = this.orderToFulfill.order_items.find(i => i.product_id === productId);
 
-          // 3. Check Order Completion Status for this specific item
-          const requiredQty = orderLineItem.quantity;
-          const scannedQty = this.orderItemsScanned[productId] || 0;
+                // 2. Validate against the Order
+                // 🛑 This check throws the "Wrong Product Scanned" error if the product isn't in the order
+                if (!orderLineItem) {
+                    this.scanStatusMessage = `❌ Scanned wrong product: ${productMatch.brand}. Not in Order #${this.orderToFulfill.order_id.slice(0, 8)}.`;
+                    alert(`❌ Wrong Product Scanned: ${productMatch.brand}. This item is not part of the current order.`);
+                    return;
+                }
 
-          if (scannedQty >= requiredQty) {
-              this.scanStatusMessage = `⚠️ All ${requiredQty} units of ${item.product_name} are already scanned for this order.`;
-              alert(`⚠️ All required units of ${item.product_name} are already scanned.`);
-              return;
-          }
+                // 3. Check Order Completion Status for this specific item
+                const requiredQty = orderLineItem.quantity;
+                const scannedQty = this.orderItemsScanned[productId] || 0;
 
-          // 4. Update LOCAL Scan Counter
-          this.orderItemsScanned = {
-              ...this.orderItemsScanned,
-              [productId]: scannedQty + 1
-          };
+                if (scannedQty >= requiredQty) {
+                    this.scanStatusMessage = `⚠️ All ${requiredQty} units of ${productMatch.brand} are already scanned for this order.`;
+                    alert(`⚠️ All required units of ${productMatch.brand} are already scanned.`);
+                    return;
+                }
 
-          const currentTotalScanned = this.totalItemsScanned;
-          const totalRequired = this.totalItemsToScan;
+                // 4. Update LOCAL Scan Counter
+                this.orderItemsScanned = {
+                    ...this.orderItemsScanned,
+                    [productId]: scannedQty + 1
+                };
 
-          // 5. Update Status Message for the user
-          if (currentTotalScanned === totalRequired) {
-              this.stopQuagga();
-              this.isProductScanned = true; // Signals completion, triggers confirmation modal
-              this.scanStatusMessage = `✅ ALL ${totalRequired} ITEMS SCANNED! Click 'Confirm Shipment' below.`;
-              this.showScanModal = false; // Hide scanner modal to show confirmation modal
-          } else {
-              this.scanStatusMessage = `✅ Scanned ${item.product_name}. Total: ${currentTotalScanned}/${totalRequired}. Scan next!`;
-          }
+                const currentTotalScanned = this.totalItemsScanned;
+                const totalRequired = this.totalItemsToScan;
 
-      } catch (err) {
-          console.error('Scan error:', err);
-          alert('⚠️ Failed to process scan: ' + (err.message || err));
-      } finally {
-          this.isProcessingScan = false;
-          this.lastDetectedCode = null; // Clear detected code for next scan
-      }
-  },
+                // 5. Update Status Message for the user
+                if (currentTotalScanned === totalRequired) {
+                    this.stopQuagga();
+                    this.isProductScanned = true; // Signals completion, triggers confirmation modal
+                    this.scanStatusMessage = `✅ ALL ${totalRequired} ITEMS SCANNED! Click 'Confirm Shipment' below.`;
+                    this.showScanModal = false; // Hide scanner modal to show confirmation modal
+                } else {
+                    this.scanStatusMessage = `✅ Scanned ${productMatch.brand}. Total: ${currentTotalScanned}/${totalRequired}. Scan next!`;
+                }
+
+            } catch (err) {
+                console.error('Scan error:', err);
+                alert('⚠️ Failed to process scan: ' + (err.message || err));
+            } finally {
+                this.isProcessingScan = false;
+                this.lastDetectedCode = null; // Clear detected code for next scan
+            }
+        },
+
 
         closeScanModal() {
             this.stopQuagga();
@@ -746,18 +745,20 @@ export default {
         captureBarcode() {
             const codeToProcess = this.lastDetectedCode;
 
+            // 1. If all items are locally tracked as scanned, proceed to final database COMMIT
             if (this.totalItemsScanned === this.totalItemsToScan && this.totalItemsToScan > 0) {
-                // If all items are already scanned, clicking "Capture" should perform the final shipment confirmation
+                // This will run the inventory decrease logic
                 this.updateStockOut();
                 return;
             }
 
+            // 2. If no code is visually detected, show an error and stop.
             if (!codeToProcess) {
                 this.scanStatusMessage = "⚠️ Capture failed: Please align a valid barcode and wait for detection.";
                 return;
             }
 
-            // Perform the scan validation and local counter update
+            // 3. If not all items are scanned, and a code is detected, process the scan
             this.handleBarcodeScanned(codeToProcess);
         },
 
@@ -819,8 +820,8 @@ export default {
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
-            // Ensure product ID and brand are fetched for scanning logic
-            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, quantity');
+            // Fetch product barcode for scanner logic lookup
+            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, quantity, barcode');
             if (productsError) console.error('Error fetching products:', productsError);
             else this.availableProducts = products;
 
@@ -919,7 +920,7 @@ export default {
             const productTrendMap = new Map();
 
             try {
-                // 1. CRITICAL STEP: DECREMENT INVENTORY based on scanned counts
+                // 1. CRITICAL STEP: DECREMENT INVENTORY in the PRODUCTS table
                 const updatePromises = [];
                 for (const productId in this.orderItemsScanned) {
                     const scannedQty = this.orderItemsScanned[productId];
@@ -1013,9 +1014,6 @@ export default {
             } catch (error) {
                 console.error('Stock Out/Shipping Error:', error);
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
-
-                // If updateStockOut fails, you might want to consider rolling back the scans
-                // (i.e., reloading the scan modal state), but for now, we just inform the user.
             }
         },
 
@@ -1090,6 +1088,7 @@ export default {
             if (updateError) { alert('Error updating product: ' + updateError.message); return; }
 
             const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
+            // NOTE: The stock_in table is a log of RECEIVED stock. It should be inserted.
             const { data: insertedStock, error: logError } = await supabase.from('stock_in').insert({
                 barcode_id: barcodeBase,
                 product_name: this.stockIn.productName,
