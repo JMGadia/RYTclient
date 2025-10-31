@@ -424,7 +424,6 @@ import Quagga from '@ericblade/quagga2'; // Barcode scanning library
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
 // The 'router' constant declaration is not typically needed outside of setup() or setup script
-// For a standard Options API component, it should be accessed via 'this.$router'
 
 export default {
     name: 'AdminDashboard',
@@ -476,11 +475,11 @@ export default {
 
             // --- Loading / Scan State ---
             isStockOutLoading: false,
-            // isProductScanned now means "all items in order have been scanned"
+            // isProductScanned now means: the user has successfully scanned all required items
             isProductScanned: false,
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false,
-            // 🔥 NEW: Tracks how many units of each product ID have been scanned for the current order
+            // 🔥 CRITICAL NEW/RE-PURPOSED: Tracks scanned quantity for each product ID in the current order
             orderItemsScanned: {},
 
             // --- Dashboard / Views ---
@@ -525,19 +524,20 @@ export default {
             return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
         },
         totalItemsScanned() {
+            // Sums up all quantities in the tracking object
             return Object.values(this.orderItemsScanned).reduce((total, count) => total + count, 0);
         },
         scannedItemsList() {
             if (!this.orderToFulfill || !this.orderToFulfill.order_items) return [];
 
             return this.orderToFulfill.order_items.map(item => {
-                const productId = item.products.id;
+                const productId = item.products.id; // Use product ID for accurate tracking
                 const productName = item.products ? item.products.brand : 'Unknown Product';
                 const required = item.quantity;
                 const scanned = this.orderItemsScanned[productId] || 0;
 
                 return {
-                    id: productId, // Important for tracking
+                    id: productId,
                     name: productName,
                     required: required,
                     scanned: scanned,
@@ -571,6 +571,9 @@ export default {
                 return;
             }
 
+            // Ensure scanner is stopped if it was running
+            this.stopQuagga();
+
             Quagga.init({
                 inputStream: {
                     name: "Live",
@@ -601,8 +604,8 @@ export default {
                     // Only update if the code is new to prevent flickering status
                     if (this.lastDetectedCode !== code) {
                         this.lastDetectedCode = code;
-                        // Provide scanning feedback without stopping the scan session
-                        this.scanStatusMessage = `Code Detected: ${code}. Press CAPTURE to add to shipment.`;
+                        // Provide scanning feedback. NOTE: No database lookup/decrement here!
+                        this.scanStatusMessage = `✅ Barcode detected: ${code}. Click CAPTURE to add to shipment.`;
                     }
                 });
             });
@@ -619,6 +622,7 @@ export default {
                 console.warn('Error stopping Quagga:', err);
             }
         },
+
 
         // ✅ MODIFIED: Reset scan tracking state
         startScanForOrder(order) {
@@ -640,7 +644,7 @@ export default {
         },
 
 
-       // 🔥 MODIFIED: Logic to handle one scan, update counter, and check for completion
+        // 🔥 MODIFIED: Logic to validate scan and update local counter
         async handleBarcodeScanned(scannedCode) {
             if (!scannedCode || this.isProcessingScan) return;
             if (!this.orderToFulfill) {
@@ -649,36 +653,32 @@ export default {
             }
 
             this.isProcessingScan = true;
-            this.scanStatusMessage = `Processing: ${scannedCode}...`;
+            this.scanStatusMessage = `Validating: ${scannedCode}...`;
 
             try {
-                // 1. Normalize Code & Find Product/Stock
+                // 1. Normalize Code & Find Product/Stock ID
                 const rawCode = String(scannedCode).trim().toUpperCase();
 
-                // ✅ MODIFIED: Extract the base code (e.g., RYTT-1234567890)
-                // The printLabel function generates codes like BASECODE-001. We only need the BASECODE part.
+                // Extract the base code (e.g., from RYTT-1234567890-001 to RYTT-1234567890)
                 let baseCode = rawCode;
                 const parts = rawCode.split('-');
-                // Assuming your base code is the first two segments (e.g., 'RYTT' and 'TIMESTAMP')
                 if (parts.length >= 3) {
                     baseCode = parts.slice(0, 2).join('-');
                 } else if (parts.length === 2) {
                     baseCode = rawCode;
                 }
 
-                console.log(`Scanned: ${rawCode} | Searching with Base Code: ${baseCode}`);
-
-                // Search for the product in the stock_in table using the *base code*
+                // Search for the *product information* in stock_in using the base code
                 const { data: item, error } = await supabase
                     .from('stock_in')
-                    .select('barcode_id, product_name, size, product_id, quantity')
-                    .eq('barcode_id', baseCode) // ⬅️ CRITICAL: Use exact match on the base code
+                    .select('product_name, product_id')
+                    .eq('barcode_id', baseCode)
                     .maybeSingle();
 
                 if (error) throw error;
                 if (!item) {
                     this.scanStatusMessage = '❌ Barcode not found in stock_in records.';
-                    alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock. Scanned: ${rawCode}`);
+                    alert(`❌ Barcode (Base Code: ${baseCode}) not found in stock records.`);
                     return;
                 }
 
@@ -702,44 +702,23 @@ export default {
                     return;
                 }
 
-                // 4. Update Order Scan Counter
+                // 4. Update LOCAL Scan Counter
                 this.orderItemsScanned = {
                     ...this.orderItemsScanned,
                     [productId]: scannedQty + 1
                 };
 
-                // 5. Update Inventory (Decrement the main product stock immediately by 1)
-                // We must update the quantity in the main 'products' table.
-                const { data: currentProduct, error: prodErr } = await supabase
-                    .from('products')
-                    .select('quantity')
-                    .eq('id', productId)
-                    .single();
+                const currentTotalScanned = this.totalItemsScanned;
+                const totalRequired = this.totalItemsToScan;
 
-                if (prodErr || !currentProduct || currentProduct.quantity < 1) {
-                    alert('Error: Not enough stock in main inventory to fulfill scan.');
-                    // Revert scan count since inventory update failed
-                    this.orderItemsScanned[productId] -= 1;
-                    return;
-                }
-
-                const newQuantity = currentProduct.quantity - 1;
-                let newStatus = newQuantity >= 12 ? 'In Stock' : (newQuantity >= 1 ? 'Low Stock' : 'Out of Stock');
-
-                const { error: updateProductError } = await supabase
-                    .from('products')
-                    .update({ quantity: newQuantity, status: newStatus })
-                    .eq('id', productId);
-                if (updateProductError) throw updateProductError;
-
-                // 6. Check for Order Completion
-                if (this.totalItemsScanned === this.totalItemsToScan) {
+                // 5. Update Status Message for the user
+                if (currentTotalScanned === totalRequired) {
                     this.stopQuagga();
-                    this.isProductScanned = true; // Trigger confirmation modal
-                    this.scanStatusMessage = `✅ ALL ${this.totalItemsToScan} ITEMS SCANNED! Ready to confirm shipment.`;
-                    this.showScanModal = false; // Hide scanner modal
+                    this.isProductScanned = true; // Signals completion, triggers confirmation modal
+                    this.scanStatusMessage = `✅ ALL ${totalRequired} ITEMS SCANNED! Click 'Confirm Shipment' below.`;
+                    this.showScanModal = false; // Hide scanner modal to show confirmation modal
                 } else {
-                    this.scanStatusMessage = `✅ Scanned ${item.product_name} (${this.totalItemsScanned}/${this.totalItemsToScan}). Scan next item!`;
+                    this.scanStatusMessage = `✅ Scanned ${item.product_name}. Total: ${currentTotalScanned}/${totalRequired}. Scan next!`;
                 }
 
             } catch (err) {
@@ -760,15 +739,22 @@ export default {
             this.orderItemsScanned = {}; // Clear scan tracking on close
         },
 
-        // ✅ CORRECTED METHOD: The core logic is now in handleBarcodeScanned
+        // ✅ CRITICAL MODIFICATION: This now acts as the FINAL COMMIT button
         captureBarcode() {
             const codeToProcess = this.lastDetectedCode;
+
+            if (this.totalItemsScanned === this.totalItemsToScan && this.totalItemsToScan > 0) {
+                // If all items are already scanned, clicking "Capture" should perform the final shipment confirmation
+                this.updateStockOut();
+                return;
+            }
 
             if (!codeToProcess) {
                 this.scanStatusMessage = "⚠️ Capture failed: Please align a valid barcode and wait for detection.";
                 return;
             }
 
+            // Perform the scan validation and local counter update
             this.handleBarcodeScanned(codeToProcess);
         },
 
@@ -830,7 +816,8 @@ export default {
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
-            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, barcode');
+            // Ensure product ID and brand are fetched for scanning logic
+            const { data: products, error: productsError } = await supabase.from('products').select('id, brand, size, price, quantity');
             if (productsError) console.error('Error fetching products:', productsError);
             else this.availableProducts = products;
 
@@ -929,7 +916,40 @@ export default {
             const productTrendMap = new Map();
 
             try {
-                // 1. Calculate sales and log individual stock-out transactions
+                // 1. CRITICAL STEP: DECREMENT INVENTORY based on scanned counts
+                const updatePromises = [];
+                for (const productId in this.orderItemsScanned) {
+                    const scannedQty = this.orderItemsScanned[productId];
+                    if (scannedQty > 0) {
+                        const productRecord = this.availableProducts.find(p => p.id === productId);
+
+                        // Find the current stock in the main products table
+                        const { data: currentProduct, error: prodErr } = await supabase
+                            .from('products')
+                            .select('quantity')
+                            .eq('id', productId)
+                            .single();
+
+                        if (prodErr || !currentProduct || currentProduct.quantity < scannedQty) {
+                             throw new Error(`Insufficient stock for product ID ${productId}. Available: ${currentProduct.quantity}, Required: ${scannedQty}`);
+                        }
+
+                        const newQuantity = currentProduct.quantity - scannedQty;
+                        let newStatus = newQuantity >= 12 ? 'In Stock' : (newQuantity >= 1 ? 'Low Stock' : 'Out of Stock');
+
+                        // Create the update promise
+                        updatePromises.push(supabase
+                            .from('products')
+                            .update({ quantity: newQuantity, status: newStatus })
+                            .eq('id', productId)
+                        );
+                    }
+                }
+                // Execute all inventory updates concurrently
+                const updateResults = await Promise.all(updatePromises);
+                updateResults.forEach(result => { if (result.error) throw result.error; });
+
+                // 2. Perform Order Logging & Sales Reporting (using the original order quantity)
                 for (const item of items) {
                     const { product_id, quantity, price_at_purchase } = item;
                     totalSalesAmount += (quantity * price_at_purchase);
@@ -944,7 +964,6 @@ export default {
                     productTrendMap.set(productName, currentTrend);
 
                     // Log individual stock-out transaction
-                    // NOTE: This log reflects the total order quantity, even though stock was reduced unit-by-unit in the scanner
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
                         product_id: product_id,
@@ -958,18 +977,18 @@ export default {
                 // Convert map to object for JSONB insertion
                 const dailyProductTrend = Object.fromEntries(productTrendMap);
 
-                // 2. Update Order Status to Shipped
+                // 3. Update Order Status to Shipped
                 const { error: updateOrderError } = await supabase
                     .from('orders')
                     .update({ status: 'Shipped' })
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
-                // 3. 💥 CRITICAL STEP: IMPORT SALES DATA via RPC
+                // 4. Update Sales Report
                 const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
                     p_sales_amount: totalSalesAmount,
                     p_orders_count: totalOrdersCount,
-                    p_product_trend: dailyProductTrend // Pass the aggregated JSON object
+                    p_product_trend: dailyProductTrend
                 });
 
                 if (salesReportError) {
@@ -977,7 +996,7 @@ export default {
                 }
 
                 // --- TRANSACTION SUCCESS ---
-                alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery! Sales report updated.`);
+                alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery!`);
 
                 // Clear state
                 this.isProductScanned = false;
@@ -991,6 +1010,9 @@ export default {
             } catch (error) {
                 console.error('Stock Out/Shipping Error:', error);
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
+
+                // If updateStockOut fails, you might want to consider rolling back the scans
+                // (i.e., reloading the scan modal state), but for now, we just inform the user.
             }
         },
 
@@ -1166,8 +1188,8 @@ export default {
                 const { error } = await supabase.auth.signOut();
                 if (error) { alert(`Logout failed: ${error.message}`); return; }
 
-                // The beforeRouteLeave guard handles this, but keep for fallback
-                window.location.href = '/';
+                await this.$router.push('/');
+                window.location.reload();
             } catch (e) {
                 console.error('Unexpected logout error:', e);
                 alert('An unexpected error occurred. Check console.');
