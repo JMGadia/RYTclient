@@ -221,164 +221,204 @@ onMounted(fetchOrders);
 */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap');
 
-/* 🌈 Aurora Gradient Background */
+/* 🌈 Aurora Gradient Background (unchanged) */
 .order-tracking-page {
-  font-family: 'Roboto', sans-serif;
-  min-height: 100vh;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+    font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Animated Aurora Background */
+/* Animated Aurora Background (unchanged) */
 .order-tracking-page::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background-image:
-    radial-gradient(circle at 15% 20%, #5a7dff 10%, transparent 50%),
-    radial-gradient(circle at 80% 80%, #d08bff 10%, transparent 40%),
-    radial-gradient(circle at 50% 40%, #ff8ed1 10%, transparent 40%),
-    linear-gradient(120deg, #0c0a24, #241e4e, #17133d);
-  filter: blur(80px);
-  opacity: 0.9;
-  animation: auroraAnimation 25s ease-in-out infinite;
-  z-index: 0;
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image:
+        radial-gradient(circle at 15% 20%, #5a7dff 10%, transparent 50%),
+        radial-gradient(circle at 80% 80%, #d08bff 10%, transparent 40%),
+        radial-gradient(circle at 50% 40%, #ff8ed1 10%, transparent 40%),
+        linear-gradient(120deg, #0c0a24, #241e4e, #17133d);
+    filter: blur(80px);
+    opacity: 0.9;
+    animation: auroraAnimation 25s ease-in-out infinite;
+    z-index: 0;
 }
 
 @keyframes auroraAnimation {
-  0% { transform: rotate(0deg) translateX(0); }
-  50% { transform: rotate(180deg) translateX(10%); }
-  100% { transform: rotate(360deg) translateX(0); }
+    0% { transform: rotate(0deg) translateX(0); }
+    50% { transform: rotate(180deg) translateX(10%); }
+    100% { transform: rotate(360deg) translateX(0); }
 }
 
-/* Keep main content above background */
+/* Keep main content above background (unchanged) */
 .container,
 .fab {
-  position: relative;
-  z-index: 2;
+    position: relative;
+    z-index: 2;
 }
 
-/* --- Floating Action Button (FAB) --- */
+/* --- Floating Action Button (FAB) (unchanged) --- */
 .fab {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #0d6efd;
-  color: white;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  z-index: 1000;
-  transition: transform 0.2s ease-in-out;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.2s ease-in-out;
 }
 .fab:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
-/* --- Section Title --- */
+/* --- Section Title (unchanged) --- */
 .section-title {
-  font-family: 'Poppins', sans-serif;
-  color: #fff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* --- Order Card (Glass Effect) --- */
+/* --- Order Card (Glass Effect) (unchanged) --- */
 .order-card {
-  border: none;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .order-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
 }
 
-/* --- Card Header --- */
+/* --- Card Header (unchanged) --- */
 .card-header h6 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
 }
 .card-header {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* --- Status Tracker (Standardized for Bootstrap 5) --- */
 .status-tracker {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  overflow-x: auto;
-  padding-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    /* This scrollbar is necessary since there are 5 steps */
+    overflow-x: auto;
+    padding-bottom: 1rem;
 }
 
+/* 💥 FIX 1: Ensure header content wraps cleanly on mobile */
+.card-header.d-flex.flex-wrap {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+}
+.card-header .fw-bold.me-3 {
+    margin-right: 0 !important;
+    font-size: 1.1rem; /* Make total price stand out slightly */
+}
+
+
 .step {
-  text-align: center;
-  min-width: 100px;
-  flex-shrink: 0;
+    text-align: center;
+    /* 💥 FIX 2: Reduce min-width of each step for mobile */
+    min-width: 85px;
+    flex-shrink: 0;
 }
 .step .icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #e9ecef;
-  color: #adb5bd;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  border: 3px solid #e9ecef;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #adb5bd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    border: 3px solid #e9ecef;
 }
 .step .label {
-  margin-top: 10px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #6c757d;
+    margin-top: 10px;
+    /* 💥 FIX 3: Smaller font for labels on mobile */
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #6c757d;
+    /* 💥 FIX 4: Allow text to wrap for long labels */
+    word-break: break-word;
+    white-space: normal;
+    padding: 0 5px; /* Add slight padding for separation */
 }
 .step.active .icon {
-  background-color: #e7f1ff;
-  color: #0d6efd;
-  border-color: #0d6efd;
-}
-.step.active .label {
-  color: #0d6efd;
+    background-color: #e7f1ff;
+    color: #0d6efd;
+    border-color: #0d6efd;
 }
 .step.completed .icon {
-  background-color: #198754;
-  color: #fff;
-  border-color: #198754;
+    background-color: #198754;
+    color: #fff;
+    border-color: #198754;
 }
 .step.completed .label {
-  color: #198754;
+    color: #198754;
 }
 
 /* --- Connector --- */
 .connector {
-  flex-grow: 1;
-  height: 4px;
-  background-color: #e9ecef;
-  margin-top: 18px;
+    /* 💥 FIX 5: Reduce connector width for more step space */
+    flex-grow: 0.5;
+    height: 4px;
+    background-color: #e9ecef;
+    margin-top: 18px;
+    /* Set a max width for extra small screens to prevent overflow */
+    max-width: 15px;
 }
 .connector.completed {
-  background-color: #198754;
+    background-color: #198754;
 }
 
-/* --- Empty State Overrides for Dark Background --- */
+/* --- Media Query for Larger Screens (Restore default values) --- */
+@media (min-width: 576px) { /* Restore spacing on tablet/desktop views */
+    .card-header.d-flex.flex-wrap {
+        flex-direction: row;
+        align-items: center !important;
+        gap: 0;
+    }
+    .step {
+        min-width: 100px;
+    }
+    .step .label {
+        font-size: 0.85rem;
+        padding: 0;
+    }
+    .connector {
+        flex-grow: 1;
+        max-width: none;
+    }
+}
+
+
+/* --- Empty State Overrides for Dark Background (unchanged) --- */
 .order-tracking-page .text-light,
 .order-tracking-page .fa-box-open {
     color: #fff !important;
@@ -388,9 +428,9 @@ onMounted(fetchOrders);
     color: rgba(255, 255, 255, 0.8) !important;
 }
 
-/* Overriding text color for Order Item details */
+/* Overriding text color for Order Item details (unchanged) */
 .card-body p {
-    color: #212529 !important; /* Ensure content is readable against semi-transparent card */
+    color: #212529 !important;
 }
 
 .card-body .text-muted {

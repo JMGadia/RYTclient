@@ -1,87 +1,87 @@
 <template>
-  <div class="shopping-cart-page">
-    <div class="container py-5">
-      <h2 class="fw-bold mb-5 section-title text-center">Shopping Cart</h2>
-      <div v-if="cart.length > 0" class="row">
-        <div class="col-lg-8">
-          <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-              <h5 class="mb-0 fw-bold">Your Items ({{ cart.length }})</h5>
-            </div>
-            <div class="card-body">
-              <div v-for="(item, index) in cart" :key="item.id">
-                <div class="row align-items-center mb-4 cart-item">
-                  <div class="col-2 col-md-2">
-                    <img :src="item.image_url || '/images/placeholder.png'" class="img-fluid rounded" :alt="item.brand">
-                  </div>
-                  <div class="col-5 col-md-5">
-                    <h6 class="fw-bold mb-1">{{ item.brand }}</h6>
-                    <p class="text-muted small mb-0">Size: {{ item.size }}</p>
-                  </div>
-                  <div class="col-3 col-md-3">
-                    <input
-                      type="number"
-                      class="form-control form-control-sm text-center"
-                      :value="item.quantity"
-                      @input="updateQuantity(item.id, parseInt($event.target.value))"
-                      min="1"
-                    >
-                  </div>
-                  <div class="col-2 col-md-2 text-end">
-                    <h6 class="fw-bold mb-0">₱{{ (item.price * item.quantity).toLocaleString() }}</h6>
-                    <a href="#" class="text-danger small" @click.prevent="removeFromCart(item.id)">Remove</a>
-                  </div>
+    <div class="shopping-cart-page">
+        <div class="container py-5">
+            <h2 class="fw-bold mb-5 section-title text-center">Shopping Cart</h2>
+            <div v-if="cart.length > 0" class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 fw-bold">Your Items ({{ cart.length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            <div v-for="(item, index) in cart" :key="item.id">
+                                <div class="row align-items-center mb-4 cart-item">
+                                    <div class="col-2">
+                                        <img :src="item.image_url || '/images/placeholder.png'" class="img-fluid rounded" :alt="item.brand">
+                                    </div>
+                                    <div class="col-4">
+                                        <h6 class="fw-bold mb-1">{{ item.brand }}</h6>
+                                        <p class="text-muted small mb-0">Size: {{ item.size }}</p>
+                                    </div>
+                                    <div class="col-3">
+                                        <input
+                                            type="number"
+                                            class="form-control form-control-sm text-center"
+                                            :value="item.quantity"
+                                            @input="updateQuantity(item.id, parseInt($event.target.value))"
+                                            min="1"
+                                        >
+                                    </div>
+                                    <div class="col-3 text-end d-flex flex-column align-items-end justify-content-center">
+                                        <h6 class="fw-bold mb-0 product-price-mobile">₱{{ (item.price * item.quantity).toLocaleString() }}</h6>
+                                        <a href="#" class="text-danger small" @click.prevent="removeFromCart(item.id)">Remove</a>
+                                    </div>
+                                </div>
+                                <hr v-if="index < cart.length - 1">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <hr v-if="index < cart.length - 1">
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div class="col-lg-4">
-          <div class="card shadow-sm">
-            <div class="card-header bg-white py-3">
-              <h5 class="mb-0 fw-bold">Order Summary</h5>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 fw-bold">Order Summary</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-2">
+                                    <span>Subtotal</span>
+                                    <span>₱{{ cartTotal.toLocaleString() }}.00</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-2">
+                                    <span>Shipping</span>
+                                    <span>₱{{ shippingFee.toLocaleString() }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0 mb-3">
+                                    <strong class="fw-bold">Total</strong>
+                                    <strong class="fw-bold fs-5 text-danger">₱{{ grandTotal.toLocaleString() }}.00</strong>
+                                </li>
+                            </ul>
+                            <div class="d-grid">
+                                <button class="btn btn-primary btn-lg rounded-pill" @click="proceedToAddress">
+                                    Proceed to Checkout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-4">
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-2">
-                  <span>Subtotal</span>
-                  <span>₱{{ cartTotal.toLocaleString() }}.00</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-2">
-                  <span>Shipping</span>
-                  <span>₱{{ shippingFee.toLocaleString() }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0 mb-3">
-                  <strong class="fw-bold">Total</strong>
-                  <strong class="fw-bold fs-5 text-danger">₱{{ grandTotal.toLocaleString() }}.00</strong>
-                </li>
-              </ul>
-              <div class="d-grid">
-                <button class="btn btn-primary btn-lg rounded-pill" @click="proceedToAddress">
-                  Proceed to Checkout
+
+            <div v-else class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                <h4 class="fw-bold">Your cart is empty</h4>
+                <p class="text-muted">Looks like you haven't added anything to your cart yet.</p>
+                <button class="btn btn-primary rounded-pill mt-3" @click="router.push({ name: 'ordering system' })">
+                    Start Shopping
                 </button>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
 
-      <div v-else class="text-center py-5">
-        <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
-        <h4 class="fw-bold">Your cart is empty</h4>
-        <p class="text-muted">Looks like you haven't added anything to your cart yet.</p>
-        <button class="btn btn-primary rounded-pill mt-3" @click="router.push({ name: 'ordering system' })">
-          Start Shopping
+        <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
+            <i class="fas fa-shopping-bag"></i>
         </button>
-      </div>
     </div>
-
-    <button @click="goToOrderingSystem" class="fab" title="Continue Shopping">
-      <i class="fas fa-shopping-bag"></i>
-    </button>
-  </div>
 </template>
 
 <script setup>

@@ -408,19 +408,20 @@
 
 <script>
 /* ============================================================
-    Admin Dashboard Vue Component
+    Admin Dashboard Vue Component - Realtime Edition
     Features:
     - User Profile Management
     - Stock In / Stock Out Handling
     - Barcode Generation & Scanning (Quagga2 & JsBarcode)
     - Dashboard Statistics & Recent Activities
     - Responsive UI and Sidebar Navigation
+    - **REALTIME: Supabase Subscriptions eliminate UI flickering refresh.**
 ============================================================ */
 
 import { supabase } from '../server/supabase';
 import { nextTick } from 'vue';
 import JsBarcode from 'jsbarcode';
-import Quagga from '@ericblade/quagga2'; // Barcode scanning library
+import Quagga from '@ericblade/quagga2';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
 const router = useRouter();
@@ -458,9 +459,10 @@ export default {
     ============================================================ */
     data() {
         return {
-            // ** 🚀 NEW: Property to hold the interval ID **
-            refreshIntervalId: null,
-            REFRESH_INTERVAL_MS: 12000, // 12 seconds
+            // ** 🚀 REALTIME CHANNELS (New) **
+            orderChannel: null,
+            stockInChannel: null,
+
             // --- UI State ---
             isCollapsed: false,
             isSidebarVisible: false,
@@ -543,16 +545,15 @@ export default {
                 };
             });
         },
-        // Keeping this helper function for template compatibility
         getOrderProductDetails() {
              return (items) => {
-                if (!items || items.length === 0) return 'No items found.';
-                return items.map(item => {
-                    const brand = item.products ? item.products.brand : 'Unknown Product';
-                    const size = item.products ? item.products.size : 'N/A';
-                    return `${brand} (${size}) x${item.quantity}`;
-                }).join(', ');
-            };
+                 if (!items || items.length === 0) return 'No items found.';
+                 return items.map(item => {
+                     const brand = item.products ? item.products.brand : 'Unknown Product';
+                     const size = item.products ? item.products.size : 'N/A';
+                     return `${brand} (${size}) x${item.quantity}`;
+                 }).join(', ');
+             };
         }
     },
 
@@ -560,23 +561,55 @@ export default {
       METHODS
     ============================================================ */
     methods: {
-        // ** 🚀 NEW: Auto-Refresh Methods **
-        startAutoRefresh() {
-            this.stopAutoRefresh(); // Ensure any existing interval is cleared
-            console.log(`Auto-refresh started: fetching data every ${this.REFRESH_INTERVAL_MS / 1000}s.`);
-            this.refreshIntervalId = setInterval(this.fetchInitialData, this.REFRESH_INTERVAL_MS);
+
+        // ** 🚀 REAL-TIME SUBSCRIPTION MANAGEMENT (New) **
+        setupRealtimeSubscriptions() {
+            console.log('Setting up Supabase real-time subscriptions...');
+
+            // 1. Subscribe to 'orders' for Stock Out/Shipping view updates
+            this.orderChannel = supabase
+                .channel('admin_orders')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'orders' },
+                    (payload) => {
+                        console.log('Realtime Order Change:', payload.eventType);
+                        // Refetch the list to ensure correct relationships/filtering
+                        this.fetchProcessedOrders();
+                    }
+                )
+                .subscribe();
+
+            // 2. Subscribe to 'stock_in' for Dashboard and Stock In History updates
+            this.stockInChannel = supabase
+                 .channel('admin_stock_in')
+                 .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'stock_in' },
+                    (payload) => {
+                         console.log('Realtime Stock In Change:', payload.eventType);
+                         // Refetch related dashboard data on stock in changes
+                         this.fetchDashboardData();
+                         this.fetchStockInHistory();
+                    }
+                 )
+                 .subscribe();
         },
 
-        stopAutoRefresh() {
-            if (this.refreshIntervalId) {
-                clearInterval(this.refreshIntervalId);
-                this.refreshIntervalId = null;
-                console.log('Auto-refresh stopped.');
+        removeRealtimeSubscriptions() {
+            console.log('Removing Supabase real-time subscriptions...');
+            if (this.orderChannel) {
+                supabase.removeChannel(this.orderChannel);
+                this.orderChannel = null;
+            }
+             if (this.stockInChannel) {
+                supabase.removeChannel(this.stockInChannel);
+                this.stockInChannel = null;
             }
         },
 
         /* ============================
-          --- QUAGGA BARCODE SCANNER (STABLE SINGLE-SCAN) ---
+          --- QUAGGA BARCODE SCANNER ---
           ============================ */
         initQuagga() {
             if (typeof Quagga === 'undefined' || !Quagga.init) {
@@ -634,7 +667,6 @@ export default {
 
 
         startScanForOrder(order) {
-            // Reverted to simple single-scan initialization logic
             if (order.status !== 'Order Processed') return;
 
             this.orderToFulfill = order;
@@ -642,7 +674,6 @@ export default {
             this.scanStatusMessage = 'Awaiting camera initialization...';
             this.showScanModal = true;
 
-            // Wait for DOM to be ready before initializing Quagga
             nextTick(() => {
                 setTimeout(() => {
                     this.initQuagga();
@@ -652,13 +683,13 @@ export default {
 
 
         async handleBarcodeScanned(scannedCode) {
-            if (!scannedCode) return; // This will now catch the null from the fixed captureBarcode
+            if (!scannedCode) return;
 
             try {
-                this.stopQuagga(); // <--- Scanner stops *after* button is pressed
+                this.stopQuagga();
                 this.isProductScanned = true;
                 this.scanStatusMessage = `✅ Barcode validated: ${scannedCode}. Ready for shipment confirmation.`;
-                this.showScanModal = false; // Hide scanner modal to show confirmation modal
+                this.showScanModal = false;
 
             } catch (err) {
                 console.error('Scan error:', err);
@@ -673,18 +704,16 @@ export default {
             this.isProductScanned = false;
             this.orderToFulfill = null;
         },
-       // ✅ CORRECTED METHOD: Requires a detected code before proceeding
+
         captureBarcode() {
             const codeToProcess = this.lastDetectedCode;
 
             if (!codeToProcess) {
-                // Display error message and stop
                 this.scanStatusMessage = "⚠️ Capture failed: Please align a valid barcode and wait for detection.";
                 console.warn('Capture attempt failed: No valid barcode was recently detected.');
-                return; // CRITICAL: Stop proceeding
+                return;
             }
 
-            // Reset for next scan, then proceed to handling logic
             this.lastDetectedCode = null;
             this.handleBarcodeScanned(codeToProcess);
         },
@@ -788,7 +817,6 @@ export default {
         async fetchProcessedOrders() {
             this.isStockOutLoading = true;
             try {
-                // Include all necessary states: Order Processed, Shipped, Delivered
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
@@ -836,7 +864,6 @@ export default {
             let totalSalesAmount = 0;
             let totalOrdersCount = 1;
 
-            // Map to aggregate product sales for the JSONB field in sales_report
             const productTrendMap = new Map();
 
             try {
@@ -848,13 +875,11 @@ export default {
                     const product = this.availableProducts.find(p => p.id === product_id);
                     const productName = product ? product.brand : `Product ID: ${product_id}`;
 
-                    // Aggregate product trend data
                     const currentTrend = productTrendMap.get(productName) || { sales: 0, count: 0 };
                     currentTrend.sales += (quantity * price_at_purchase);
                     currentTrend.count += quantity;
                     productTrendMap.set(productName, currentTrend);
 
-                    // Log individual stock-out transaction
                     const { error: logError } = await supabase.from('stock_out').insert({
                         order_id: orderId,
                         product_id: product_id,
@@ -865,7 +890,6 @@ export default {
                     if (logError) console.warn('Failed to log stock-out for item:', logError);
                 }
 
-                // Convert map to object for JSONB insertion
                 const dailyProductTrend = Object.fromEntries(productTrendMap);
 
                 // 2. Update Order Status to Shipped
@@ -875,21 +899,16 @@ export default {
                     .eq('order_id', orderId);
                 if (updateOrderError) throw updateOrderError;
 
-                // 3. 💥 CRITICAL STEP: IMPORT SALES DATA via RPC
+                // 3. Import Sales Data via RPC
                 const { error: salesReportError } = await supabase.rpc('upsert_daily_sales_report', {
                     p_sales_amount: totalSalesAmount,
                     p_orders_count: totalOrdersCount,
-                    p_product_trend: dailyProductTrend // Pass the aggregated JSON object
+                    p_product_trend: dailyProductTrend
                 });
 
                 if (salesReportError) {
-                    // Log error but don't halt, as the order update succeeded
                     console.error('Failed to update sales report:', salesReportError);
                 }
-
-                // 4. Update Stock Quantity (Implementation depends on availableProducts and stock reduction logic)
-                // This step is critical but is kept simple here. You would typically call another RPC (e.g., decrement_stock)
-                // for each item here.
 
                 // --- TRANSACTION SUCCESS ---
                 alert(`✅ Order #${orderId.slice(0, 8)} confirmed and ready for delivery! Sales report updated.`);
@@ -899,7 +918,8 @@ export default {
                 this.showScanModal = false;
                 this.orderToFulfill = null;
 
-                // Call for immediate update after action (Auto-refresh will also pick it up)
+                // Note: Realtime subscriptions should handle the UI updates.
+                // We call fetch manually here for immediate local feedback.
                 this.fetchProcessedOrders();
                 this.fetchDashboardData();
 
@@ -913,7 +933,6 @@ export default {
           --- ADMIN DELIVERY CONFIRMATION ---
           ============================ */
         openConfirmDeliveryModal(order) {
-            // FIX: Allow only if the order is Shipped
             if (order.status !== 'Shipped') return;
 
             this.orderToFulfill = order;
@@ -923,7 +942,7 @@ export default {
         closeConfirmDeliveryModal() {
             this.showDeliveryConfirmationModal = false;
             this.orderToFulfill = null;
-            this.isDelivering = null; // Ensure loading state is cleared
+            this.isDelivering = null;
         },
 
         async confirmDeliverySuccessAdmin() {
@@ -944,9 +963,8 @@ export default {
                 console.error("Error confirming delivery:", error.message);
                 alert(`Failed to mark order as delivered. Details: ${error.message}`);
             } finally {
-                // FIX: Close modal and reset state
                 this.closeConfirmDeliveryModal();
-                // Refresh the list to update status/disable button (Auto-refresh will also handle this)
+                // Note: Realtime subscriptions should handle the UI updates.
                 await this.fetchProcessedOrders();
             }
         },
@@ -1006,7 +1024,7 @@ export default {
                 dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
             };
 
-            // Call for immediate update after action (Auto-refresh will also pick it up)
+            // Note: Realtime subscriptions should handle the UI updates.
             this.fetchInitialData();
         },
 
@@ -1100,16 +1118,19 @@ export default {
         this.checkMobile();
         window.addEventListener('resize', this.checkMobile);
 
-        // ** 🚀 ADDED: Start auto-refresh and initial data fetch **
+        // 1. Initial data fetch (runs once)
         this.fetchInitialData();
-        this.startAutoRefresh();
+
+        // 2. Start listening for real-time changes
+        this.setupRealtimeSubscriptions();
     },
 
     beforeUnmount() {
         window.removeEventListener('resize', this.checkMobile);
         this.stopQuagga();
-        // ** 🚀 ADDED: Stop auto-refresh for cleanup **
-        this.stopAutoRefresh();
+
+        // 3. Stop and remove real-time channels for cleanup
+        this.removeRealtimeSubscriptions();
     }
 };
 </script>
