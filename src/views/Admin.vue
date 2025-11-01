@@ -458,6 +458,9 @@ export default {
     ============================================================ */
     data() {
         return {
+            // ** 🚀 NEW: Property to hold the interval ID **
+            refreshIntervalId: null,
+            REFRESH_INTERVAL_MS: 12000, // 12 seconds
             // --- UI State ---
             isCollapsed: false,
             isSidebarVisible: false,
@@ -557,6 +560,20 @@ export default {
       METHODS
     ============================================================ */
     methods: {
+        // ** 🚀 NEW: Auto-Refresh Methods **
+        startAutoRefresh() {
+            this.stopAutoRefresh(); // Ensure any existing interval is cleared
+            console.log(`Auto-refresh started: fetching data every ${this.REFRESH_INTERVAL_MS / 1000}s.`);
+            this.refreshIntervalId = setInterval(this.fetchInitialData, this.REFRESH_INTERVAL_MS);
+        },
+
+        stopAutoRefresh() {
+            if (this.refreshIntervalId) {
+                clearInterval(this.refreshIntervalId);
+                this.refreshIntervalId = null;
+                console.log('Auto-refresh stopped.');
+            }
+        },
 
         /* ============================
           --- QUAGGA BARCODE SCANNER (STABLE SINGLE-SCAN) ---
@@ -882,6 +899,7 @@ export default {
                 this.showScanModal = false;
                 this.orderToFulfill = null;
 
+                // Call for immediate update after action (Auto-refresh will also pick it up)
                 this.fetchProcessedOrders();
                 this.fetchDashboardData();
 
@@ -928,7 +946,7 @@ export default {
             } finally {
                 // FIX: Close modal and reset state
                 this.closeConfirmDeliveryModal();
-                // Refresh the list to update status/disable button
+                // Refresh the list to update status/disable button (Auto-refresh will also handle this)
                 await this.fetchProcessedOrders();
             }
         },
@@ -988,6 +1006,7 @@ export default {
                 dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
             };
 
+            // Call for immediate update after action (Auto-refresh will also pick it up)
             this.fetchInitialData();
         },
 
@@ -1080,12 +1099,17 @@ export default {
     mounted() {
         this.checkMobile();
         window.addEventListener('resize', this.checkMobile);
+
+        // ** 🚀 ADDED: Start auto-refresh and initial data fetch **
         this.fetchInitialData();
+        this.startAutoRefresh();
     },
 
     beforeUnmount() {
         window.removeEventListener('resize', this.checkMobile);
         this.stopQuagga();
+        // ** 🚀 ADDED: Stop auto-refresh for cleanup **
+        this.stopAutoRefresh();
     }
 };
 </script>

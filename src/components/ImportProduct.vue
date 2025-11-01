@@ -4,7 +4,7 @@
 
     <div class="image-upload-box" :class="{ 'error-border': validationErrors.image }">
       <label for="productImage">Import Image</label>
-      <input type="file" id="productImage" @change="handleImageUpload" accept="image/*" />
+            <input type="file" id="productImage" @change="handleImageUpload" accept="image/png, image/jpeg, image/gif, image/webp" />
       <div v-if="imageUrl" class="image-preview">
         <img :src="imageUrl" alt="Product Image Preview" />
       </div>
@@ -48,9 +48,21 @@
         </p>
       </div>
 
-      <div class="detail-box" :class="{ 'error-border': validationErrors.car_brand }">
+      <div
+            class="detail-box"
+            :class="{
+                'error-border': validationErrors.car_brand,
+                // 🎯 MODIFICATION 2: Apply a disabled style when Non-Tires is selected
+                'disabled-field': product.product_type === 'Non-Tires'
+            }"
+        >
         <label for="carBrand">Car Brand</label>
-        <select id="carBrand" v-model="product.car_brand">
+        <select
+            id="carBrand"
+            v-model="product.car_brand"
+            :disabled="product.product_type === 'Non-Tires'"
+            :class="{ 'disabled-input': product.product_type === 'Non-Tires' }"
+        >
           <option value="">Select a brand (Optional for Non-Tires)</option>
           <option v-for="car in carBrandOptions" :key="car" :value="car">
             {{ car }}
@@ -63,7 +75,15 @@
 
       <div class="detail-box" :class="{ 'error-border': validationErrors.price }">
         <label for="price">Price (₱)</label>
-        <input type="number" id="price" v-model.number="product.price" placeholder="e.g., 4500.50" min="0" />
+                <input
+            type="number"
+            id="price"
+            v-model.number="product.price"
+            placeholder="e.g., 4500"
+            min="0"
+            step="1"
+            onkeypress="return (event.charCode >= 48 && event.charCode <= 57)"
+        />
         <p v-if="validationErrors.price" class="error-message">
           {{ validationErrors.price }}
         </p>
@@ -81,7 +101,7 @@
 
 <script setup>
 // --- IMPORTS & SETUP ---
-import { ref } from 'vue'; // Core Vue function for reactive state
+import { ref, watch } from 'vue'; // 🎯 Added 'watch' import
 import { useRouter } from 'vue-router'; // Vue Router for navigation
 // API service functions for image upload and product creation
 import { uploadProductImage, createProduct } from '../services/apiService';
@@ -203,6 +223,14 @@ const carBrandOptions = ref([
 const productTypeOptions = ref(['Tires', 'Non-Tires']);
 
 
+// 🎯 NEW WATCHER: Reset car_brand if product_type changes to Non-Tires
+watch(() => product.value.product_type, (newType) => {
+  if (newType === 'Non-Tires') {
+    product.value.car_brand = ''; // Clear car brand when switching to Non-Tires
+    if (validationErrors.value.car_brand) delete validationErrors.value.car_brand; // Clear error
+  }
+});
+
 // --- VALIDATION LOGIC ---
 
 /**
@@ -219,6 +247,13 @@ const validateForm = () => {
     validationErrors.value.image = 'Product image is required.';
     isValid = false;
   }
+  // 🎯 MODIFICATION 1 (Part 2): Image file type validation
+  else if (!selectedFile.value.type.startsWith('image/')) {
+    validationErrors.value.image = 'Invalid file format. Only images (PNG, JPG, etc.) are allowed.';
+    selectedFile.value = null;
+    imageUrl.value = '';
+    isValid = false;
+  }
 
   // 2. Check general required fields
   const generalRequiredFields = ['brand', 'size', 'product_type'];
@@ -231,8 +266,7 @@ const validateForm = () => {
     }
   });
 
-  // MODIFICATION 2: Conditional check for 'car_brand'
-  // 'car_brand' is required ONLY IF 'product_type' is 'Tires'.
+  // 🎯 MODIFICATION 2 (Part 2): Conditional check for 'car_brand'
   const isTyreProduct = product.value.product_type === 'Tires';
 
   if (isTyreProduct) {
@@ -241,17 +275,19 @@ const validateForm = () => {
       isValid = false;
     }
   }
-  // For 'Non-Tires', car_brand is NOT required. We ensure it's saved as null/empty if not selected.
-  // The 'product.car_brand' model will be an empty string if no option is selected, which is fine for Non-Tires.
+  // For 'Non-Tires', car_brand is NOT required. The watcher handles the clearing.
 
-  // 3. Check Price field (null or positive number)
+  // 3. Check Price field (must be a positive whole number)
   if (product.value.price === null || product.value.price === '') {
-    validationErrors.value.price = 'Price is Required, Make sure its Number.';
+    validationErrors.value.price = 'Price is required.';
     isValid = false;
   } else if (isNaN(product.value.price) || product.value.price <= 0) {
-    // The v-model.number ensures product.value.price is a number (or null/empty string if input is invalid),
-    // but the isNaN check is a strong final guard.
     validationErrors.value.price = 'Price must be a positive number.';
+    isValid = false;
+  }
+  // 🎯 MODIFICATION 3 (Part 2): Check for whole number (integer)
+  else if (!Number.isInteger(product.value.price)) {
+    validationErrors.value.price = 'Price must be a whole number (no decimals).';
     isValid = false;
   }
 
@@ -265,15 +301,27 @@ const validateForm = () => {
  * Handles the selection of a new image file for the product.
  */
 const handleImageUpload = (event) => {
-  selectedFile.value = event.target.files[0];
-  if (selectedFile.value) {
-    // Creates a temporary local URL for immediate image preview
-    imageUrl.value = URL.createObjectURL(selectedFile.value);
-    // Clear the image error when a file is selected
-    if (validationErrors.value.image) delete validationErrors.value.image;
-  } else {
+  const file = event.target.files[0];
+  if (!file) {
+    selectedFile.value = null;
     imageUrl.value = '';
+    return;
   }
+
+  // 🎯 MODIFICATION 1 (Part 3): Image format validation immediately on change
+  if (!file.type.startsWith('image/')) {
+    validationErrors.value.image = 'Invalid file format. Only images are allowed.';
+    selectedFile.value = null;
+    imageUrl.value = '';
+    event.target.value = null; // Clear the file input
+    return;
+  }
+
+  selectedFile.value = file;
+  // Creates a temporary local URL for immediate image preview
+  imageUrl.value = URL.createObjectURL(selectedFile.value);
+  // Clear the image error when a valid file is selected
+  if (validationErrors.value.image) delete validationErrors.value.image;
 };
 
 /**
@@ -295,9 +343,9 @@ const submitProduct = async () => {
     // Store the returned image path/URL on the product object
       product.value.image_url = imagePath;
 
-    // MODIFICATION 3 (Cleanup): Ensure car_brand is an empty string for Non-Tires if it's not selected
-    if (product.value.product_type === 'Non-Tires' && !product.value.car_brand) {
-      product.value.car_brand = ''; // Or null, depending on your backend's preference. Empty string is common for DB fields.
+    // MODIFICATION 2 (Final clean-up): Ensure car_brand is explicitly null/empty if non-tire
+    if (product.value.product_type === 'Non-Tires') {
+      product.value.car_brand = '';
     }
 
     // STEP 3: Create the product record
@@ -319,6 +367,18 @@ const submitProduct = async () => {
 /* Add this rule to fix invisible dropdown text */
 .detail-box select option {
 color: #000;}
+
+/* 🟢 NEW DISABLED STYLES */
+.disabled-field,
+.disabled-input {
+    /* Gray out the whole box slightly */
+    background-color: #f0f0f0 !important;
+    cursor: not-allowed !important;
+}
+.disabled-input {
+    background-color: #e9ecef !important; /* Lighter gray for the input itself */
+    color: #6c757d !important; /* Gray text */
+}
 
 .import-product-container { max-width: 800px; margin: 40px auto; padding: 30px; background-color: #f9f9f9; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; }
 h1 { text-align: center; color: #333; margin-bottom: 30px; }

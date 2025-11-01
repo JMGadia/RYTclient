@@ -1,663 +1,1444 @@
-<template>
+ <template>
+
   <div class="d-flex" id="wrapper" :class="{ toggled: sidebarToggled }">
+
     <div class="bg-dark border-right" id="sidebar-wrapper">
+
       <div class="sidebar-heading text-white text-center py-4 fs-4 fw-bold">i-Tyre Super Admin</div>
+
       <div class="list-group list-group-flush">
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
+
           id="sidebar-notifications"
+
         >
+
           <i class="fas fa-bell me-2"></i>Notifications
+
         </a>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4 d-lg-none d-none"
+
           id="sidebar-profile"
+
           data-bs-toggle="collapse"
+
           data-bs-target="#sidebarProfileCollapse"
+
           aria-expanded="false"
+
           aria-controls="sidebarProfileCollapse"
+
         >
+
           <i class="fas fa-user-circle me-2"></i>Super Admin
+
         </a>
+
         <div class="collapse" id="sidebarProfileCollapse">
+
           <a href="#" class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5" data-bs-toggle="modal" data-bs-target="#superAdminProfileModal">
+
             Profile
+
           </a>
+
           <a
+
             href="#"
+
             class="list-group-item list-group-item-action bg-dark text-white py-2 ps-5"
+
             data-bs-toggle="modal"
+
             data-bs-target="#logoutConfirmationModal"
+
             >Logout</a
+
           >
+
         </div>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
+
           :class="{ 'active-link': activeFeature === 'dashboard' }"
+
           @click.prevent="setActiveFeature('dashboard')"
+
         >
+
           <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+
         </a>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
+
           :class="{ 'active-link': activeFeature === 'sales-report' }"
+
           @click.prevent="setActiveFeature('sales-report')"
+
         >
+
           <i class="fas fa-chart-line me-2"></i>Sales Report
+
         </a>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
+
           :class="{ 'active-link': activeFeature === 'stock-monitoring' }"
+
           @click.prevent="setActiveFeature('stock-monitoring')"
+
         >
+
           <i class="fas fa-boxes me-2"></i>Stock Monitoring
+
         </a>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
+
           :class="{ 'active-link': activeFeature === 'orders' }"
+
           @click.prevent="setActiveFeature('orders')"
+
         >
+
           <i class="fas fa-shopping-cart me-2"></i>Purchased Orders
+
         </a>
+
         <a
+
           href="#"
+
           class="list-group-item list-group-item-action bg-dark text-white py-3 px-4"
+
           :class="{ 'active-link': activeFeature === 'user-management' }"
+
           @click.prevent="setActiveFeature('user-management')"
+
         >
+
           <i class="fas fa-users me-2"></i>User Management
+
         </a>
+
       </div>
+
     </div>
+
+
 
     <div v-if="sidebarToggled && isMobile" class="sidebar-overlay" @click="toggleSidebar"></div>
 
+
+
     <div id="page-content-wrapper">
+
       <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+
         <button class="btn btn-primary ms-3" id="menu-toggle" @click="toggleSidebar">
+
           <img src="/images/carWheel.svg" alt="Car Wheel Icon" width="36" height="36" />
+
         </button>
 
+
+
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
           <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
+
             <li class="nav-item active d-lg-block d-none d-sm-block" id="notifications-top-nav">
+
               <a class="nav-link" href="#">
+
                 <i class="fas fa-bell me-1"></i>
+
                 <span class="d-sm-inline">Notifications</span>
+
               </a>
+
             </li>
 
+
+
             <li class="nav-item dropdown d-lg-block d-none d-sm-block" id="super-admin-top-nav">
+
                 <a
+
                   class="nav-link dropdown-toggle"
+
                   href="#"
+
                   id="navbarDropdown"
+
                   role="button"
+
                   data-bs-toggle="dropdown"
+
                   aria-expanded="false"
+
                 >
+
                   <span class="d-sm-inline">Super Admin</span>
+
                 </a>
+
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+
                   <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#superAdminProfileModal">Profile</a></li>
+
                   <li><hr class="dropdown-divider" /></li>
+
                   <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmationModal">Logout</a></li>
+
                 </ul>
+
               </li>
+
           </ul>
+
         </div>
+
       </nav>
 
+
+
       <div class="container-fluid p-4">
+
         <h1 class="mt-4 mb-4 text-primary">{{ pageTitle }}</h1>
+
         <div class="dashboard-content">
+
           <div v-if="activeFeature === 'dashboard'">
+
             <h2 class="h4">Dashboard Overview</h2>
+
             <p>Welcome to your Super Admin Dashboard! Here's a quick look at your key metrics.</p>
 
+
+
             <div class="row g-4 mb-4">
+
               <div class="col-lg-3 col-md-6">
+
                 <div class="card text-white bg-primary h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex flex-column justify-content-between">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                       <div>
+
                         <h5 class="card-title fw-bold">Total Sales (Last 30 Days)</h5>
+
                         <h3 class="card-text display-6 fw-bolder">₱{{ totalSalesLast30Days.toLocaleString() }}</h3>
+
                       </div>
+
                       <i class="fas fa-chart-bar fa-3x opacity-50"></i>
+
                     </div>
 
+
+
                   </div>
+
                 </div>
+
               </div>
+
               <div class="col-lg-3 col-md-6">
+
                 <div class="card text-white bg-success h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex flex-column justify-content-between">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                       <div>
+
                         <h5 class="card-title fw-bold">Pending Orders</h5>
+
                         <h3 class="card-text display-6 fw-bolder">{{ pendingOrdersCount }}</h3>
+
                       </div>
+
                       <i class="fas fa-clock fa-3x opacity-50"></i>
+
                     </div>
+
                   </div>
-                </div>
+
               </div>
+
+              </div>
+
               <div class="col-lg-3 col-md-6">
+
                 <div class="card text-white bg-warning h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex flex-column justify-content-between">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                       <div>
+
                         <h5 class="card-title fw-bold">Low Stock Items</h5>
+
                         <h3 class="card-text display-6 fw-bolder">{{ lowStockCount }}</h3>
+
                       </div>
+
                       <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
               <div class="col-lg-3 col-md-6">
+
                 <div class="card text-white bg-info h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex flex-column justify-content-between">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                       <div>
+
                         <h5 class="card-title fw-bold">New Users (This Month)</h5>
+
                         <h3 class="card-text display-6 fw-bolder">{{ newUsersCount }}</h3>
+
                       </div>
+
                       <i class="fas fa-user-plus fa-3x opacity-50"></i>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
 
+
+
             <div class="row g-4">
+
               <div class="col-lg-12">
+
                 <div class="card shadow-sm h-100">
+
                   <div class="card-header bg-white">
+
                     <h5 class="mb-0 text-primary fw-bold">Recent Activities</h5>
+
                   </div>
+
                   <div class="card-body p-0">
+
                     <div class="list-group list-group-flush">
+
                       <a href="#" class="list-group-item list-group-item-action">
+
                         <i class="fas fa-check-circle text-success me-2"></i>
+
                         Order #101 was completed by John Doe.
+
                         <span class="float-end text-muted small">Just now</span>
+
                       </a>
+
                       <a href="#" class="list-group-item list-group-item-action">
+
                         <i class="fas fa-box-open text-info me-2"></i>
+
                         Stock for "Performance" tires is now below minimum level.
+
                         <span class="float-end text-muted small">5 mins ago</span>
+
                       </a>
+
                       <a href="#" class="list-group-item list-group-item-action">
+
                         <i class="fas fa-user-plus text-primary me-2"></i>
+
                         A new user, Alice Williams, registered.
+
                         <span class="float-end text-muted small">1 hour ago</span>
+
                       </a>
+
                       <a href="#" class="list-group-item list-group-item-action">
+
                         <i class="fas fa-truck text-secondary me-2"></i>
+
                         Order #103 was shipped.
+
                         <span class="float-end text-muted small">Yesterday</span>
+
                       </a>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
+
           <div v-else-if="activeFeature === 'sales-report'">
-            <h2 class="h4">Sales Report Overview</h2>
-            <p>View key sales metrics and performance over time.</p>
 
-            <div class="row g-4 mb-4">
-              <div class="col-lg-6 col-md-6">
-                <div class="card text-white bg-info h-100 shadow-sm border-0">
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Total Sales (Today)</h5>
-                        <h3 class="card-text display-6 fw-bolder">
-                          ₱{{ totalSalesToday.toLocaleString() }}
-                        </h3>
+            <div id="salesReportContent">
+
+              <h2 class="h4">Sales Report Overview</h2>
+
+              <p>View key sales metrics and performance over time.</p>
+
+
+
+              <div class="d-flex justify-content-end mb-3">
+
+                  <button class="btn btn-danger" @click="exportSalesToPDF">
+
+                      <i class="fas fa-file-pdf me-2"></i>Copy to PDF
+
+                  </button>
+
+              </div>
+
+
+
+              <div class="row g-4 mb-4">
+
+                <div class="col-lg-6 col-md-6">
+
+                  <div class="card text-white bg-info h-100 shadow-sm border-0">
+
+                    <div class="card-body d-flex flex-column justify-content-between">
+
+                      <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                          <h5 class="card-title fw-bold">Total Sales (Today)</h5>
+
+                          <h3 class="card-text display-6 fw-bolder">
+
+                            ₱{{ totalSalesToday.toLocaleString() }}
+
+                          </h3>
+
+                        </div>
+
+                        <i class="fas fa-peso-sign fa-3x opacity-50"></i>
+
                       </div>
-                      <i class="fas fa-peso-sign fa-3x opacity-50"></i>
+
                     </div>
+
                   </div>
+
                 </div>
-              </div>
-              <div class="col-lg-6 col-md-6">
-                <div class="card text-white bg-dark h-100 shadow-sm border-0">
-                  <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h5 class="card-title fw-bold">Total Orders (Today)</h5>
-                        <h3 class="card-text display-6 fw-bolder">
-                          {{ totalOrdersToday.toLocaleString() }}
-                        </h3>
+
+                <div class="col-lg-6 col-md-6">
+
+                  <div class="card text-white bg-dark h-100 shadow-sm border-0">
+
+                    <div class="card-body d-flex flex-column justify-content-between">
+
+                      <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                          <h5 class="card-title fw-bold">Total Orders (Today)</h5>
+
+                          <h3 class="card-text display-6 fw-bolder">
+
+                            {{ totalOrdersToday.toLocaleString() }}
+
+                          </h3>
+
+                        </div>
+
+                        <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+
                       </div>
-                      <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
-            </div>
 
-            <div class="row g-4">
-              <div class="col-lg-12">
-                <div class="card shadow-sm h-100">
-                  <div class="card-header bg-white">
-                    <h5 class="mb-0 text-primary fw-bold">Sales Trend (Last 7 Days)</h5>
-                  </div>
-                  <div class="card-body">
-                    <canvas id="salesTrendChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <div class="row g-4 mt-4">
-                <div class="col-lg-6 offset-lg-3">
-                  <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white">
-                      <h5 class="mb-0 text-primary fw-bold">Sales by Tire Type</h5>
-                    </div>
-                    <div class="card-body d-flex justify-content-center align-items-center">
-                      <canvas id="salesByTireTypeChart"></canvas>
-                    </div>
-                  </div>
-                </div>
-            </div>
 
-            <div class="row g-4 mt-4">
+              <div class="row g-4">
+
                 <div class="col-lg-12">
+
                   <div class="card shadow-sm h-100">
+
                     <div class="card-header bg-white">
-                      <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
+
+                      <h5 class="mb-0 text-primary fw-bold">Sales Trend (Last 7 Days)</h5>
+
                     </div>
+
                     <div class="card-body">
-                      <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
+
+                      <canvas id="salesTrendChart"></canvas>
+
                     </div>
+
                   </div>
+
                 </div>
-            </div>
-          </div>
+
+              </div>
+
+
+
+              <div class="row g-4 mt-4">
+
+                  <div class="col-lg-6 offset-lg-3">
+
+                    <div class="card shadow-sm h-100">
+
+                      <div class="card-header bg-white">
+
+                        <h5 class="mb-0 text-primary fw-bold">Sales by Tire Type</h5>
+
+                      </div>
+
+                      <div class="card-body d-flex justify-content-center align-items-center">
+
+                        <canvas id="salesByTireTypeChart"></canvas>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+              </div>
+
+
+
+              <div class="row g-4 mt-4">
+
+                  <div class="col-lg-12">
+
+                    <div class="card shadow-sm h-100">
+
+                      <div class="card-header bg-white">
+
+                        <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
+
+                      </div>
+
+                      <div class="card-body">
+
+                        <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+              </div>
+
+            </div> </div>
+
           <div v-else-if="activeFeature === 'stock-monitoring'">
+
             <h2 class="h4">Tire Stock Monitoring</h2>
+
             <p>
+
               View and manage current stock levels, low stock alerts, and details for different tire
+
               types.
+
             </p>
 
+
+
             <div class="row g-4 mb-4">
+
               <div class="col-lg-4 col-md-6">
+
                 <div class="card bg-primary text-white h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex justify-content-between align-items-center">
+
                     <div>
+
                       <h5 class="card-title fw-bold">Total Stock</h5>
+
                       <h3 class="card-text display-6 fw-bolder">{{ totalStock }}</h3>
+
                     </div>
+
                     <i class="fas fa-boxes fa-3x opacity-50"></i>
-                  </div>
+
+                    </div>
+
                 </div>
+
               </div>
+
               <div class="col-lg-4 col-md-6">
+
                 <div class="card bg-warning text-dark h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex justify-content-between align-items-center">
+
                     <div>
+
                       <h5 class="card-title fw-bold">Low Stock Alerts</h5>
+
                       <h3 class="card-text display-6 fw-bolder">{{ lowStockCount }}</h3>
+
                     </div>
+
                     <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+
                   </div>
+
                 </div>
+
               </div>
+
               <div class="col-lg-4 col-md-12">
+
                 <div class="card bg-success text-white h-100 shadow-sm border-0">
+
                   <div class="card-body d-flex justify-content-between align-items-center">
+
                     <div>
+
                       <h5 class="card-title fw-bold">Product Types</h5>
+
                       <h3 class="card-text display-6 fw-bolder">{{ productTypes }}</h3>
+
                     </div>
+
                     <i class="fas fa-list fa-3x opacity-50"></i>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
+
+
 
             <div class="card mt-4 shadow-sm">
+
               <div
+
                 class="card-header bg-white d-flex justify-content-between align-items-center"
+
               >
+
                 <h5 class="mb-0 text-primary fw-bold">Current Tire Stock</h5>
+
                 <button class="btn btn-primary" @click="navigateToAddProduct">
+
                   <i class="fas fa-plus-circle me-2"></i>Add New Product
+
                 </button>
+
               </div>
+
               <div class="card-body p-0">
+
                 <div class="table-responsive">
+
                   <table class="table table-hover mb-0">
+
                     <thead class="bg-light">
+
                       <tr>
+
                         <th class="py-3 px-4">Product Type</th>
+
                         <th class="py-3 px-4">Brand</th>
+
                         <th class="py-3 px-4">Size</th>
+
                         <th class="py-3 px-4">Current Stock</th>
+
+                                                <th class="py-3 px-4">Last Updated</th>
+
                         <th class="py-3 px-4">Status</th>
+
                       </tr>
+
                     </thead>
+
                     <tbody>
+
                       <tr v-if="stockLoading">
-                        <td colspan="5" class="text-center py-4">Loading stock...</td>
+
+                        <td colspan="6" class="text-center py-4">Loading stock...</td>
+
                       </tr>
+
                       <tr v-else-if="stockItems.length === 0">
-                        <td colspan="5" class="text-center py-4">No products found. Add a new product to see it here.</td>
+
+                        <td colspan="6" class="text-center py-4">No products found. Add a new product to see it here.</td>
+
                       </tr>
+
                       <tr v-for="item in stockItems" :key="item.id">
+
                         <td class="py-3 px-4">{{ item.product_type }}</td>
+
                         <td class="py-3 px-4">{{ item.brand }}</td>
+
                         <td class="py-3 px-4">{{ item.size }}</td>
+
                         <td class="py-3 px-4">{{ item.quantity }}</td>
+
+                                                <td class="py-3 px-4 small text-muted">{{ item.last_updated }}</td>
+
                         <td class="py-3 px-4">
+
                           <span :class="['badge',
+
                             item.status === 'In Stock' ? 'bg-success' :
+
                             item.status === 'Low Stock' ? 'bg-warning text-dark' : 'bg-danger']">
+
                             {{ item.status }}
+
                           </span>
+
                         </td>
+
                       </tr>
+
                     </tbody>
+
                   </table>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
+
           <div v-else-if="activeFeature === 'orders'">
-    <h2 class="h4">Purchased Orders Overview</h2>
-    <p>Track and manage the status of all incoming customer orders. 🛒</p>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-4 col-md-6">
-            <div
-                class="card text-white bg-info h-100 shadow-sm border-0"
-                :class="{ 'card-active': selectedStatus === 'All' }"
-                @click="filterOrders('All')"
-            >
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title fw-bold">Total Orders</h5>
-                            <h3 class="card-text display-6 fw-bolder">{{ totalOrders }}</h3>
-                        </div>
-                        <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div
-                class="card text-white bg-warning h-100 shadow-sm border-0"
-                :class="{ 'card-active': selectedStatus === 'Pending' }"
-                @click="filterOrders('Pending')"
-            >
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title fw-bold">Pending Orders</h5>
-                            <h3 class="card-text display-6 fw-bolder">{{ pendingOrdersCount }}</h3>
-                        </div>
-                        <i class="fas fa-clock fa-3x opacity-50"></i>
-                    </div>
-                </div>
-              </div>
-        </div>
-        <div class="col-lg-4 col-md-12">
-            <div
-                class="card text-white bg-success h-100 shadow-sm border-0"
-                :class="{ 'card-active': selectedStatus === 'Completed' }"
-                @click="filterOrders('Completed')"
-            >
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title fw-bold">Completed Orders</h5>
-                            <h3 class="card-text display-6 fw-bolder">{{ completedOrdersCount }}</h3>
-                        </div>
-                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            <h2 class="h4">Purchased Orders Overview</h2>
 
-    <div class="card mt-4 shadow-sm">
-        <div
-            class="card-header bg-white d-flex justify-content-between align-items-center"
-        >
-            <h5 class="mb-0 text-primary fw-bold">Order List ({{ selectedStatus }})</h5>
-            <div class="d-flex align-items-center">
-                <input
-                    type="text"
-                    class="form-control form-control-sm me-2"
-                    placeholder="Search orders..."
-                    v-model="searchQuery"
-                />
-                <button class="btn btn-sm btn-primary">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div v-if="ordersLoading" class="text-center py-5">
-                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-                <p class="mt-2 text-muted">Loading orders...</p>
-            </div>
-            <div v-else-if="filteredOrders.length === 0" class="alert alert-info text-center">
-                No orders found matching your criteria.
-            </div>
-            <div class="row g-4" v-else>
-                <div class="col-lg-4 col-md-6" v-for="order in filteredOrders" :key="order.order_id">
-                    <div class="card h-100 shadow-sm border-2" :class="getCardBorder(order.cardStatus)">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="card-subtitle text-muted fw-bold">Order ID: #{{ order.order_id.slice(0, 8) }}</h6>
-                                <span class="badge" :class="getStatusBadge(order.cardStatus)">{{ order.cardStatus }}</span>
+            <p>Track and manage the status of all incoming customer orders. 🛒</p>
+
+
+
+            <div class="row g-4 mb-4">
+
+                <div class="col-lg-4 col-md-6">
+
+                    <div
+
+                        class="card text-white bg-info h-100 shadow-sm border-0"
+
+                        :class="{ 'card-active': selectedStatus === 'All' }"
+
+                        @click="filterOrders('All')"
+
+                    >
+
+                        <div class="card-body d-flex flex-column justify-content-between">
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <div>
+
+                                    <h5 class="card-title fw-bold">Total Orders</h5>
+
+                                    <h3 class="card-text display-6 fw-bolder">{{ totalOrders }}</h3>
+
+                                </div>
+
+                                <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+
                             </div>
-                            <h5 class="card-title">{{ order.username }}</h5>
-                            <p class="card-text mb-1">
-                                <i class="fas fa-calendar-alt text-muted me-2"></i>
-                                <span class="fw-bold">Date:</span> {{ new Date(order.created_at).toLocaleDateString() }}
-                            </p>
-                            <p class="card-text">
-                                <i class="fas fa-peso-sign text-muted me-2"></i>
-                                <span class="fw-bold">Total:</span> ₱{{ order.total_price.toLocaleString() }}
-                            </p>
+
                         </div>
-                        <div class="card-footer bg-light border-top-0 d-flex justify-content-end">
-                            <button class="btn btn-sm btn-outline-primary me-2" @click="viewOrderDetails(order)">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                        </div>
+
                     </div>
+
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-          <div v-else-if="activeFeature === 'user-management'">
-            <h2 class="mb-4">User Management</h2>
-            <div class="card shadow-sm mb-4">
-              <div class="card-body">
-                <h5 class="card-title">All Users</h5>
-                <p class="card-subtitle mb-3 text-muted">This table updates in real-time. 'Admin' roles are always listed first.</p>
-                <div class="table-responsive">
-                 <table class="table table-hover table-striped">
-                    <thead class="bg-light">
-                      <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Date Created</th>
-                        <th>Role</th>
-                        <th class="text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="user in sortedUsers" :key="user.id">
-                        <td>{{ user.username || 'N/A' }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A' }}</td>
-                        <td>
-                          <span class="badge" :class="user.role === 'Admin' ? 'bg-info' : 'bg-primary'">
-                            {{ user.role }}
-                          </span>
-                        </td>
-                        <td class="text-center">
-                          <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id, user.username)">
-                            <i class="fas fa-trash-alt me-1"></i>Delete
-                          </button>
-                        </td>
-                      </tr>
-                      <tr v-if="users.length === 0">
-                        <td colspan="5" class="text-center py-4">No users found.</td>
-                      </tr>
-                    </tbody>
-                  </table>
+
+                <div class="col-lg-4 col-md-6">
+
+                    <div
+
+                        class="card text-white bg-warning h-100 shadow-sm border-0"
+
+                        :class="{ 'card-active': selectedStatus === 'Pending' }"
+
+                        @click="filterOrders('Pending')"
+
+                    >
+
+                        <div class="card-body d-flex flex-column justify-content-between">
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <div>
+
+                                    <h5 class="card-title fw-bold">Pending Orders</h5>
+
+                                    <h3 class="card-text display-6 fw-bolder">{{ pendingOrdersCount }}</h3>
+
+                                </div>
+
+                                <i class="fas fa-clock fa-3x opacity-50"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
-              </div>
+
+                <div class="col-lg-4 col-md-12">
+
+                    <div
+
+                        class="card text-white bg-success h-100 shadow-sm border-0"
+
+                        :class="{ 'card-active': selectedStatus === 'Completed' }"
+
+                        @click="filterOrders('Completed')"
+
+                    >
+
+                        <div class="card-body d-flex flex-column justify-content-between">
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <div>
+
+                                    <h5 class="card-title fw-bold">Completed Orders</h5>
+
+                                    <h3 class="card-text display-6 fw-bolder">{{ completedOrdersCount }}</h3>
+
+                                </div>
+
+                                <i class="fas fa-check-circle fa-3x opacity-50"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
+
+
+
+            <div class="card mt-4 shadow-sm">
+
+                <div
+
+                    class="card-header bg-white d-flex justify-content-between align-items-center"
+
+                >
+
+                    <h5 class="mb-0 text-primary fw-bold">Order List ({{ selectedStatus }})</h5>
+
+                    <div class="d-flex align-items-center">
+
+                        <input
+
+                            type="text"
+
+                            class="form-control form-control-sm me-2"
+
+                            placeholder="Search orders..."
+
+                            v-model="searchQuery"
+
+                        />
+
+                        <button class="btn btn-sm btn-primary">
+
+                            <i class="fas fa-search"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div v-if="ordersLoading" class="text-center py-5">
+
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+
+                        <p class="mt-2 text-muted">Loading orders...</p>
+
+                    </div>
+
+                    <div v-else-if="filteredOrders.length === 0" class="alert alert-info text-center">
+
+                        No orders found matching your criteria.
+
+                    </div>
+
+                    <div class="row g-4" v-else>
+
+                        <div class="col-lg-4 col-md-6" v-for="order in filteredOrders" :key="order.order_id">
+
+                            <div class="card h-100 shadow-sm border-2" :class="getCardBorder(order.cardStatus)">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+
+                                        <h6 class="card-subtitle text-muted fw-bold">Order ID: #{{ order.order_id.slice(0, 8) }}</h6>
+
+                                        <span class="badge" :class="getStatusBadge(order.cardStatus)">{{ order.cardStatus }}</span>
+
+                                    </div>
+
+                                    <h5 class="card-title">{{ order.username }}</h5>
+
+                                    <p class="card-text mb-1">
+
+                                        <i class="fas fa-calendar-alt text-muted me-2"></i>
+
+                                        <span class="fw-bold">Date:</span> {{ new Date(order.created_at).toLocaleDateString() }}
+
+                                    </p>
+
+                                    <p class="card-text">
+
+                                        <i class="fas fa-peso-sign text-muted me-2"></i>
+
+                                        <span class="fw-bold">Total:</span> ₱{{ order.total_price.toLocaleString() }}
+
+                                    </p>
+
+                                </div>
+
+                                <div class="card-footer bg-light border-top-0 d-flex justify-content-end">
+
+                                    <button class="btn btn-sm btn-outline-primary me-2" @click="viewOrderDetails(order)">
+
+                                        <i class="fas fa-eye"></i> View
+
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'">
+
+                                        <i class="fas fa-times"></i> Cancel
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
           </div>
+
+          <div v-else-if="activeFeature === 'user-management'">
+
+            <h2 class="mb-4">User Management</h2>
+
+            <div class="card shadow-sm mb-4">
+
+              <div class="card-body">
+
+                <h5 class="card-title">All Users</h5>
+
+                <p class="card-subtitle mb-3 text-muted">This table updates in real-time. 'Admin' roles are always listed first.</p>
+
+                <div class="table-responsive">
+
+                   <table class="table table-hover table-striped">
+
+                    <thead class="bg-light">
+
+                      <tr>
+
+                        <th>Username</th>
+
+                        <th>Email</th>
+
+                        <th>Date Created</th>
+
+                        <th>Role</th>
+
+                        <th class="text-center">Actions</th>
+
+                      </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                      <tr v-for="user in sortedUsers" :key="user.id">
+
+                        <td>{{ user.username || 'N/A' }}</td>
+
+                        <td>{{ user.email }}</td>
+
+                        <td>{{ user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A' }}</td>
+
+                        <td>
+
+                          <span class="badge" :class="user.role === 'Admin' ? 'bg-info' : 'bg-primary'">
+
+                            {{ user.role }}
+
+                          </span>
+
+                        </td>
+
+                        <td class="text-center">
+
+                          <button class="btn btn-sm btn-outline-danger" @click="deleteUser(user.id, user.username)">
+
+                            <i class="fas fa-trash-alt me-1"></i>Delete
+
+                          </button>
+
+                        </td>
+
+                      </tr>
+
+                      <tr v-if="users.length === 0">
+
+                        <td colspan="5" class="text-center py-4">No users found.</td>
+
+                      </tr>
+
+                    </tbody>
+
+                   </table>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
+
     </div>
+
+
 
     <div class="modal fade" id="logoutConfirmationModal" tabindex="-1" aria-labelledby="logoutConfirmationModalLabel" aria-hidden="true">
+
       <div class="modal-dialog modal-dialog-centered">
+
         <div class="modal-content">
+
           <div class="modal-header bg-primary text-white">
+
             <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
+
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="logoutButton"></button>
+
            </div>
+
           <div class="modal-body text-center">
+
             <div class="p-3">
+
               <i class="fas fa-sign-out-alt fa-3x text-primary mb-3"></i>
+
               <p class="fs-5">Are you sure you want to log out of your account?</p>
+
               <p class="text-muted">You will be redirected to the account selection page.</p>
+
             </div>
+
           </div>
+
           <div class="modal-footer justify-content-center border-0">
+
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
             <button type="button" class="btn btn-danger" @click="confirmLogout" data-bs-dismiss="modal">Logout</button>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
-  </div>
 
-  <div class="modal fade" id="superAdminProfileModal" tabindex="-1" aria-labelledby="superAdminProfileModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content profile-modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="superAdminProfileModalLabel">Super Admin Profile</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body profile-modal-body">
 
-        <div class="profile-info-box">
-          <small class="text-muted">Username</small>
-          <div v-if="isEditingUsername" class="d-flex align-items-center">
-            <input type="text" v-model="editableUsername" class="form-control form-control-sm">
+
+    <div class="modal fade" id="superAdminProfileModal" tabindex="-1" aria-labelledby="superAdminProfileModalLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+
+      <div class="modal-content profile-modal-content">
+
+        <div class="modal-header">
+
+          <h5 class="modal-title" id="superAdminProfileModalLabel">Super Admin Profile</h5>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+        </div>
+
+        <div class="modal-body profile-modal-body">
+
+
+
+          <div class="profile-info-box">
+
+            <small class="text-muted">Username</small>
+
+            <div v-if="isEditingUsername" class="d-flex align-items-center">
+
+              <input type="text" v-model="editableUsername" class="form-control form-control-sm">
+
+              </div>
+
+            <p v-else class="mb-0 d-flex justify-content-between align-items-center">
+
+              <span>{{ superAdminProfile.username || '...' }}</span>
+
+              <button class="btn btn-sm btn-link edit-btn" @click="startUsernameEdit">
+
+                <i class="fas fa-pencil-alt"></i>
+
+              </button>
+
+            </p>
+
           </div>
-          <p v-else class="mb-0 d-flex justify-content-between align-items-center">
-            <span>{{ superAdminProfile.username || '...' }}</span>
-            <button class="btn btn-sm btn-link edit-btn" @click="startUsernameEdit">
-              <i class="fas fa-pencil-alt"></i>
-            </button>
-          </p>
+
+
+
+          <div v-if="isEditingUsername" class="d-flex justify-content-end w-100 mt-2">
+
+            <button class="btn btn-sm btn-secondary me-2" @click="cancelUsernameEdit">Cancel</button>
+
+            <button class="btn btn-sm btn-primary" @click="saveUsername">Save</button>
+
+          </div>
+
+
+
+          <div class="profile-info-box mt-2">
+
+            <small class="text-muted">Email</small>
+
+            <p class="mb-0">{{ superAdminProfile.email || '...' }}</p>
+
+          </div>
+
         </div>
 
-        <div v-if="isEditingUsername" class="d-flex justify-content-end w-100 mt-2">
-          <button class="btn btn-sm btn-secondary me-2" @click="cancelUsernameEdit">Cancel</button>
-          <button class="btn btn-sm btn-primary" @click="saveUsername">Save</button>
-        </div>
-
-        <div class="profile-info-box mt-2">
-          <small class="text-muted">Email</small>
-          <p class="mb-0">{{ superAdminProfile.email || '...' }}</p>
-        </div>
       </div>
+
     </div>
-  </div>
-</div>
-<div v-if="showOrderModal" class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Order Details: #{{ selectedOrderDetails.order_id.slice(0, 8) }}</h5>
-                <button type="button" class="btn-close" @click="showOrderModal = false"></button>
-            </div>
-            <div class="modal-body" v-if="selectedOrderDetails">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Order Summary</h6>
-                        <ul class="list-group list-group-flush mb-3">
-                            <li class="list-group-item d-flex justify-content-between">
-                                Status: <span :class="getStatusBadge(selectedOrderDetails.cardStatus)" class="badge">{{ selectedOrderDetails.cardStatus }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                Customer: <span>{{ selectedOrderDetails.username }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                Contact: <span>{{ selectedOrderDetails.contact }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                Total Price: <span class="text-success fw-bold">₱{{ selectedOrderDetails.total_price.toFixed(2) }}</span>
-                            </li>
-                            <li class="list-group-item">
-                                Shipping Address: <br> <span>{{ selectedOrderDetails.shipping_addr }}</span>
-                            </li>
-                        </ul>
 
-                        <h6>Items Ordered</h6>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between" v-for="item in selectedOrderDetails.order_items" :key="item.product_id">
-                                <span>{{ item.products.brand }} ({{ item.products.size }}) x{{ item.quantity }}</span>
-                                <span class="text-muted">₱{{ (item.price_at_purchase * item.quantity).toFixed(2) }}</span>
-                            </li>
-                        </ul>
-                    </div>
+    </div>
 
-                    <div class="col-md-6">
-                        <h6>Payment Confirmation</h6>
-                        <div v-if="selectedOrderDetails.paymentProofUrl">
-                            <p class="text-muted small">Proof Path: {{ selectedOrderDetails.payment_proof_path }}</p>
-                            <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" class="d-block text-center">
-                                <img :src="selectedOrderDetails.paymentProofUrl" alt="Payment Proof" class="img-fluid border rounded shadow-sm" style="max-height: 300px; object-fit: contain;" />
-                                <p class="small mt-2 text-primary">Click to view full image in new tab</p>
-                            </a>
-                        </div>
-                        <div v-else class="alert alert-warning">
-                            No payment proof screenshot found for this order.
-                        </div>
-                    </div>
+    <div v-if="showOrderModal" class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">Order Details: #{{ selectedOrderDetails.order_id.slice(0, 8) }}</h5>
+
+                    <button type="button" class="btn-close" @click="showOrderModal = false"></button>
+
                 </div>
+
+                <div class="modal-body" v-if="selectedOrderDetails">
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+
+                            <h6>Order Summary</h6>
+
+                            <ul class="list-group list-group-flush mb-3">
+
+                                <li class="list-group-item d-flex justify-content-between">
+
+                                    Status: <span :class="getStatusBadge(selectedOrderDetails.cardStatus)" class="badge">{{ selectedOrderDetails.cardStatus }}</span>
+
+                                </li>
+
+                                <li class="list-group-item d-flex justify-content-between">
+
+                                    Customer: <span>{{ selectedOrderDetails.username }}</span>
+
+                                </li>
+
+                                <li class="list-group-item d-flex justify-content-between">
+
+                                    Contact: <span>{{ selectedOrderDetails.contact }}</span>
+
+                                </li>
+
+                                <li class="list-group-item d-flex justify-content-between">
+
+                                    Total Price: <span class="text-success fw-bold">₱{{ selectedOrderDetails.total_price.toFixed(2) }}</span>
+
+                                </li>
+
+                                <li class="list-group-item">
+
+                                    Shipping Address: <br> <span>{{ selectedOrderDetails.shipping_addr }}</span>
+
+                                </li>
+
+                            </ul>
+
+
+
+                            <h6>Items Ordered</h6>
+
+                            <ul class="list-group list-group-flush">
+
+                                <li class="list-group-item d-flex justify-content-between" v-for="item in selectedOrderDetails.order_items" :key="item.product_id">
+
+                                    <span>{{ item.products.brand }} ({{ item.products.size }}) x{{ item.quantity }}</span>
+
+                                    <span class="text-muted">₱{{ (item.price_at_purchase * item.quantity).toFixed(2) }}</span>
+
+                                </li>
+
+                            </ul>
+
+                        </div>
+
+
+
+                        <div class="col-md-6">
+
+                            <h6>Payment Confirmation</h6>
+
+                            <div v-if="selectedOrderDetails.paymentProofUrl">
+
+                                <p class="text-muted small">Proof Path: {{ selectedOrderDetails.payment_proof_path }}</p>
+
+                                <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" class="d-block text-center">
+
+                                    <img :src="selectedOrderDetails.paymentProofUrl" alt="Payment Proof" class="img-fluid border rounded shadow-sm" style="max-height: 300px; object-fit: contain;" />
+
+                                    <p class="small mt-2 text-primary">Click to view full image in new tab</p>
+
+                                </a>
+
+                            </div>
+
+                            <div v-else class="alert alert-warning">
+
+                                No payment proof screenshot found for this order.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" @click="showOrderModal = false">Close</button>
+
+                </div>
+
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @click="showOrderModal = false">Close</button>
+
+        </div>
+
+    </div>
+
+
+
+    <div v-if="showDeleteConfirmationModal" class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+
+      <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+          <div class="modal-header bg-danger text-white">
+
+            <h5 class="modal-title">⚠️ **Confirm User Deletion**</h5>
+
+            <button type="button" class="btn-close btn-close-white" @click="cancelDeleteProcedure"></button>
+
+          </div>
+
+          <div class="modal-body">
+
+            <p>You are about to permanently delete the user: **{{ userToDelete?.username }}**.</p>
+
+            <p class="fw-bold">To proceed, enter the **Super Admin account password**:</p>
+
+
+
+            <div class="mb-3">
+
+              <label for="superAdminPass" class="form-label">Super Admin Password:</label>
+
+              <input
+
+                type="password"
+
+                class="form-control"
+
+                id="superAdminPass"
+
+                v-model="superAdminPassword"
+
+                @keyup.enter="confirmDeleteUser"
+
+                placeholder="Enter Super Admin Password"
+
+              >
+
             </div>
+
+
+
+            <div v-if="deleteError" class="alert alert-danger" role="alert">
+
+              {{ deleteError }}
+
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="cancelDeleteProcedure">
+              Cancel
+            </button>
+
+            <button type="button" class="btn btn-danger" @click="confirmDeleteUser">
+
+              Confirm Delete
+
+            </button>
+          </div>
+        </div>
         </div>
     </div>
-</div>
+  </div>
 </template>
 
 <style scoped>
+/* 🔔 NEW: Notification Styles (Add this to your CSS) */
+.notification-container {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1050; /* Above modals/navbars */
+    width: 100%;
+    max-width: 350px;
+}
+
+.notification-container .alert {
+    animation: slide-in 0.3s ease-out;
+}
+
+/* Optional Fade Transition for Vue's transition-group */
+.fade-enter-active,
+.fade-leave-active {
+    transition: all 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+/* 🔔 END Notification Styles */
+
 /* REVISED STYLES for Profile Modal */
 .profile-modal-content {
   border-radius: 0.75rem;
@@ -967,10 +1748,14 @@
 </style>
 
 <script setup>
+
+// 1. 💡 NEW IMPORTS: Add PDF export libraries
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import html2canvas from 'html2canvas'; // 👈 Must be installed (npm install html2canvas)
+import { jsPDF } from 'jspdf';       // 👈 Must be installed (npm install jspdf)
 
 
 // --- 👇 THIS IS THE EXIT GUARD ---
@@ -1001,9 +1786,15 @@ const superAdminProfile = ref({ username: '', email: '' });
 const isEditingUsername = ref(false);
 const editableUsername = ref('');
 
+// --- 🔒 NEW SECURITY FEATURE REFS ---
+const showDeleteConfirmationModal = ref(false);
+const userToDelete = ref(null); // Stores { id, username } of the user being deleted
+const superAdminPassword = ref('');
+const deleteError = ref('');
+
 // --- REFS FOR LIVE STOCK DATA ---
 const stockItems = ref([]);
-const stockLoading = ref(true);
+const stockLoading = ref(false); // Changed to false for better initial UX if data loads fast
 const stockError = ref(null);
 
 // --- NEW STATE FOR PURCHASE ORDERS ---
@@ -1012,6 +1803,10 @@ const ordersLoading = ref(false);
 const showOrderModal = ref(false);
 const selectedOrderDetails = ref(null);
 
+// 🌟 NEW: Realtime Channel References
+let userManagementChannel = null; // Existing
+let ordersChannel = null; // Renamed from anonymous channel
+let stockChannel = null; // 👈 NEW: Channel for stock/product updates
 
 // --- NEW FUNCTION: FETCH PURCHASE ORDERS (LIVE DATA ONLY) ---
 const fetchPurchaseOrders = async () => {
@@ -1100,9 +1895,7 @@ const updateOrderStatus = async (orderId, newStatus) => {
             }
         }
 
-        // Refresh the list of orders and sales data
-        fetchPurchaseOrders();
-        fetchSalesReport();
+        // 🌟 NOTE: The Realtime subscriptions will handle the UI refresh.
         alert(`Order ${orderId} successfully updated to ${newStatus}.`);
     } catch (err) {
         alert(`Failed to complete action: ${err.message}`);
@@ -1130,31 +1923,38 @@ const viewOrderDetails = (order) => {
     showOrderModal.value = true;
 };
 
-
+// 1. 🚀 MODIFIED: Fetch 'updated_at' column
 const fetchStockItems = async () => {
     stockLoading.value = true;
     stockError.value = null;
     try {
         const { data, error } = await supabase
             .from('products')
-            .select('*')
+            .select('*, updated_at') // 👈 ADDED: updated_at field
             .order('brand', { ascending: true });
 
         if (error) throw error;
 
         stockItems.value = data.map(item => {
             let status;
+            // 2. ⚡ NEW LOGIC: Based on user request (quantity < 12 -> Low, quantity > 12 -> In Stock, quantity == 0 -> Out of Stock)
             if (item.quantity === 0) {
-                // 🌟 NEW LOGIC: If quantity is exactly 0, it's 'Out of Stock'
                 status = 'Out of Stock';
-            } else if (item.quantity <= item.reorder_point) {
+            } else if (item.quantity <= 12) { // Quantity is 1 to 12 inclusive
                 status = 'Low Stock';
-            } else {
+            } else { // Quantity is > 12
                 status = 'In Stock';
             }
+
+            // 3. 📅 NEW: Format the date and time
+            const formattedTimestamp = item.updated_at
+                ? new Date(item.updated_at).toLocaleString() // Format as local date and time
+                : 'N/A';
+
             return {
                 ...item,
-                status: status
+                status: status,
+                last_updated: formattedTimestamp, // 👈 ADDED: The new field for the column
             };
         });
 
@@ -1220,7 +2020,6 @@ const saveUsername = async () => {
 const activeFeature = ref('dashboard');
 const sidebarToggled = ref(false);
 const isMobile = ref(false);
-let userManagementChannel = null;
 
 const users = ref([]);
 
@@ -1239,11 +2038,16 @@ const salesData = ref({
     salesByTireType: { labels: [], datasets: [{ label: 'Sales by Product Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
 });
 
-// --- CORE FUNCTION: UPDATED FETCH SALES REPORT DATA WITH DUMMY DATA FALLBACK ---
+// --- CORE FUNCTION: UPDATED FETCH SALES REPORT DATA ---
 const fetchSalesReport = async () => {
     salesLoading.value = true;
     salesError.value = null;
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // 💡 NEW: Calculate the date 30 days ago for the monthly product trend
+    const date30DaysAgo = new Date();
+    date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
+    const date30DaysAgoString = date30DaysAgo.toISOString().split('T')[0];
 
     try {
         // 1. Fetch sales_data (Cumulative Totals)
@@ -1273,7 +2077,7 @@ const fetchSalesReport = async () => {
         salesData.value.totalWeeklySales = liveWeeklySales;
         salesData.value.totalMonthlySales = liveMonthlySales;
 
-        // 2. Calculate Total Orders for Today and Product Trend
+        // 2. Calculate Total Orders (Today) and Product Trend (Last 30 Days)
         const { data: orderItemsData, error: ordersError } = await supabase
             .from('orders')
             .select(`
@@ -1286,7 +2090,8 @@ const fetchSalesReport = async () => {
                 )
             `)
             .eq('status', 'Delivered')
-            .gte('created_at', today) // Orders created today or later
+            // 🚀 MODIFIED: Filter for orders 30 days ago or later for Product Trend
+            .gte('created_at', date30DaysAgoString)
             .order('created_at', { ascending: false });
 
         if (ordersError) throw ordersError;
@@ -1296,9 +2101,13 @@ const fetchSalesReport = async () => {
 
         if (orderItemsData) {
             orderItemsData.forEach(order => {
-                totalOrdersTodayCount++;
+                // Only count total orders for TODAY (to keep the daily card accurate)
+                const orderDate = new Date(order.created_at).toISOString().split('T')[0];
+                if (orderDate === today) {
+                    totalOrdersTodayCount++;
+                }
 
-                // Aggregate Product Trend (Sales by Tire Type)
+                // Aggregate Product Trend (Sales by Tire Type) for the last 30 days
                 order.order_items.forEach(item => {
                     const brand = item.products.brand;
                     // Fallback safety for missing price_at_purchase
@@ -1315,7 +2124,7 @@ const fetchSalesReport = async () => {
         // Update live total orders card
         salesData.value.totalOrdersToday = totalOrdersTodayCount;
 
-        // 3. Update Product Trend Chart (SALES BY TIRE TYPE - Live Data)
+        // 3. Update Product Trend Chart (SALES BY TIRE TYPE - Live Data for 30 Days)
         salesData.value.salesByTireType.labels = Object.keys(productTrendMap);
         salesData.value.salesByTireType.datasets[0].data = Object.values(productTrendMap);
 
@@ -1391,6 +2200,68 @@ const fetchSalesReport = async () => {
     }
 };
 
+
+// 2. 🚀 NEW FUNCTION: Export Sales Report to PDF
+const exportSalesToPDF = async () => {
+    // 1. Get the content wrapper element
+    const input = document.getElementById('salesReportContent');
+    if (!input) {
+        alert("Sales Report content area not found (missing ID: 'salesReportContent').");
+        return;
+    }
+
+    // 2. Adjust styles temporarily for better PDF rendering (optional but recommended)
+    // Create a temporary cloned element to apply print styles if needed,
+    // but for simplicity, we'll just try to capture the current view.
+
+    try {
+        // 3. Convert HTML content to canvas (image)
+        const canvas = await html2canvas(input, {
+            scale: 2, // Higher scale = better quality
+            logging: false,
+            useCORS: true, // Needed if you have external images
+            scrollX: 0, // Prevent scrollbar issues
+            scrollY: 0,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+        // 4. Initialize jsPDF document
+        // Dimensions: 'p' (portrait), 'mm' (unit), 'a4' (size)
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        // Calculate image dimensions to fit the A4 page
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        // 5. Add the image to the PDF
+        // Note: For very long reports, you'd need to calculate page breaks (more advanced).
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+        // 6. Save the PDF file
+        const dateString = new Date().toISOString().split('T')[0];
+        pdf.save(`iTyre_Sales_Report_${dateString}.pdf`);
+
+        // Optional: Alert or notification after successful download
+        // alert('PDF export successful!');
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert(`Failed to generate PDF. Error: ${error.message}. Check the console for details.`);
+    }
+};
+
+
+const fetchInitialData = () => {
+    fetchStockItems();
+    fetchPurchaseOrders();
+    fetchSalesReport();
+    fetchSuperAdminProfile();
+    fetchUsers();
+}
+
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
@@ -1462,6 +2333,7 @@ const createCharts = () => {
     }
 
     const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
+    // Only create the pie chart if there is data (i.e., sales have occurred)
     if (salesByTireTypeCtx && salesData.value.salesByTireType.labels.length > 0) {
         salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
     }
@@ -1553,37 +2425,109 @@ const fetchUsers = async () => {
     }
 };
 
+// 1. MODIFIED: Open the confirmation modal instead of an immediate confirm()
 const deleteUser = async (userId, username) => {
-    if (confirm(`Are you sure you want to delete the user "${username || 'N/A'}"?`)) {
-        const { error } = await supabase.rpc('delete_user_by_id', { user_id: userId });
-        if (error) alert(`Failed to delete user: ${error.message}`);
-        else alert(`User "${username || 'N/A'}" has been deleted.`);
+    deleteError.value = '';
+    superAdminPassword.value = '';
+    userToDelete.value = { id: userId, username: username || 'N/A' };
+    showDeleteConfirmationModal.value = true;
+};
+
+// 2. NEW FUNCTION: Handle the password confirmation and actual deletion
+const confirmDeleteUser = async () => {
+    deleteError.value = '';
+
+    if (!superAdminPassword.value) {
+        deleteError.value = 'Password is required.';
+        return;
+    }
+
+    if (!userToDelete.value) {
+        deleteError.value = 'No user selected for deletion.';
+        return;
+    }
+
+    // 💡 Step 1: Get Super Admin's email (already fetched or retrieve it)
+    const currentAdminEmail = superAdminProfile.value.email;
+
+    if (!currentAdminEmail) {
+        deleteError.value = 'Could not retrieve Super Admin email for verification.';
+        return;
+    }
+
+    try {
+        // 💡 Step 2: Attempt to re-authenticate the Super Admin using email and password
+        // NOTE: This relies on Supabase's sign-in functionality to verify credentials without logging out.
+        const { error: authError } = await supabase.auth.signInWithPassword({
+            email: currentAdminEmail,
+            password: superAdminPassword.value,
+        });
+
+        if (authError) {
+            // Check if the error is due to bad credentials
+            if (authError.message.includes('Invalid login credentials') || authError.status === 400) {
+                deleteError.value = '🚨 Incorrect Super Admin password. Try again.';
+            } else {
+                // Other auth errors (e.g., rate limiting)
+                deleteError.value = `Verification failed: ${authError.message}`;
+            }
+            return;
+        }
+
+        // 💡 Step 3: Password verified! Proceed with deletion.
+        const userId = userToDelete.value.id;
+        const username = userToDelete.value.username;
+
+        const { error: deleteErrorResult } = await supabase.rpc('delete_user_by_id', { user_id: userId });
+
+        if (deleteErrorResult) {
+            alert(`Failed to delete user: ${deleteErrorResult.message}`);
+        } else {
+            alert(`✅ User "${username}" has been successfully deleted.`);
+            // No need to call fetchUsers manually, the Realtime subscription should handle it
+        }
+
+        // 💡 Step 4: Close modal and reset state
+        cancelDeleteProcedure();
+
+    } catch (err) {
+        console.error('Error during re-authentication or deletion:', err);
+        deleteError.value = `An unexpected error occurred: ${err.message}`;
     }
 };
 
+// 3. NEW FUNCTION: Close and reset the modal state
+const cancelDeleteProcedure = () => {
+    showDeleteConfirmationModal.value = false;
+    userToDelete.value = null;
+    superAdminPassword.value = '';
+    deleteError.value = '';
+};
+
+
 onMounted(() => {
-    fetchStockItems();
-    fetchSalesReport();
-    fetchPurchaseOrders();
+    // 1. Initial Data Fetch
+    fetchInitialData();
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    fetchSuperAdminProfile();
-    fetchUsers();
 
-    // Real-time subscriptions remain unchanged as they are still useful
+    // 2. ❌ REMOVED: Start the auto-refresh cycle
+    // startAutoRefresh();
+
+    // 3. 🌟 Setup Real-time Subscriptions (from your existing code + Stock)
+
+    // Real-time for Users/Profiles (triggers fetchUsers)
     userManagementChannel = supabase
         .channel('public:profiles')
         .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'profiles' },
-            (payload) => {
-                fetchUsers();
-            }
+            (payload) => { fetchUsers(); }
         )
         .subscribe();
 
-    // Real-time updates for orders
-    supabase
+    // Real-time for Orders (triggers order & sales refresh)
+    ordersChannel = supabase
         .channel('orders_updates')
         .on(
             'postgres_changes',
@@ -1595,8 +2539,16 @@ onMounted(() => {
         )
         .subscribe();
 
-    // Removed the 'sales_report_updates' channel since 'sales_report' is no longer the source
-    // Sales data will be refreshed when orders change status
+    // 🌟 NEW: Real-time for Products/Stock (triggers stock refresh)
+    stockChannel = supabase
+        .channel('stock_updates')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'products' },
+            () => { fetchStockItems(); }
+        )
+        .subscribe();
+
 
     nextTick(() => {
         if (activeFeature.value === 'sales-report' || activeFeature.value === 'dashboard') {
@@ -1605,15 +2557,19 @@ onMounted(() => {
     });
 });
 
+
 onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
+    // ❌ REMOVED: stopAutoRefresh();
+
     if (salesTrendChart) salesTrendChart.destroy();
     if (salesByTireTypeChart) salesByTireTypeChart.destroy();
     if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
 
-    if (userManagementChannel) {
-        supabase.removeChannel(userManagementChannel);
-    }
+    // 🌟 CLEANUP: Remove all channels
+    if (userManagementChannel) { supabase.removeChannel(userManagementChannel); }
+    if (ordersChannel) { supabase.removeChannel(ordersChannel); }
+    if (stockChannel) { supabase.removeChannel(stockChannel); }
 });
 
 watch(activeFeature, (newFeature) => {
