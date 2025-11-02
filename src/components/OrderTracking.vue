@@ -9,14 +9,14 @@
         </div>
       </div>
 
-      <div v-else-if="orders.length === 0" class="text-center py-5">
+      <div v-else-if="inProcessOrders.length === 0 && !isLoading" class="text-center py-5">
         <i class="fas fa-box-open fa-3x text-light mb-3"></i>
         <h4 class="fw-bold text-light">No Orders Found</h4>
         <p class="text-muted text-light">You haven't placed any orders yet.</p>
       </div>
 
       <div v-else>
-        <div class="card shadow-sm mb-4 order-card" v-for="order in orders" :key="order.order_id">
+        <div class="card shadow-sm mb-4 order-card" v-for="order in inProcessOrders" :key="order.order_id">
           <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center py-3">
             <div>
               <h6 class="fw-bold mb-1">Order #{{ order.order_id.slice(0, 8).toUpperCase() }}</h6>
@@ -95,13 +95,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue'; // Added 'computed'
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-const orders = ref([]);
+const orders = ref([]); // Holds ALL orders fetched from DB
 const isLoading = ref(true);
 const isUpdatingStatus = ref(null);
 
@@ -112,6 +112,16 @@ const statusHierarchy = [
   'Shipped',
   'Delivered'
 ];
+
+// --- 🎯 CORE CHANGE: COMPUTED PROPERTY FOR FILTERING ---
+/**
+ * Filters the raw orders array, excluding any order that is 'Delivered'.
+ * This ensures the UI only shows active/in-process orders.
+ */
+const inProcessOrders = computed(() => {
+    return orders.value.filter(order => order.status !== 'Delivered');
+});
+// --------------------------------------------------------
 
 // --- FETCH ORDERS ---
 const fetchOrders = async () => {
@@ -139,7 +149,7 @@ const fetchOrders = async () => {
 
     if (error) throw error;
 
-    // ✅ Map 'Pre-Ordered' to 'Order Processed' before displaying
+    // Store ALL fetched orders. The computed property handles filtering for display.
     orders.value = data.map(order => ({
       ...order,
       status: order.status === 'Pre-Ordered' ? 'Order Processed' : order.status
@@ -166,6 +176,7 @@ const handleOrderReceived = async (orderId) => {
     if (error) throw error;
 
     alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
+    // Re-fetch updates the 'orders' ref, which automatically updates the 'inProcessOrders' computed property.
     await fetchOrders();
   } catch (error) {
     console.error('Error confirming delivery:', error.message);
@@ -175,7 +186,7 @@ const handleOrderReceived = async (orderId) => {
   }
 };
 
-// --- STATUS TRACKER HELPERS ---
+// --- STATUS TRACKER HELPERS (Unchanged) ---
 const getStatusColorClass = (status) => {
   switch (status) {
     case 'Delivered':
@@ -212,7 +223,6 @@ const goToOrderingSystem = () => {
 // --- INITIAL LOAD ---
 onMounted(fetchOrders);
 </script>
-
 
 <style scoped>
 /* ============================================================

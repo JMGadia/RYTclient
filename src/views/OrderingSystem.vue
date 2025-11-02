@@ -197,11 +197,10 @@
 </template>
 
 <script setup>
-/* ============================================================
+/* ===========================================================
     Customer Product Listing Page - Logic from Stable Code
     UI adapted from Ordering System UI
 ============================================================ */
-
 import { ref, computed, onMounted, onUnmounted } from 'vue'; // Added onUnmounted for scroll event cleanup
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { getProducts, getProductImageURL } from '../services/apiService';
