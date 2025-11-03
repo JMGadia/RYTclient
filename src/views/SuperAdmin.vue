@@ -1748,7 +1748,6 @@
 </style>
 
 <script setup>
-
 // 1. 💡 NEW IMPORTS: Add PDF export libraries
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
@@ -2478,7 +2477,8 @@ const confirmDeleteUser = async () => {
         const userId = userToDelete.value.id;
         const username = userToDelete.value.username;
 
-        const { error: deleteErrorResult } = await supabase.rpc('delete_user_by_id', { user_id: userId });
+       // New line: Matches the new parameter name in the SQL function
+        const { error: deleteErrorResult } = await supabase.rpc('delete_user_by_id', { p_user_id: userId });
 
         if (deleteErrorResult) {
             alert(`Failed to delete user: ${deleteErrorResult.message}`);
