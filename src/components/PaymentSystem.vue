@@ -21,22 +21,27 @@
                 <p class="text-muted">Complete your purchase</p>
               </div>
 
-              <div class="mb-4">
-                <h5 class="fw-semibold">Select Customer Type</h5>
-                <div class="d-grid gap-2 d-sm-flex">
+             <div class="mb-4">
+              <h5 class="fw-semibold">Select Customer Type</h5>
+              <div class="d-grid gap-2 d-sm-flex">
                   <button
-                    @click="setCustomerType('Regular')"
-                    :class="['btn', 'flex-grow-1', customerType === 'Regular' ? 'btn-primary' : 'btn-outline-primary']">
-                    <i class="fas fa-user me-2"></i>Regular Buyer
+                      @click="setCustomerType('Regular')"
+                      :class="['btn', 'flex-grow-1', customerType === 'Regular' ? 'btn-primary' : 'btn-outline-primary']"
+                      :disabled="isRegularBuyerDisabled" >
+                      <i class="fas fa-user me-2"></i>Regular Buyer
                   </button>
                   <button
-                    @click="setCustomerType('B2B')"
-                    :class="['btn', 'flex-grow-1', customerType === 'B2B' ? 'btn-primary' : 'btn-outline-primary']">
-                    <i class="fas fa-building me-2"></i>B2B Transaction
+                      @click="setCustomerType('B2B')"
+                      :class="['btn', 'flex-grow-1', customerType === 'B2B' ? 'btn-primary' : 'btn-outline-primary']">
+                      <i class="fas fa-building me-2"></i>B2B Transaction
                   </button>
-                </div>
               </div>
 
+              <div v-if="isRegularBuyerDisabled" class="alert alert-danger p-2 small mt-2 text-center">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  **Regular Buyer** is limited to a maximum of 4 items. Please switch to **B2B Transaction** for bulk orders (Total items: {{ totalOrderQuantity }}).
+              </div>
+          </div>
               <div v-if="customerType">
                 <hr class="my-4">
 
@@ -256,9 +261,28 @@ const selectedPaymentMethod = ref(null)
 const gcashNumber = ref('')
 const paymentProofFile = ref(null)
 const b2bPermitFile = ref(null)
-const isProcessing = ref(false) // **NEW: State for button disabling**
+const isProcessing = ref(false)
 const serviceFee = ref(0)
 const isQrModalOpen = ref(false)
+
+// ----------------------------
+// COMPUTED LOGIC (NEW: Quantity Check)
+// ----------------------------
+
+/**
+ * Calculates the sum of all item quantities in the cart.
+ */
+const totalOrderQuantity = computed(() => {
+    return cart.value.reduce((total, item) => total + item.quantity, 0)
+})
+
+/**
+ * Determines if the Regular Buyer option should be disabled (quantity > 4).
+ */
+const isRegularBuyerDisabled = computed(() => {
+    return totalOrderQuantity.value > 4
+})
+
 
 // ----------------------------
 // COMPUTED TOTALS
@@ -277,6 +301,11 @@ const partialPayment = computed(() => {
 // CUSTOMER TYPE SELECTION
 // ----------------------------
 const setCustomerType = (type) => {
+    // If attempting to select Regular Buyer and it's disabled, stop.
+    if (type === 'Regular' && isRegularBuyerDisabled.value) {
+        return
+    }
+
     customerType.value = type
     // Reset selected payment method when customer type changes
     selectedPaymentMethod.value = null
@@ -285,7 +314,7 @@ const setCustomerType = (type) => {
 }
 
 // ----------------------------
-// FILE HANDLERS
+// FILE HANDLERS and NAVIGATION (unchanged)
 // ----------------------------
 const handlePaymentProofUpload = (event) => {
     paymentProofFile.value = event.target.files[0]
@@ -295,35 +324,29 @@ const handleB2BPermitUpload = (event) => {
     b2bPermitFile.value = event.target.files[0]
 }
 
-// ----------------------------
-// NAVIGATION
-// ----------------------------
 const goToAddressBook = () => {
     router.push({ name: 'BookOrderAddress' })
 }
 
 // ----------------------------
-// ENABLE BUTTON CONDITION
+// ENABLE BUTTON CONDITION (unchanged)
 // ----------------------------
 const isPreOrderEnabled = computed(() => {
     if (customerType.value === 'Regular') {
         if (selectedPaymentMethod.value === 'cod') {
-            // **COD does not require partial payment proof, so only selection is enough**
             return true
         } else if (selectedPaymentMethod.value === 'gcash') {
-            // GCash still requires proof
             return !!paymentProofFile.value
         }
-        return false // If no payment method is selected
+        return false
     } else if (customerType.value === 'B2B') {
-        // B2B remains the same (requires payment proof and business permit)
         return !!paymentProofFile.value && !!b2bPermitFile.value
     }
     return false
 })
 
 // ----------------------------
-// MAIN ORDER SUBMISSION (FINAL SALES REPORT ADJUSTMENT)
+// MAIN ORDER SUBMISSION (unchanged)
 // ----------------------------
 const handleSubmit = async () => {
     if (!cart.value.length) {
@@ -333,6 +356,11 @@ const handleSubmit = async () => {
 
     // --- Validation Checks ---
     if (customerType.value === 'Regular') {
+        if (totalOrderQuantity.value > 4) {
+             alert('Regular Buyer orders cannot exceed 4 items. Please switch to B2B or reduce quantity.')
+             return
+        }
+        // ... (rest of Regular checks remain) ...
         if (!selectedPaymentMethod.value) {
             alert('Please select a payment method (COD or GCash).')
             return
@@ -450,16 +478,14 @@ const handleSubmit = async () => {
         }
 
         // 💰 SALES DATA UPDATE: Record sale *only if it's a paid order*
-        // COD is typically recorded as sales when paid, but for simplicity/tracking,
-        // we'll record the sale amount if the order is confirmed to proceed.
         if (orderStatus !== 'Payment Verification') {
              const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
-                p_sales_amount: totalSalesAmount
-            })
+                 p_sales_amount: totalSalesAmount
+             })
 
-            if (salesReportError) {
-                console.warn('Failed to update sales data (COD/B2B):', salesReportError.message)
-            }
+             if (salesReportError) {
+                 console.warn('Failed to update sales data (COD/B2B):', salesReportError.message)
+             }
         }
 
 
@@ -477,7 +503,7 @@ const handleSubmit = async () => {
 }
 
 // ----------------------------
-// ON MOUNT
+// ON MOUNT (unchanged)
 // ----------------------------
 onMounted(fetchCart)
 </script>

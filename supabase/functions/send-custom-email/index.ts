@@ -64,9 +64,9 @@ Deno.serve(async (req: Request) => {
   // 5. Construct the Brevo API payload
   const emailData = {
     sender: {
-        name: "Your Thesis Project",
+        name: "i-Tyre_support",
         // !!! IMPORTANT: Change this to your actual VERIFIED Brevo sender email !!!
-        email: "your-verified-sender@example.com"
+        email: "jhunmarkgadia202@gmail.com"
     },
     to: [{ email: toEmail }],
     subject: subject,

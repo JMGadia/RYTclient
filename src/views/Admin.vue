@@ -211,15 +211,21 @@
           <div v-else class="row">
             <div class="col-md-6 col-lg-4 mb-4" v-for="order in activeOrders" :key="order.order_id">
               <div
-                class="card h-100 shadow-sm border-warning"
-                :class="{'border-success': order.status === 'Shipped', 'border-danger': order.status === 'Delivered'}"
+                class="card h-100 shadow-sm"
+                :class="{
+                    // BORDER COLOR
+                    'border-warning': order.status === 'Order Processed', // ORANGE
+                    'border-info': order.status === 'Shipped',           // YELLOW/BLUE
+                    'border-success': order.status === 'Delivered'       // GREEN
+                }"
               >
                 <div
                   class="card-header fw-bold"
                   :class="{
-                    'bg-warning text-dark': order.status === 'Order Processed',
-                    'bg-success text-white': order.status === 'Shipped',
-                    'bg-danger text-white': order.status === 'Delivered'
+                    // HEADER COLOR
+                    'bg-warning text-dark': order.status === 'Order Processed', // ORANGE
+                    'bg-info text-white': order.status === 'Shipped',           // YELLOW/BLUE
+                    'bg-success text-white': order.status === 'Delivered'       // GREEN
                   }"
                 >
                   Order #{{ order.order_id.slice(0, 8) }}
@@ -246,13 +252,14 @@
                   <button
                       class="btn w-100 mt-2"
                       :class="{
-                        'btn-primary': order.status === 'Order Processed',
-                        'btn-success': order.status === 'Shipped',
-                        'btn-danger': order.status === 'Delivered'
+                          // BUTTON COLOR
+                          'btn-warning text-dark': order.status === 'Order Processed', // ORANGE
+                          'btn-info': order.status === 'Shipped',                      // YELLOW/BLUE
+                          'btn-success': order.status === 'Delivered'                  // GREEN
                       }"
                       @click="
-                        order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
-                        order.status === 'Order Processed' ? startScanForOrder(order) : null
+                          order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
+                          order.status === 'Order Processed' ? startScanForOrder(order) : null
                       "
                       :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
                   >
@@ -269,7 +276,7 @@
                         'Take Order & Scan'
                     }}
                   </button>
-                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -316,92 +323,92 @@
       </div>
     </div>
     <div v-if="showBarcodeModal" class="custom-modal-overlay">
-        <div class="custom-modal-card card shadow-lg" style="max-width: 400px;">
-            <div class="card-header bg-primary text-white text-center">
-                <h5 class="mb-0"><i class="fas fa-barcode me-2"></i> Print Labels</h5>
-            </div>
-            <div class="card-body text-center">
-              <p>Ready to print <strong>{{ itemToPrint.quantity }}</strong> labels for <strong>{{ itemToPrint.productName }}</strong>.</p>
-              <div class="d-flex justify-content-center gap-3 mt-4">
-                  <button class="btn btn-secondary" @click="closeBarcodePrintModal">Cancel</button>
-                  <button class="btn btn-primary" @click="printLabel">
-                      <i class="fas fa-print me-2"></i> Print All Labels
-                  </button>
-              </div>
-            </div>
+      <div class="custom-modal-card card shadow-lg" style="max-width: 400px;">
+        <div class="card-header bg-primary text-white text-center">
+          <h5 class="mb-0"><i class="fas fa-barcode me-2"></i> Print Labels</h5>
         </div>
+        <div class="card-body text-center">
+          <p>Ready to print <strong>{{ itemToPrint.quantity }}</strong> labels for <strong>{{ itemToPrint.productName }}</strong>.</p>
+          <div class="d-flex justify-content-center gap-3 mt-4">
+            <button class="btn btn-secondary" @click="closeBarcodePrintModal">Cancel</button>
+            <button class="btn btn-primary" @click="printLabel">
+              <i class="fas fa-print me-2"></i> Print All Labels
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <div v-if="showScanModal" class="custom-modal-overlay">
-        <div class="custom-modal-card card shadow-lg" style="max-width: 600px;">
-            <div class="card-header bg-primary text-white text-center">
-                <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
-            </div>
-            <div class="card-body">
-              <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
-
-              <div id="scanner-container" class="mb-3">
-                <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
-              </div>
-              <div class="alert alert-warning" v-if="scanStatusMessage">{{ scanStatusMessage }}</div>
-
-              <div class="d-flex justify-content-center gap-3 mt-4">
-                <button class="btn btn-secondary" @click="closeScanModal">
-                    <i class="fas fa-times me-2"></i> Cancel Scan
-                </button>
-                <button class="btn btn-warning" @click="captureBarcode" :disabled="isProductScanned">
-                    <i class="fas fa-camera me-2"></i> Capture Barcode
-                </button>
-              </div>
-            </div>
+      <div class="custom-modal-card card shadow-lg" style="max-width: 600px;">
+        <div class="card-header bg-primary text-white text-center">
+          <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i> Scan Product Barcode</h5>
         </div>
+        <div class="card-body">
+          <p class="text-center text-muted">Scan **{{ getOrderProductDetails(orderToFulfill.order_items) }}** for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+
+          <div id="scanner-container" class="mb-3">
+            <video id="scanner-video" style="width: 100%; height: 100%; object-fit: cover;"></video>
+          </div>
+          <div class="alert alert-warning" v-if="scanStatusMessage">{{ scanStatusMessage }}</div>
+
+          <div class="d-flex justify-content-center gap-3 mt-4">
+            <button class="btn btn-secondary" @click="closeScanModal">
+              <i class="fas fa-times me-2"></i> Cancel Scan
+            </button>
+            <button class="btn btn-warning" @click="captureBarcode" :disabled="isProductScanned">
+              <i class="fas fa-camera me-2"></i> Capture Barcode
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <div v-if="isProductScanned && orderToFulfill && !showScanModal" class="custom-modal-overlay">
-        <div class="custom-modal-card card shadow-lg" style="max-width: 450px;">
-            <div class="card-header bg-success text-white text-center">
-                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
-            </div>
-            <div class="card-body text-center">
-                <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
-                <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
-                <div class="d-flex justify-content-center gap-3 mt-4">
-                    <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
-                    <button class="btn btn-success" @click="updateStockOut">
-                        <i class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
-                    </button>
-                </div>
-            </div>
+      <div class="custom-modal-card card shadow-lg" style="max-width: 450px;">
+        <div class="card-header bg-success text-white text-center">
+          <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
         </div>
+        <div class="card-body text-center">
+          <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
+          <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
+          <div class="d-flex justify-content-center gap-3 mt-4">
+            <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
+            <button class="btn btn-success" @click="updateStockOut">
+              <i class="fas fa-shipping-fast me-2"></i> Ship & Complete Order
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-if="showDeliveryConfirmationModal" class="custom-modal-overlay" style="z-index: 1060;"></div>
     <div class="modal fade" :class="{ 'show': showDeliveryConfirmationModal }" style="display: block; z-index: 1070;" v-if="showDeliveryConfirmationModal">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Confirm Order Delivery</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="closeConfirmDeliveryModal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="fas fa-truck-loading fa-3x text-success mb-3"></i>
-                    <p class="lead fw-semibold">Confirm final delivery for Order #{{ orderToFulfill ? orderToFulfill.order_id.slice(0, 8) : 'N/A' }}?</p>
-                    <p class="text-muted small">
-                        This action will mark the order as **DELIVERED**.
-                    </p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" @click="closeConfirmDeliveryModal">Cancel</button>
-                    <button
-                        type="button"
-                        class="btn btn-success"
-                        @click="confirmDeliverySuccessAdmin"
-                        :disabled="isDelivering === orderToFulfill?.order_id"
-                    >
-                        <span v-if="isDelivering === orderToFulfill?.order_id" class="spinner-border spinner-border-sm me-2"></span>
-                        Order Delivered
-                    </button>
-                </div>
-            </div>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title fw-bold">Confirm Order Delivery</h5>
+            <button type="button" class="btn-close btn-close-white" @click="closeConfirmDeliveryModal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <i class="fas fa-truck-loading fa-3x text-success mb-3"></i>
+            <p class="lead fw-semibold">Confirm final delivery for Order #{{ orderToFulfill ? orderToFulfill.order_id.slice(0, 8) : 'N/A' }}?</p>
+            <p class="text-muted small">
+              This action will mark the order as **DELIVERED**.
+            </p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-secondary" @click="closeConfirmDeliveryModal">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-success"
+              @click="confirmDeliverySuccessAdmin"
+              :disabled="isDelivering === orderToFulfill?.order_id"
+            >
+              <span v-if="isDelivering === orderToFulfill?.order_id" class="spinner-border spinner-border-sm me-2"></span>
+              Order Delivered
+            </button>
+          </div>
         </div>
+      </div>
     </div>
     </div>
 </template>

@@ -436,9 +436,9 @@
 
               <div class="d-flex justify-content-end mb-3">
 
-                  <button class="btn btn-danger" @click="exportSalesToPDF">
+                  <button class="btn btn-danger" @click="exportSalesToCSV">
 
-                      <i class="fas fa-file-pdf me-2"></i>Copy to PDF
+                      <i class="fas fa-file-excel me-2"></i>Export to Excel
 
                   </button>
 
@@ -1753,11 +1753,10 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { supabase } from '../server/supabase';
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import html2canvas from 'html2canvas'; // 👈 Must be installed (npm install html2canvas)
-import { jsPDF } from 'jspdf';       // 👈 Must be installed (npm install jspdf)
+// --- ❌ Removed html2canvas and jsPDF as they are not needed for CSV ---
 
 const EMAIL_FUNCTION_URL = 'https://ivqefxeeiuyjcsrlqjxr.supabase.co/functions/v1/send-custom-email';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImV4cCI6MjA3MTkzNTI5OH0.GURdtsHejB6ROarVzuQctzSKNVRCaD5BWQ-uB-Vody0';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImV4cCI6MjA3MTkzNTI5OH0.GURdtsHejB6ROarVzuQctcSKNVRCaD5BWQ-uB-Vody0';
 // --- 👇 THIS IS THE EXIT GUARD ---
 onBeforeRouteLeave((to, from, next) => {
     const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
@@ -1808,6 +1807,9 @@ let userManagementChannel = null; // Existing
 let ordersChannel = null; // Renamed from anonymous channel
 let stockChannel = null; // 👈 NEW: Channel for stock/product updates
 
+// --- REFS FOR RAW ORDERS (New Ref for detailed CSV export) ---
+const rawDeliveredOrders = ref([]);
+
 // --- NEW FUNCTION: FETCH PURCHASE ORDERS (LIVE DATA ONLY) ---
 const fetchPurchaseOrders = async () => {
     ordersLoading.value = true;
@@ -1856,26 +1858,56 @@ const fetchPurchaseOrders = async () => {
     }
 };
 
+// --- NEW FUNCTION: Fetch raw data for all delivered orders (for CSV) ---
+const fetchRawDeliveredOrders = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                order_id,
+                username,
+                created_at,
+                total_amount,
+                order_items (
+                    quantity,
+                    price_at_purchase,
+                    products!inner(brand, size)
+                )
+            `)
+            .eq('status', 'Delivered')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Flatten the data for easier CSV export (one row per order item)
+        const flattenedData = data.flatMap(order =>
+            order.order_items.map(item => ({
+                'Order ID': order.order_id,
+                'Order Date': new Date(order.created_at).toLocaleDateString(),
+                'Customer Username': order.username,
+                'Product Brand': item.products.brand,
+                'Product Size': item.products.size,
+                'Quantity Sold': item.quantity,
+                'Price Per Unit (₱)': item.price_at_purchase,
+                'Line Total (₱)': item.quantity * (item.price_at_purchase || 0),
+            }))
+        );
+
+        rawDeliveredOrders.value = flattenedData;
+
+    } catch (err) {
+        console.error('Error fetching raw delivered orders:', err);
+        rawDeliveredOrders.value = [];
+    }
+};
+
+
 // --- UPDATED FUNCTION: Update Order Status (SIMPLIFIED SALES AGGREGATION) ---
 const updateOrderStatus = async (orderId, newStatus) => {
     if (!confirm(`Are you sure you want to change order ${orderId} status to "${newStatus}"?`)) return;
 
-    let totalSalePrice = 0;
-
     try {
-        // 1. If 'Delivered', get price before status update
-        if (newStatus === 'Delivered') {
-            const { data: orderData, error: fetchError } = await supabase
-                .from('orders')
-                .select('total_price')
-                .eq('order_id', orderId)
-                .single();
-
-            if (fetchError) throw fetchError;
-            totalSalePrice = orderData.total_price;
-        }
-
-        // 2. Update the order status
+        // 1. Update the order status
         const { error: updateError } = await supabase
             .from('orders')
             .update({ status: newStatus })
@@ -1883,11 +1915,11 @@ const updateOrderStatus = async (orderId, newStatus) => {
 
         if (updateError) throw updateError;
 
-        // 3. ONLY run the simplified sales aggregation if the order is marked Delivered
+        // 2. ONLY run the full sales aggregation if the order is marked Delivered
         if (newStatus === 'Delivered') {
-            // Call the simple RPC to update ONLY daily_sales, weekly_sales, and monthly_sales
-            const { error: salesError } = await supabase.rpc('record_sale_amount', {
-                p_sales_amount: totalSalePrice
+            // CALL THE NEW, ROBUST RPC with the order ID
+            const { error: salesError } = await supabase.rpc('update_sales_metrics_on_delivery', {
+                p_order_id: orderId // Pass the order ID
             });
 
             if (salesError) {
@@ -1902,7 +1934,6 @@ const updateOrderStatus = async (orderId, newStatus) => {
         console.error('Error in updateOrderStatus:', err);
     }
 };
-
 
 // --- NEW FUNCTION: VIEW ORDER DETAILS (Shows payment proof) ---
 const viewOrderDetails = (order) => {
@@ -1983,7 +2014,6 @@ const fetchSuperAdminProfile = async () => {
     }
 };
 
-// Functions for editing the username (omitted for brevity, assume they are correct)
 const startUsernameEdit = () => {
     isEditingUsername.value = true;
     editableUsername.value = superAdminProfile.value.username;
@@ -2200,64 +2230,90 @@ const fetchSalesReport = async () => {
     }
 };
 
+// ----------------------------------------------------------------------
+// 🚀 MODIFIED FUNCTION: Export Sales Report to CSV (Excel-Friendly)
+// ----------------------------------------------------------------------
+const exportSalesToCSV = async () => {
+    if (!rawDeliveredOrders.value.length) {
+        // Ensure we try to fetch the raw data if it wasn't loaded before
+        await fetchRawDeliveredOrders();
+    }
 
-// 2. 🚀 NEW FUNCTION: Export Sales Report to PDF
-const exportSalesToPDF = async () => {
-    // 1. Get the content wrapper element
-    const input = document.getElementById('salesReportContent');
-    if (!input) {
-        alert("Sales Report content area not found (missing ID: 'salesReportContent').");
+    // 1. Prepare Summary Data for CSV
+    const summaryData = [
+        { Metric: "Total Sales Today", Value: salesData.value.totalSalesToday },
+        { Metric: "Total Orders Today", Value: salesData.value.totalOrdersToday },
+        { Metric: "Total Sales Last 7 Days", Value: salesData.value.totalWeeklySales },
+        { Metric: "Total Sales Last 30 Days", Value: salesData.value.totalMonthlySales },
+    ];
+
+    // 2. Prepare Product Trend Data for CSV
+    const productTrendData = salesData.value.salesByTireType.labels.map((label, index) => ({
+        'Product Brand': label,
+        'Revenue Last 30 Days (₱)': salesData.value.salesByTireType.datasets[0].data[index],
+    }));
+
+    // 3. Helper function to convert JSON array to CSV format
+    const convertToCSV = (data, title) => {
+        if (data.length === 0) return '';
+
+        const headers = Object.keys(data[0]);
+        let csv = `\n"${title}"\n`; // Add a title row
+        csv += headers.map(header => `"${header}"`).join(',') + '\n'; // Add header row (quoted for safety)
+
+        data.forEach(row => {
+            const values = headers.map(header => {
+                const value = row[header];
+                // Quote values and escape internal double quotes for safety
+                return `"${String(value).replace(/"/g, '""')}"`;
+            });
+            csv += values.join(',') + '\n';
+        });
+        return csv;
+    };
+
+    // 4. Combine All CSV Sections
+    let finalCSV = "";
+    finalCSV += convertToCSV(summaryData, 'Sales Summary');
+    finalCSV += convertToCSV(productTrendData, 'Product Trend by Revenue (Last 30 Days)');
+    finalCSV += convertToCSV(rawDeliveredOrders.value, 'Detailed Delivered Orders Report');
+
+    if (finalCSV.trim() === "") {
+        alert("No data available to export.");
         return;
     }
 
-    // 2. Adjust styles temporarily for better PDF rendering (optional but recommended)
-    // Create a temporary cloned element to apply print styles if needed,
-    // but for simplicity, we'll just try to capture the current view.
+    // 5. Trigger Download
+    // Use 'text/csv;charset=utf-8; for compatibility with Excel
+    const blob = new Blob(["\ufeff", finalCSV], { type: 'text/csv;charset=utf-8;' }); // \ufeff is the BOM for Excel
+    const dateString = new Date().toISOString().split('T')[0];
+    const filename = `iTyre_Sales_Report_${dateString}.csv`;
 
-    try {
-        // 3. Convert HTML content to canvas (image)
-        const canvas = await html2canvas(input, {
-            scale: 2, // Higher scale = better quality
-            logging: false,
-            useCORS: true, // Needed if you have external images
-            scrollX: 0, // Prevent scrollbar issues
-            scrollY: 0,
-            windowWidth: document.documentElement.offsetWidth,
-            windowHeight: document.documentElement.offsetHeight
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-
-        // 4. Initialize jsPDF document
-        // Dimensions: 'p' (portrait), 'mm' (unit), 'a4' (size)
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        // Calculate image dimensions to fit the A4 page
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-        // 5. Add the image to the PDF
-        // Note: For very long reports, you'd need to calculate page breaks (more advanced).
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        // 6. Save the PDF file
-        const dateString = new Date().toISOString().split('T')[0];
-        pdf.save(`iTyre_Sales_Report_${dateString}.pdf`);
-
-        // Optional: Alert or notification after successful download
-        // alert('PDF export successful!');
-
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert(`Failed to generate PDF. Error: ${error.message}. Check the console for details.`);
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert('Your browser does not support automatic downloads.');
     }
+
+    alert(`✅ Sales Report successfully exported as ${filename}.`);
 };
+
+// --- END OF CSV EXPORT LOGIC ---
+// ----------------------------------------------------------------------
 
 
 const fetchInitialData = () => {
     fetchStockItems();
     fetchPurchaseOrders();
     fetchSalesReport();
+    fetchRawDeliveredOrders(); // 👈 NEW: Fetch detailed data on load
     fetchSuperAdminProfile();
     fetchUsers();
 }
@@ -2591,6 +2647,7 @@ onMounted(() => {
             () => {
                 fetchPurchaseOrders();
                 fetchSalesReport();
+                fetchRawDeliveredOrders(); // 👈 NEW: Refresh raw data on sale
             }
         )
         .subscribe();

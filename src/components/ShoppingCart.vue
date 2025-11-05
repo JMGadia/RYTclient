@@ -9,6 +9,17 @@
                             <h5 class="mb-0 fw-bold">Your Items ({{ cart.length }})</h5>
                         </div>
                         <div class="card-body">
+
+                            <div v-if="stockError" class="alert alert-warning py-2 mb-3 shadow-sm" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                **Stock Limit Reached:** <span v-html="stockError"></span>
+                            </div>
+
+                            <div v-if="!isCartValidForCheckout" class="alert alert-danger py-2 mb-3 shadow-sm" role="alert">
+                                <i class="fas fa-hand-paper me-2"></i>
+                                **Action Required:** Please adjust quantities to match stock levels before proceeding to checkout.
+                            </div>
+
                             <div v-for="(item, index) in cart" :key="item.id">
                                 <div class="row align-items-center mb-4 cart-item">
                                     <div class="col-2">
@@ -23,9 +34,12 @@
                                             type="number"
                                             class="form-control form-control-sm text-center"
                                             :value="item.quantity"
-                                            @input="updateQuantity(item.id, parseInt($event.target.value))"
+                                            @input="handleQuantityUpdate(item.id, parseInt($event.target.value))"
                                             min="1"
-                                        >
+                                            :max="item.stock_limit" >
+                                        <p v-if="item.quantity > item.stock_limit" class="text-danger small mt-1 fw-bold">
+                                            Only {{ item.stock_limit }} in stock!
+                                        </p>
                                     </div>
                                     <div class="col-3 text-end d-flex flex-column align-items-end justify-content-center">
                                         <h6 class="fw-bold mb-0 product-price-mobile">₱{{ (item.price * item.quantity).toLocaleString() }}</h6>
@@ -59,9 +73,17 @@
                                 </li>
                             </ul>
                             <div class="d-grid">
-                                <button class="btn btn-primary btn-lg rounded-pill" @click="proceedToAddress">
+                                <button
+                                    class="btn btn-lg rounded-pill"
+                                    @click="proceedToAddress"
+                                    :disabled="!isCartValidForCheckout"
+                                    :class="{'btn-secondary': !isCartValidForCheckout, 'btn-primary': isCartValidForCheckout}"
+                                >
                                     Proceed to Checkout
                                 </button>
+                                <p v-if="!isCartValidForCheckout" class="text-danger text-center small mt-2 fw-bold">
+                                    Cannot proceed: Stock levels exceeded.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -85,7 +107,7 @@
 </template>
 
 <script setup>
-// --- IMPORTS & SETUP (from Stable Code) ---
+// --- IMPORTS & SETUP ---
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCart } from '../composables/useCart';
@@ -94,45 +116,256 @@ import { useCart } from '../composables/useCart';
 const router = useRouter();
 
 // Destructure reactive cart state and action functions from the composable
-const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+// We rename the imported 'updateQuantity' to 'updateCartItemQuantity'
+const { cart, removeFromCart, updateQuantity: updateCartItemQuantity, cartTotal } = useCart();
 
 // --- REACTIVE STATE & CONSTANTS ---
-// Placeholder/Example shipping fee
 const shippingFee = "Free Shipping";
+const stockError = ref(null);
 
 // --- COMPUTED PROPERTIES ---
 
-/**
- * Calculates the grand total for the order.
- * Since shipping is marked as "Free", this just mirrors the cart subtotal.
- */
 const grandTotal = computed(() => {
-  return cartTotal.value;
+    return cartTotal.value;
 });
 
-// --- NAVIGATION & CONTROL FUNCTIONS ---
+/**
+ * FIX 1: Checks if all cart quantities are less than or equal to the stock_limit.
+ */
+const isCartValidForCheckout = computed(() => {
+    return cart.value.every(item => {
+        // Check if stock_limit exists AND cart quantity is less than or equal to it.
+        if (item.stock_limit === undefined || item.stock_limit === null) {
+            // Log warning if data is missing, but assume valid for the checkout block
+            console.warn(`Product ID ${item.id} is missing stock_limit data.`);
+            return true;
+        }
+        // CRITICAL CHECK: cart quantity vs stock limit
+        return item.quantity <= item.stock_limit;
+    });
+});
+
+
+// --- QUANTITY & STOCK LOGIC ---
 
 /**
- * Navigates the user back to the main product ordering page.
+ * FIX 2: Uses the correct item.stock_limit property for client-side validation and capping.
  */
-const goToOrderingSystem = () => {
-  router.push({ name: 'ordering system' });
+const handleQuantityUpdate = (itemId, newQuantity) => {
+    const item = cart.value.find(i => i.id === itemId);
+
+    // Check if the item and stock data are present
+    if (!item || item.stock_limit === undefined || item.stock_limit === null) {
+        console.error(`Cannot validate stock: Stock limit missing for item ID ${itemId}`);
+        updateCartItemQuantity(itemId, newQuantity); // Update without local cap
+        return;
+    }
+
+    let quantityToSet = Math.max(1, newQuantity || 1);
+
+    // 1. Check against the stock limit
+    if (quantityToSet > item.stock_limit) {
+        // CAP THE QUANTITY
+        quantityToSet = item.stock_limit;
+
+        // DISPLAY THE MESSAGE
+        stockError.value = `Sorry, the desired quantity for **${item.brand}** exceeds our stock. We only have ${item.stock_limit} available.`;
+
+        setTimeout(() => {
+            stockError.value = null;
+        }, 4000);
+    } else {
+        if (stockError.value && stockError.value.includes(item.brand)) {
+            stockError.value = null;
+        }
+    }
+
+    // 2. Update the cart state with the capped quantity via the composable
+    updateCartItemQuantity(itemId, quantityToSet);
 };
 
-/**
- * Handles the logic for proceeding from the cart summary.
- * Checks if the cart is empty and navigates to the address selection page if items are present.
- */
+
+// --- NAVIGATION & CONTROL FUNCTIONS (unchanged) ---
+
+const goToOrderingSystem = () => {
+    router.push({ name: 'ordering system' });
+};
+
 const proceedToAddress = () => {
-  // Prevent proceeding if the cart has no items
-  if (cart.value.length === 0) {
-    alert("Your cart is empty!");
-    return;
-  }
-  // Navigate to the component where the user selects or sets their shipping address
-  router.push({ name: 'BookOrderAddress' });
+    if (cart.value.length === 0) {
+        alert("Your cart is empty!");
+        return;
+    }
+
+    if (!isCartValidForCheckout.value) {
+        alert("Please adjust the quantities of marked items to match stock levels before continuing to checkout.");
+        return;
+    }
+
+    router.push({ name: 'BookOrderAddress' });
 };
 </script>
+
+<style scoped>
+/* ============================================================
+    STYLES from UI-focused Code (Modern Aurora Background & Glassmorphism)
+ ============================================================
+*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&family=Roboto:wght@400;500&display=swap');
+
+/* 🌈 Aurora Gradient Background (Unified with Other Pages) */
+.shopping-cart-page {
+    font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Animated Aurora Effect */
+.shopping-cart-page::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image:
+        radial-gradient(circle at 15% 20%, #5a7dff 10%, transparent 50%),
+        radial-gradient(circle at 80% 80%, #d08bff 10%, transparent 40%),
+        radial-gradient(circle at 50% 40%, #ff8ed1 10%, transparent 40%),
+        linear-gradient(120deg, #0c0a24, #241e4e, #17133d);
+    filter: blur(80px);
+    opacity: 0.9;
+    animation: auroraAnimation 25s ease-in-out infinite;
+    z-index: 0;
+}
+
+@keyframes auroraAnimation {
+    0% { transform: rotate(0deg) translateX(0); }
+    50% { transform: rotate(180deg) translateX(10%); }
+    100% { transform: rotate(360deg) translateX(0); }
+}
+
+/* Keep content above aurora */
+.container,
+.fab {
+    position: relative;
+    z-index: 2;
+}
+
+/* --- Section Title --- */
+.section-title {
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Card Styling (Glassmorphism Effect) --- */
+.card {
+    border: none;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.85); /* Semi-transparent background */
+    backdrop-filter: blur(15px); /* Blur effect */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
+}
+
+.card-header {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* --- Cart Items --- */
+.cart-item img {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+.cart-item h6,
+.card-header h5 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* --- Form Controls --- */
+.form-control-sm {
+    max-width: 80px;
+    margin: 0 auto;
+    border-radius: 50rem;
+    text-align: center;
+}
+
+/* --- Order Summary --- */
+.list-group-item {
+    background-color: transparent;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+}
+.list-group-item span {
+    color: #212529;
+}
+.text-danger {
+    color: #dc3545 !important;
+}
+
+/* --- Primary Button --- */
+.btn-primary {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-radius: 50rem;
+    transition: all 0.3s ease-in-out;
+}
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}
+
+/* --- Empty Cart State --- */
+/* Ensure text is visible against the dark background */
+.shopping-cart-page .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+.shopping-cart-page h4 {
+    color: #fff;
+}
+.fa-shopping-cart {
+    opacity: 0.9;
+    color: #fff !important;
+}
+
+/* --- Floating Action Button (FAB) --- */
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.2s ease-in-out;
+}
+.fab:hover {
+    transform: scale(1.1);
+}
+</style>
 
 <style scoped>
 /* ============================================================

@@ -45,7 +45,7 @@ for (const path in imageContext) {
 }
 
 .scroller-item {
-  height: 250px; 
+  height: 250px;
   width: auto; /* Allow width to adjust based on aspect ratio */
   object-fit: contain; /* Ensures the whole image is visible without stretching */
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
