@@ -1756,7 +1756,8 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import html2canvas from 'html2canvas'; // 👈 Must be installed (npm install html2canvas)
 import { jsPDF } from 'jspdf';       // 👈 Must be installed (npm install jspdf)
 
-
+const EMAIL_FUNCTION_URL = 'https://ivqefxeeiuyjcsrlqjxr.supabase.co/functions/v1/send-custom-email';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImV4cCI6MjA3MTkzNTI5OH0.GURdtsHejB6ROarVzuQctzSKNVRCaD5BWQ-uB-Vody0';
 // --- 👇 THIS IS THE EXIT GUARD ---
 onBeforeRouteLeave((to, from, next) => {
     const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
@@ -2455,36 +2456,56 @@ const confirmDeleteUser = async () => {
     }
 
     try {
-        // 💡 Step 2: Attempt to re-authenticate the Super Admin using email and password
-        // NOTE: This relies on Supabase's sign-in functionality to verify credentials without logging out.
+        // ... (Supabase re-authentication logic is correct and remains here) ...
         const { error: authError } = await supabase.auth.signInWithPassword({
             email: currentAdminEmail,
             password: superAdminPassword.value,
         });
 
         if (authError) {
-            // Check if the error is due to bad credentials
+            // ... (Authentication error handling remains here) ...
             if (authError.message.includes('Invalid login credentials') || authError.status === 400) {
                 deleteError.value = '🚨 Incorrect Super Admin password. Try again.';
             } else {
-                // Other auth errors (e.g., rate limiting)
                 deleteError.value = `Verification failed: ${authError.message}`;
             }
             return;
         }
 
-        // 💡 Step 3: Password verified! Proceed with deletion.
+        // 💡 Step 3a: Password verified! Retrieve the target user's email before deletion.
         const userId = userToDelete.value.id;
         const username = userToDelete.value.username;
 
-       // New line: Matches the new parameter name in the SQL function
+        const { data: userProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', userId)
+            .single();
+
+        if (profileError || !userProfile || !userProfile.email) {
+             // We can proceed with deletion even if email fails to fetch, but log the error.
+             console.error('Warning: Failed to retrieve user email for notification.', profileError);
+        }
+
+        const userEmail = userProfile ? userProfile.email : null;
+
+
+        // 💡 Step 3b: Proceed with deletion using the RPC
         const { error: deleteErrorResult } = await supabase.rpc('delete_user_by_id', { p_user_id: userId });
 
         if (deleteErrorResult) {
             alert(`Failed to delete user: ${deleteErrorResult.message}`);
         } else {
             alert(`✅ User "${username}" has been successfully deleted.`);
-            // No need to call fetchUsers manually, the Realtime subscription should handle it
+
+            // ----------------------------------------------------
+            // 🚀 NEW LOGIC: Send Inactivity Email Notification
+            // ----------------------------------------------------
+            if (userEmail) {
+                console.log(`Attempting to send deletion email to ${userEmail}...`);
+                await sendAccountDeletionEmail(userEmail, username);
+            }
+            // ----------------------------------------------------
         }
 
         // 💡 Step 4: Close modal and reset state
@@ -2504,6 +2525,41 @@ const cancelDeleteProcedure = () => {
     deleteError.value = '';
 };
 
+const sendAccountDeletionEmail = async (toEmail, username) => {
+    // 1. Construct the message payload (unchanged)
+    const payload = {
+        toEmail: toEmail,
+        subject: `[iTyre] Account Deletion Notification`,
+        htmlContent: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+        `,
+    };
+
+    try {
+        const response = await fetch(EMAIL_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // --- 🚨 CRITICAL FIX: Add the Authorization header ---
+                // Supabase requires the public anon key for direct public function calls.
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY, // Often needed for functions as well
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'No detailed error message from server.' }));
+            throw new Error(`Server status ${response.status}: ${errorData.message}`);
+        }
+
+        console.log(`Email successfully queued for ${toEmail}.`);
+
+    } catch (error) {
+        console.error('🚨 Failed to send account deletion email: Missing authorization header', error.message);
+    }
+};
 
 onMounted(() => {
     // 1. Initial Data Fetch
