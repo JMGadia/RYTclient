@@ -8,8 +8,40 @@
         <a class="navbar-brand fw-bold ms-3" href="#">Administrator</a>
         <div v-if="!isMobile" class="collapse navbar-collapse justify-content-end">
           <ul class="navbar-nav">
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-bell me-1"></i> Notifications</a>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link"
+                href="#"
+                @click.prevent="toggleNotificationsDropdown"
+                :class="{ 'active': notificationsDropdownOpen }"
+                ref="notificationDropdownToggle"
+              >
+                <i class="fas fa-bell me-1"></i>
+                Notifications
+                <span v-if="unreadNotificationsCount > 0" class="badge bg-danger rounded-pill">{{ unreadNotificationsCount }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" v-show="notificationsDropdownOpen" style="min-width: 300px;">
+                <li><h6 class="dropdown-header">Realtime Updates ({{ notifications.length }})</h6></li>
+                <li v-if="notifications.length === 0">
+                  <span class="dropdown-item text-muted small">No recent activity.</span>
+                </li>
+                <li v-for="(notif, index) in notifications.slice(0, 5)" :key="index">
+                  <a
+                    class="dropdown-item d-flex align-items-start"
+                    href="#"
+                    @click.prevent="markAsRead(index, notif.view)"
+                    :class="{ 'fw-bold': !notif.read }"
+                  >
+                    <i :class="[notif.icon, 'me-2 mt-1', notif.iconColor]"></i>
+                    <div style="white-space: normal; line-height: 1.2;">
+                      {{ notif.message }}
+                      <small class="d-block text-muted">{{ notif.timeAgo }}</small>
+                    </div>
+                  </a>
+                </li>
+                <li v-if="notifications.length > 0"><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item text-center small" href="#" @click.prevent="clearAllNotifications">Clear All</a></li>
+              </ul>
             </li>
             <li class="nav-item dropdown">
               <a
@@ -55,9 +87,12 @@
               </ul>
             </li>
             <li v-if="isMobile" class="nav-item mt-2">
-              <a class="nav-link text-white py-2 px-3 d-flex align-items-center" href="#">
-                <i class="fas fa-bell me-2"></i>
-                <span>Notifications</span>
+              <a class="nav-link text-white py-2 px-3 d-flex align-items-center justify-content-between" href="#" @click.prevent="toggleNotificationsDropdown">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-bell me-2"></i>
+                  <span>Notifications</span>
+                </div>
+                <span v-if="unreadNotificationsCount > 0" class="badge bg-danger rounded-pill">{{ unreadNotificationsCount }}</span>
               </a>
             </li>
             <li
@@ -213,10 +248,10 @@
               <div
                 class="card h-100 shadow-sm"
                 :class="{
-                    // BORDER COLOR
-                    'border-warning': order.status === 'Order Processed', // ORANGE
-                    'border-info': order.status === 'Shipped',           // YELLOW/BLUE
-                    'border-success': order.status === 'Delivered'       // GREEN
+                  // BORDER COLOR
+                  'border-warning': order.status === 'Order Processed', // ORANGE
+                  'border-info': order.status === 'Shipped',           // YELLOW/BLUE
+                  'border-success': order.status === 'Delivered'       // GREEN
                 }"
               >
                 <div
@@ -254,14 +289,14 @@
                       :class="{
                           // BUTTON COLOR
                           'btn-warning text-dark': order.status === 'Order Processed', // ORANGE
-                          'btn-info': order.status === 'Shipped',                      // YELLOW/BLUE
-                          'btn-success': order.status === 'Delivered'                  // GREEN
+                          'btn-info': order.status === 'Shipped',                     // YELLOW/BLUE
+                          'btn-success': order.status === 'Delivered'                 // GREEN
                       }"
                       @click="
                           order.status === 'Delivered' ? openConfirmDeliveryModal(order) :
-                          order.status === 'Order Processed' ? startScanForOrder(order) : null
+                          order.status === 'Order Processed' ? startScanForOrder(order) : openConfirmDeliveryModal(order)
                       "
-                      :disabled="order.status === 'Shipped' || isDelivering === order.order_id"
+                      :disabled="order.status === 'Delivered' || isDelivering === order.order_id"
                   >
                     <i
                         :class="{
@@ -271,8 +306,8 @@
                         }"
                     ></i>
                     {{
-                        order.status === 'Delivered' ? 'Delivered Completed' :
-                        order.status === 'Shipped' ? 'Ready to Deliver' :
+                        order.status === 'Delivered' ? 'Delivery Confirmed' :
+                        order.status === 'Shipped' ? 'Confirm Delivery' :
                         'Take Order & Scan'
                     }}
                   </button>
@@ -281,7 +316,7 @@
             </div>
           </div>
         </div>
-        </main>
+      </main>
     </div>
 
     <div v-if="showProfileModal" class="custom-modal-overlay">
@@ -328,7 +363,7 @@
           <h5 class="mb-0"><i class="fas fa-barcode me-2"></i> Print Labels</h5>
         </div>
         <div class="card-body text-center">
-          <p>Ready to print <strong>{{ itemToPrint.quantity }}</strong> labels for <strong>{{ itemToPrint.productName }}</strong>.</p>
+          <p>Ready to print <strong>{{ stockIn.quantity }}</strong> labels for <strong>{{ stockIn.productName }}</strong>.</p>
           <div class="d-flex justify-content-center gap-3 mt-4">
             <button class="btn btn-secondary" @click="closeBarcodePrintModal">Cancel</button>
             <button class="btn btn-primary" @click="printLabel">
@@ -368,7 +403,7 @@
           <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i> Confirm Order Details</h5>
         </div>
         <div class="card-body text-center">
-          <p class="lead">All {{ totalItemsToScan }} items successfully matched!</p>
+          <p class="lead">All required items are ready for shipment!</p>
           <p>Confirm shipment for Order #{{ orderToFulfill.order_id.slice(0, 8) }}.</p>
           <div class="d-flex justify-content-center gap-3 mt-4">
             <button class="btn btn-secondary" @click="closeScanModal">Cancel</button>
@@ -410,19 +445,44 @@
         </div>
       </div>
     </div>
+
+    <div v-if="isMobile && notificationsDropdownOpen" class="custom-modal-overlay" style="z-index: 9999;">
+        <div class="custom-modal-card card shadow-lg" style="max-width: 450px;">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-bell me-2"></i> Realtime Updates</h5>
+                <button type="button" class="btn-close btn-close-white" @click="notificationsDropdownOpen = false"></button>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li v-if="notifications.length === 0" class="list-group-item text-center text-muted py-3">
+                        No recent activity.
+                    </li>
+                    <li v-for="(notif, index) in notifications.slice(0, 10)" :key="index" :class="{ 'bg-light': !notif.read }">
+                        <a
+                            class="list-group-item list-group-item-action d-flex align-items-start"
+                            href="#"
+                            @click.prevent="markAsRead(index, notif.view)"
+                        >
+                            <i :class="[notif.icon, 'me-3 mt-1', notif.iconColor]" style="font-size: 1.2em;"></i>
+                            <div style="flex-grow: 1;">
+                                <p class="mb-0" :class="{ 'fw-bold': !notif.read }">{{ notif.message }}</p>
+                                <small class="text-muted">{{ notif.timeAgo }}</small>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <button class="btn btn-sm btn-outline-secondary w-100" @click="clearAllNotifications">Clear All Notifications</button>
+            </div>
+        </div>
+    </div>
     </div>
 </template>
 
 <script>
 /* ============================================================
-    Admin Dashboard Vue Component - Realtime Edition
-    Features:
-    - User Profile Management
-    - Stock In / Stock Out Handling
-    - Barcode Generation & Scanning (Quagga2 & JsBarcode)
-    - Dashboard Statistics & Recent Activities
-    - Responsive UI and Sidebar Navigation
-    - **REALTIME: Supabase Subscriptions eliminate UI flickering refresh.**
+    Admin Dashboard Vue Component - Realtime Edition (with Notifications)
 ============================================================ */
 
 import { supabase } from '../server/supabase';
@@ -431,6 +491,7 @@ import JsBarcode from 'jsbarcode';
 import Quagga from '@ericblade/quagga2';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 
+// NOTE: Since this is outside a setup() function, we keep the router variable initialization here.
 const router = useRouter();
 
 export default {
@@ -443,7 +504,7 @@ export default {
         const allowedExitRoutes = ['login', 'signup'];
 
         if (allowedExitRoutes.includes(to.name)) {
-            next(); // Allowed route, no warning
+            next();
             return;
         }
 
@@ -466,9 +527,14 @@ export default {
     ============================================================ */
     data() {
         return {
-            // ** 🚀 REALTIME CHANNELS (New) **
+            // ** 🚀 REALTIME CHANNELS **
             orderChannel: null,
             stockInChannel: null,
+            timeAgoInterval: null,
+
+            // 🔔 NOTIFICATION STATE (NEW)
+            notifications: [],
+            notificationsDropdownOpen: false,
 
             // --- UI State ---
             isCollapsed: false,
@@ -529,6 +595,10 @@ export default {
       COMPUTED PROPERTIES
     ============================================================ */
     computed: {
+        // 🔔 NEW: Counts unread notifications
+        unreadNotificationsCount() {
+            return this.notifications.filter(n => !n.read).length;
+        },
         totalItemsToScan() {
             if (!this.orderToFulfill || !this.orderToFulfill.order_items) return 0;
             return this.orderToFulfill.order_items.reduce((total, item) => total + item.quantity, 0);
@@ -553,14 +623,14 @@ export default {
             });
         },
         getOrderProductDetails() {
-             return (items) => {
-                 if (!items || items.length === 0) return 'No items found.';
-                 return items.map(item => {
-                     const brand = item.products ? item.products.brand : 'Unknown Product';
-                     const size = item.products ? item.products.size : 'N/A';
-                     return `${brand} (${size}) x${item.quantity}`;
-                 }).join(', ');
-             };
+            return (items) => {
+                if (!items || items.length === 0) return 'No items found.';
+                return items.map(item => {
+                    const brand = item.products ? item.products.brand : 'Unknown Product';
+                    const size = item.products ? item.products.size : 'N/A';
+                    return `${brand} (${size}) x${item.quantity}`;
+                }).join(', ');
+            };
         }
     },
 
@@ -569,11 +639,11 @@ export default {
     ============================================================ */
     methods: {
 
-        // ** 🚀 REAL-TIME SUBSCRIPTION MANAGEMENT (New) **
+        // ** 🚀 REAL-TIME SUBSCRIPTION MANAGEMENT (UPDATED) **
         setupRealtimeSubscriptions() {
             console.log('Setting up Supabase real-time subscriptions...');
 
-            // 1. Subscribe to 'orders' for Stock Out/Shipping view updates
+            // 1. Subscribe to 'orders' for Stock Out/Shipping view updates AND Notifications
             this.orderChannel = supabase
                 .channel('admin_orders')
                 .on(
@@ -581,26 +651,26 @@ export default {
                     { event: '*', schema: 'public', table: 'orders' },
                     (payload) => {
                         console.log('Realtime Order Change:', payload.eventType);
-                        // Refetch the list to ensure correct relationships/filtering
                         this.fetchProcessedOrders();
+                        this.handleOrderNotification(payload); // 🔔 Notification handler
                     }
                 )
                 .subscribe();
 
-            // 2. Subscribe to 'stock_in' for Dashboard and Stock In History updates
+            // 2. Subscribe to 'stock_in' for Dashboard and Stock In History updates AND Notifications
             this.stockInChannel = supabase
-                 .channel('admin_stock_in')
-                 .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'stock_in' },
-                    (payload) => {
-                         console.log('Realtime Stock In Change:', payload.eventType);
-                         // Refetch related dashboard data on stock in changes
-                         this.fetchDashboardData();
-                         this.fetchStockInHistory();
-                    }
-                 )
-                 .subscribe();
+                    .channel('admin_stock_in')
+                    .on(
+                        'postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: 'stock_in' }, // Only INSIDE for Stock In
+                        (payload) => {
+                            console.log('Realtime Stock In Change:', payload.eventType);
+                            this.fetchDashboardData();
+                            this.fetchStockInHistory();
+                            this.handleStockInNotification(payload); // 🔔 Notification handler
+                        }
+                    )
+                    .subscribe();
         },
 
         removeRealtimeSubscriptions() {
@@ -609,10 +679,115 @@ export default {
                 supabase.removeChannel(this.orderChannel);
                 this.orderChannel = null;
             }
-             if (this.stockInChannel) {
+            if (this.stockInChannel) {
                 supabase.removeChannel(this.stockInChannel);
                 this.stockInChannel = null;
             }
+        },
+
+        /* ============================
+          🔔 NOTIFICATION METHODS (NEW)
+          ============================ */
+        timeSince(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutes ago";
+            return Math.floor(seconds) + " seconds ago";
+        },
+
+        addNotification(message, icon, iconColor, view) {
+            this.notifications.unshift({
+                message,
+                icon,
+                iconColor,
+                view,
+                read: false,
+                timestamp: new Date(),
+                timeAgo: this.timeSince(new Date())
+            });
+            // Keep the list manageable (e.g., max 10 temporary notifications)
+            if (this.notifications.length > 10) {
+                this.notifications.pop();
+            }
+        },
+
+        handleOrderNotification(payload) {
+            const newOrder = payload.new;
+            const oldOrder = payload.old;
+            const event = payload.eventType;
+
+            if (event === 'INSERT' && newOrder.status === 'Order Processed') {
+                this.addNotification(
+                    `New Order #${String(newOrder.order_id).slice(0, 8)} needs processing.`,
+                    'fas fa-plus-circle',
+                    'text-success',
+                    'Stock Out'
+                );
+            } else if (event === 'UPDATE') {
+                if (newOrder.status === 'Shipped' && oldOrder.status === 'Order Processed') {
+                    this.addNotification(
+                        `Order #${String(newOrder.order_id).slice(0, 8)} is Shipped and out for delivery.`,
+                        'fas fa-truck',
+                        'text-info',
+                        'Stock Out'
+                    );
+                } else if (newOrder.status === 'Delivered' && oldOrder.status === 'Shipped') {
+                    this.addNotification(
+                        `Order #${String(newOrder.order_id).slice(0, 8)} delivery confirmed.`,
+                        'fas fa-check-double',
+                        'text-success',
+                        'Stock Out'
+                    );
+                }
+            }
+        },
+
+        handleStockInNotification(payload) {
+            const newStockIn = payload.new;
+            if (payload.eventType === 'INSERT') {
+                this.addNotification(
+                    `Stock In: ${newStockIn.product_name} (${newStockIn.size}) +${newStockIn.quantity} units.`,
+                    'fas fa-box',
+                    'text-primary',
+                    'Stock In'
+                );
+            }
+        },
+
+        toggleNotificationsDropdown() {
+            this.notificationsDropdownOpen = !this.notificationsDropdownOpen;
+            if (this.notificationsDropdownOpen) {
+                // Update timeAgo on open
+                this.notifications = this.notifications.map(n => ({
+                    ...n,
+                    timeAgo: this.timeSince(n.timestamp)
+                }));
+            }
+        },
+
+        markAsRead(index, view) {
+            if (this.notifications[index]) {
+                this.notifications[index].read = true;
+            }
+            if (this.notificationsDropdownOpen) {
+                this.notificationsDropdownOpen = false;
+            }
+            if (view && this.currentView !== view) {
+                this.selectView(view);
+            }
+        },
+
+        clearAllNotifications() {
+            this.notifications = [];
+            this.notificationsDropdownOpen = false;
         },
 
         /* ============================
@@ -849,17 +1024,6 @@ export default {
             }
         },
 
-        getOrderProductDetails(items) {
-            if (!items || items.length === 0) return 'No items found.';
-
-            return items.map(item => {
-                const brand = item.products ? item.products.brand : 'Unknown Product';
-                const size = item.products ? item.products.size : 'N/A';
-
-                return `${brand} (${size}) x${item.quantity}`;
-            }).join(', ');
-        },
-
         /* ============================
           --- STOCK OUT METHODS (SHIPPING) ---
           ============================ */
@@ -925,11 +1089,7 @@ export default {
                 this.showScanModal = false;
                 this.orderToFulfill = null;
 
-                // Note: Realtime subscriptions should handle the UI updates.
-                // We call fetch manually here for immediate local feedback.
-                this.fetchProcessedOrders();
-                this.fetchDashboardData();
-
+                // Realtime subscriptions will handle the UI updates.
             } catch (error) {
                 console.error('Stock Out/Shipping Error:', error);
                 alert('⚠️ Failed to confirm shipment: ' + (error.message || error));
@@ -940,6 +1100,7 @@ export default {
           --- ADMIN DELIVERY CONFIRMATION ---
           ============================ */
         openConfirmDeliveryModal(order) {
+            // Can confirm delivery only if status is Shipped
             if (order.status !== 'Shipped') return;
 
             this.orderToFulfill = order;
@@ -971,8 +1132,7 @@ export default {
                 alert(`Failed to mark order as delivered. Details: ${error.message}`);
             } finally {
                 this.closeConfirmDeliveryModal();
-                // Note: Realtime subscriptions should handle the UI updates.
-                await this.fetchProcessedOrders();
+                // Realtime subscriptions will handle the UI updates.
             }
         },
 
@@ -1021,7 +1181,6 @@ export default {
                 this.scanStatusMessage = `Stock In added for ${this.stockIn.productName}`;
             }
 
-
             this.itemToPrint = { barcodeBase, productName: this.stockIn.productName, size: this.stockIn.size, quantity: this.stockIn.quantity };
             this.openBarcodePrintModal();
 
@@ -1031,8 +1190,7 @@ export default {
                 dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
             };
 
-            // Note: Realtime subscriptions should handle the UI updates.
-            this.fetchInitialData();
+            // Realtime subscriptions will handle the UI updates.
         },
 
         printLabel() {
@@ -1107,8 +1265,8 @@ export default {
                 const { error } = await supabase.auth.signOut();
                 if (error) { alert(`Logout failed: ${error.message}`); return; }
 
-                await this.$router.push('/');
-                window.location.reload();
+                // Use native JS redirect since router push can be blocked by beforeRouteLeave guard
+                window.location.href = '/login';
             } catch (e) {
                 console.error('Unexpected logout error:', e);
                 alert('An unexpected error occurred. Check console.');
@@ -1130,6 +1288,14 @@ export default {
 
         // 2. Start listening for real-time changes
         this.setupRealtimeSubscriptions();
+
+        // 🔔 NEW: Set interval to update 'time ago' for notifications every 30 seconds
+        this.timeAgoInterval = setInterval(() => {
+            this.notifications = this.notifications.map(n => ({
+                ...n,
+                timeAgo: this.timeSince(n.timestamp)
+            }));
+        }, 30000);
     },
 
     beforeUnmount() {
@@ -1138,6 +1304,9 @@ export default {
 
         // 3. Stop and remove real-time channels for cleanup
         this.removeRealtimeSubscriptions();
+
+        // 🔔 NEW: Clear time ago interval
+        clearInterval(this.timeAgoInterval);
     }
 };
 </script>

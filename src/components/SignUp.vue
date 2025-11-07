@@ -8,8 +8,8 @@
             <div class="mb-4">
               <i class="fas fa-user-plus fa-5x mb-3 text-white-50"></i>
             </div>
-            <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-            <h2 class="h3 fw-light mb-4">Customer Sign Up</h2>
+            <h1 class="display-4 fw-bold mb-3">i-Tyre</h1>
+            <h2 class="h3 fw-light mb-4">Welcome to Sign Up Page</h2>
             <p class="lead mb-0">
               Create your account to place orders and track your transactions.
             </p>

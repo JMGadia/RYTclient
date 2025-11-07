@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import SuperSignUp from '../components/SignUp.vue';
-import { supabase } from '../server/supabase';
+import { supabase } from '../server/supabase.js';
 
 // This helper function checks if a user is currently logged in
 const getUser = async () => {
@@ -101,7 +101,7 @@ const router = createRouter({
             name: 'ImportProduct',
             component: () => import('../components/ImportProduct.vue')
         }
-        
+
     ],
 });
 
@@ -113,7 +113,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Define which pages require a user to be logged in
   const authRequiredRoutes = [
-    'super admin', 'admin', 'ordering system', 'profile', 
+    'super admin', 'admin', 'ordering system', 'profile',
     'order tracking', 'cart', 'BookOrderAddress', 'OrderHistory', 'ImortProduct',
     'update password', 'payment system', 'success', 'forgot password'
   ]; //

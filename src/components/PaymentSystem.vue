@@ -390,7 +390,7 @@ const handleSubmit = async () => {
     if (selectedPaymentMethod.value === 'cod') {
         orderStatus = 'Order Processed' // Ready for processing immediately
     } else if (customerType.value === 'Regular' || customerType.value === 'B2B') {
-        orderStatus = 'Payment Verification' // Needs staff to check proof
+        orderStatus = 'Order Processed' // Needs staff to check proof
     }
 
 

@@ -213,7 +213,6 @@
                           <div class="text-xs font-weight-bold text-primary text-uppercase">{{ activity.source }} ({{ activity.event }})</div>
                           <div class="text-wrap" v-html="activity.message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')"></div>
                           <div class="text-muted small mt-1">{{ activity.timestamp }}</div>
-                          <hr class="my-1">
                       </div>
                   </div>
               </div>
@@ -297,12 +296,12 @@
                     <div class="card shadow-sm h-100">
                       <div class="card-header bg-white">
                         <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
-                      </div>
-                      <div class="card-body">
+                    </div>
+                    <div class="card-body">
                         <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
                       </div>
                     </div>
-                  </div>
+                </div>
               </div>
             </div> </div>
           <div v-else-if="activeFeature === 'stock-monitoring'">
@@ -502,7 +501,8 @@
                                     <button class="btn btn-sm btn-outline-primary me-2" @click="viewOrderDetails(order)">
                                         <i class="fas fa-eye"></i> View
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'">
+                                    <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'"
+                                      @click="cancelOrder(order)"  >
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
                                 </div>
@@ -551,7 +551,7 @@
                     </tbody>
                    </table>
                 </div>
-              </div>
+                </div>
             </div>
           </div>
         </div>
@@ -577,7 +577,7 @@
             <button type="button" class="btn btn-danger" @click="confirmLogout" data-bs-dismiss="modal">Logout</button>
           </div>
         </div>
-      </div>
+        </div>
     </div>
 
     <div class="modal fade" id="superAdminProfileModal" tabindex="-1" aria-labelledby="superAdminProfileModalLabel" aria-hidden="true">
@@ -634,13 +634,16 @@
                                     Customer: <span>{{ selectedOrderDetails.username }}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
+                                    Payment Method: <span>{{ selectedOrderDetails.payment_method }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
                                     Contact: <span>{{ selectedOrderDetails.contact }}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     Total Price: <span class="text-success fw-bold">₱{{ selectedOrderDetails.total_price.toFixed(2) }}</span>
                                 </li>
-                                <li class="list-group-item">
-                                    Shipping Address: <br> <span>{{ selectedOrderDetails.shipping_addr }}</span>
+                                                                <li class="list-group-item">
+                                    Shipping Address: <span>{{ selectedOrderDetails.shipping_address }}</span>
                                 </li>
                             </ul>
 
@@ -653,19 +656,30 @@
                             </ul>
                         </div>
 
-                        <div class="col-md-6">
-                            <h6>Payment Confirmation</h6>
-                            <div v-if="selectedOrderDetails.paymentProofUrl">
-                                <p class="text-muted small">Proof Path: {{ selectedOrderDetails.payment_proof_path }}</p>
-                                <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" class="d-block text-center">
-                                    <img :src="selectedOrderDetails.paymentProofUrl" alt="Payment Proof" class="img-fluid border rounded shadow-sm" style="max-height: 300px; object-fit: contain;" />
-                                    <p class="small mt-2 text-primary">Click to view full image in new tab</p>
-                                </a>
-                            </div>
-                            <div v-else class="alert alert-warning">
-                                No payment proof screenshot found for this order.
-                            </div>
-                        </div>
+                       <div class="col-md-6">
+                          <h6>Proof of Payment</h6>
+                          <div v-if="selectedOrderDetails.paymentProofUrl">
+
+                              <div class="d-block text-center">
+                                  <img
+                                      :src="selectedOrderDetails.paymentProofUrl"
+                                      alt="Proof of Payment"
+                                      class="img-fluid border rounded shadow-sm"
+                                      style="max-height: 300px; object-fit: contain;"
+                                  />
+
+                                  <p class="small mt-2 text-primary">
+                                      <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" style="text-decoration: underline;">
+                                          Click here for full resolution view
+                                      </a>
+                                  </p>
+                              </div>
+
+                              </div>
+                          <div v-else class="alert alert-warning">
+                              No payment proof screenshot found for this order.
+                          </div>
+                      </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1071,6 +1085,48 @@ import { supabase } from '../server/supabase';
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 // --- ❌ Removed html2canvas and jsPDF as they are not needed for CSV ---
 
+// --- 🛑 NEW CORE LOGIC: CANCEL ORDER FUNCTION ---
+const cancelOrder = async (order) => {
+    // 1. Confirmation & Status Check
+    if (order.cardStatus === 'Cancelled' || order.cardStatus === 'Completed') {
+        alert(`Order #${order.order_id.slice(0, 8)} cannot be cancelled because its current status is ${order.cardStatus}.`);
+        return;
+    }
+
+    if (!confirm(`⚠️ Are you sure you want to PERMANENTLY CANCEL AND DELETE order #${order.order_id.slice(0, 8)}? This will restore stock and delete the order records.`)) {
+        return;
+    }
+
+    try {
+        ordersLoading.value = true;
+        const orderId = order.order_id;
+
+        // 🛑 CRITICAL FIX: Use a single RPC to handle all deletion, stock, and sales reversal in one atomic transaction.
+        const { data, error } = await supabase.rpc('cancel_order_and_revert_stock', {
+            p_order_id: orderId
+        });
+
+        if (error) {
+            console.error('RPC Error:', error);
+            throw new Error(error.message);
+        }
+
+        // 2. Final Refresh and Log
+        alert(`✅ Order #${order.order_id.slice(0, 8)} successfully CANCELLED and deleted. Stock restored.`);
+        createActivityLogEntry('Purchased Orders', 'DELETE', `Order **#${order.order_id.slice(0, 8)}** has been **PERMANENTLY DELETED**. Stock restored.`);
+
+    } catch (err) {
+        alert(`Failed to cancel order: ${err.message}. Please verify the RPC function is correctly set up.`);
+        console.error('Error in cancelOrder:', err);
+    } finally {
+        // Refresh all relevant data on the UI (Orders, Sales, Stock)
+        fetchPurchaseOrders();
+        fetchSalesReport();
+        fetchStockItems();
+        ordersLoading.value = false;
+    }
+};
+
 const EMAIL_FUNCTION_URL = 'https://ivqefxeeiuyjcsrlqjxr.supabase.co/functions/v1/send-custom-email';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImV4cCI6MjA3MTkzNTI5OH0.GURdtsHejB6ROarVzuQctcSKNVRCaD5BWQ-uB-Vody0';
 // --- 👇 THIS IS THE EXIT GUARD ---
@@ -1153,6 +1209,23 @@ const resetNotificationCount = () => {
     newNotificationCount.value = 0;
 };
 
+// 💡 NEW FIX: Manually toggle the dropdown using Bootstrap JS for mobile sidebar
+const toggleMobileNotifications = () => {
+    // 1. Get the DOM element of the actual dropdown (which is in the top nav bar)
+    const notificationsDropdown = document.getElementById('notificationsDropdown');
+
+    if (notificationsDropdown) {
+        // 2. Use the official Bootstrap JS API to toggle the dropdown
+        // This requires the Bootstrap JS library to be loaded (usually globally)
+        const dropdown = new window.bootstrap.Dropdown(notificationsDropdown);
+        dropdown.toggle();
+
+        // 3. Close the sidebar after attempting to open the dropdown on mobile
+        if (isMobile.value) {
+             toggleSidebar();
+        }
+    }
+};
 
 // 🎯 NEW: Utility function to create and add log entry
 const createActivityLogEntry = (source, eventType, message) => {
@@ -1185,6 +1258,8 @@ const fetchPurchaseOrders = async () => {
             .from('orders')
             .select(`
                 *,
+                payment_method,
+                shipping_address,
                 order_items (
                     product_id,
                     quantity,
@@ -1214,6 +1289,7 @@ const fetchPurchaseOrders = async () => {
             return {
                 ...order,
                 cardStatus: cardStatus,
+                // Shipping Address and Payment Method are now included here from the fetch
             };
         });
 
@@ -1302,14 +1378,41 @@ const updateOrderStatus = async (orderId, newStatus) => {
     }
 };
 
-// --- NEW FUNCTION: VIEW ORDER DETAILS (Shows payment proof) ---
+// --- 🚀 MODIFIED FUNCTION: VIEW ORDER DETAILS (Extracts path from full URL) ---
 const viewOrderDetails = (order) => {
     let paymentProofUrl = null;
 
-    if (order.payment_proof_path) {
+    if (order.payment_proof_url) {
+        let storagePath = order.payment_proof_url;
+
+        // 🛑 NEW FIX: Check if the value is already a full URL (the bad data format)
+        if (storagePath.startsWith('http')) {
+            try {
+                // Parse the URL and extract the path after the bucket name ('partialpay_proof/')
+                const url = new URL(storagePath);
+                // Example of expected pathname: /storage/v1/object/public/partialpay_proof/path/to/file.png
+                const segments = url.pathname.split('/');
+
+                // Find the index of the bucket name ('partialpay_proof')
+                const bucketIndex = segments.indexOf('partialpay_proof');
+
+                if (bucketIndex !== -1) {
+                    // Rejoin the segments starting immediately after the bucket name
+                    storagePath = segments.slice(bucketIndex + 1).join('/');
+                } else {
+                    // Fallback if URL is weird, just use the original to prevent crashes
+                    storagePath = order.payment_proof_url;
+                }
+            } catch (e) {
+                console.error("Failed to parse stored URL path:", e);
+                storagePath = order.payment_proof_url;
+            }
+        }
+
+        // Now, we use the cleaned/extracted path with getPublicUrl()
         const { data } = supabase.storage
             .from('partialpay_proof')
-            .getPublicUrl(order.payment_proof_path);
+            .getPublicUrl(storagePath);
 
         paymentProofUrl = data.publicUrl;
     }
@@ -1320,6 +1423,7 @@ const viewOrderDetails = (order) => {
     };
     showOrderModal.value = true;
 };
+// Use this version of viewOrderDetails in your script to handle the bad data format.
 
 // 1. 🚀 MODIFIED: Fetch 'updated_at' column
 const fetchStockItems = async () => {
@@ -1783,17 +1887,6 @@ const createCharts = () => {
     }
 };
 
-const pageTitle = computed(() => {
-    switch (activeFeature.value) {
-        case 'dashboard': return 'Dashboard';
-        case 'sales-report': return 'Sales Report';
-        case 'stock-monitoring': return 'Stock Monitoring';
-        case 'orders': return 'Purchased Orders';
-        case 'user-management': return 'User Management';
-        case 'settings': return 'System Settings';
-        default: return 'Super Admin Dashboard';
-    }
-});
 const setActiveFeature = (feature) => {
     activeFeature.value = feature;
     if (isMobile.value) {

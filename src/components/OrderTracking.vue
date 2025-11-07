@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'; // Added 'computed'
+import { ref, onMounted, onUnmounted, computed } from 'vue'; // Added 'onUnmounted'
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
@@ -104,6 +104,7 @@ const router = useRouter();
 const orders = ref([]); // Holds ALL orders fetched from DB
 const isLoading = ref(true);
 const isUpdatingStatus = ref(null);
+let orderSubscription = null; // Variable to hold the real-time subscription object
 
 const statusHierarchy = [
   'Payment Process',
@@ -122,6 +123,60 @@ const inProcessOrders = computed(() => {
     return orders.value.filter(order => order.status !== 'Delivered');
 });
 // --------------------------------------------------------
+
+// --- REAL-TIME UPDATE HANDLER ---
+const handleRealtimeUpdate = (payload) => {
+    console.log('Realtime update received:', payload);
+    const updatedOrder = payload.new;
+
+    // Find the index of the order in the local array
+    const index = orders.value.findIndex(order => order.order_id === updatedOrder.order_id);
+
+    // Process the status update
+    const newStatus = updatedOrder.status === 'Pre-Ordered' ? 'Order Processed' : updatedOrder.status;
+
+    if (index !== -1) {
+        // If the order exists locally, update its status (and other fields if needed)
+        orders.value[index] = {
+            ...orders.value[index], // Preserve nested data (order_items) that wasn't included in the UPDATE payload
+            status: newStatus,
+            // You can update other top-level fields here if they might change
+        };
+    } else if (newStatus !== 'Delivered') {
+        // OPTIONAL: If the update is for a new order that hasn't been fetched yet
+        // You would typically re-fetch or construct the full order object here.
+        // For simplicity, we assume 'fetchOrders' will capture new orders on page load.
+        // If a new order is placed *while* this page is open, you might need a more complex merge/refetch logic.
+        // Given this page is Order History, a simple update to existing orders is usually sufficient.
+    }
+};
+
+// --- SETUP REAL-TIME SUBSCRIPTION ---
+const setupRealtimeSubscription = async (userId) => {
+    // 1. Remove previous subscription if it exists
+    if (orderSubscription) {
+        await supabase.removeChannel(orderSubscription);
+    }
+
+    // 2. Subscribe to changes in the 'orders' table, filtered by the current user's ID
+    orderSubscription = supabase
+        .channel(`order_updates:${userId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE', // Only listen for updates
+                schema: 'public',
+                table: 'orders',
+                filter: `user_id=eq.${userId}` // Crucial: Only listen for the current user's orders
+            },
+            handleRealtimeUpdate
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Real-time subscription to orders is active.');
+            }
+        });
+};
 
 // --- FETCH ORDERS ---
 const fetchOrders = async () => {
@@ -155,6 +210,9 @@ const fetchOrders = async () => {
       status: order.status === 'Pre-Ordered' ? 'Order Processed' : order.status
     }));
 
+    // Setup real-time listener after successfully fetching the initial data
+    await setupRealtimeSubscription(user.id);
+
   } catch (error) {
     console.error('Error fetching orders:', error.message);
   } finally {
@@ -162,7 +220,7 @@ const fetchOrders = async () => {
   }
 };
 
-// --- CONFIRM ORDER RECEIVED ---
+// --- CONFIRM ORDER RECEIVED (The status update here will also trigger the Realtime listener for other users/devices) ---
 const handleOrderReceived = async (orderId) => {
   if (!window.confirm('Confirming receipt will mark the order as DELIVERED. Proceed?')) return;
 
@@ -176,8 +234,15 @@ const handleOrderReceived = async (orderId) => {
     if (error) throw error;
 
     alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
-    // Re-fetch updates the 'orders' ref, which automatically updates the 'inProcessOrders' computed property.
-    await fetchOrders();
+
+    // Note: Instead of explicit 'fetchOrders()' now,
+    // the change will be reflected automatically via the Realtime subscription
+    // which calls 'handleRealtimeUpdate' when this update completes in the database.
+
+    // However, if you want *immediate* local feedback without waiting for the RT event:
+    handleRealtimeUpdate({ new: { order_id: orderId, status: 'Delivered' } });
+
+
   } catch (error) {
     console.error('Error confirming delivery:', error.message);
     alert(`Failed to confirm delivery. Please try again. Details: ${error.message}`);
@@ -192,6 +257,7 @@ const getStatusColorClass = (status) => {
     case 'Delivered':
       return 'text-success';
     case 'Shipped':
+    case 'Ready for Pickup':
       return 'text-warning';
     case 'Order Processed':
     case 'Payment Success':
@@ -220,8 +286,16 @@ const goToOrderingSystem = () => {
   router.push({ name: 'ordering system' });
 };
 
-// --- INITIAL LOAD ---
+// --- INITIAL LOAD & CLEANUP ---
 onMounted(fetchOrders);
+
+// Crucial: Clean up the subscription when the component is unmounted
+onUnmounted(() => {
+    if (orderSubscription) {
+        supabase.removeChannel(orderSubscription);
+        console.log('Real-time subscription removed.');
+    }
+});
 </script>
 
 <style scoped>

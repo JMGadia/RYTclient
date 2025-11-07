@@ -11,8 +11,8 @@
             <div class="mb-4">
               <i class="fas fa-user fa-5x mb-3 text-white-50"></i>
             </div>
-            <h1 class="display-4 fw-bold mb-3">RYT-Tyre</h1>
-            <h2 class="h3 fw-light mb-4">Customer Log In</h2>
+            <h1 class="display-4 fw-bold mb-3">i-Tyre</h1>
+            <h2 class="h3 fw-light mb-4">Welcome to Log In Page</h2>
             <p class="lead mb-0">Access your account to manage your orders and track activity.</p>
           </div>
 
@@ -229,17 +229,17 @@ const handleLogin = async () => {
       .single()
 
     if (profileError) throw profileError
-    
+
     // Step 3: Redirect based on the determined role
     const role = profileData?.role;
 
     if (role === 'Super Admin') {
-      router.push({ name: 'super admin' }) 
+      router.push({ name: 'super admin' })
     } else if (role === 'Admin') {
-      router.push({ name: 'admin' }) 
+      router.push({ name: 'admin' })
     } else {
       // Default route for regular users
-      router.push({ name: 'ordering system' }) 
+      router.push({ name: 'ordering system' })
     }
 
   } catch (error) {
