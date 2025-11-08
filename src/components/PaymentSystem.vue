@@ -152,6 +152,7 @@
                         type="file"
                         id="paymentProofB2B"
                         @change="handlePaymentProofUpload"
+                        accept="image/*"
                       />
                     </div>
 
@@ -164,6 +165,7 @@
                         type="file"
                         id="businessProof"
                         @change="handleB2BPermitUpload"
+                        accept="image/*, application/pdf"
                       />
                     </div>
                   </template>
@@ -189,14 +191,10 @@
                     </div>
                   </div>
 
-                  <div class="mb-3">
-                    <label for="gcashNumber" class="form-label fw-semibold">Your GCash Number</label>
-                    <input type="tel" class="form-control" id="gcashNumber" v-model="gcashNumber" placeholder="e.g., 09XX-XXX-XXXX">
-                  </div>
 
                   <div class="mb-3">
                     <label for="paymentProof" class="form-label fw-semibold">Upload Confirmation of Payment</label>
-                    <input class="form-control" type="file" id="paymentProof" @change="handlePaymentProofUpload">
+                    <input class="form-control" type="file" id="paymentProof" @change="handlePaymentProofUpload" accept="image/*">
                   </div>
                 </div>
 
@@ -316,12 +314,38 @@ const setCustomerType = (type) => {
 // ----------------------------
 // FILE HANDLERS and NAVIGATION (unchanged)
 // ----------------------------
+// A helper function to validate if a file is an image
+const isImageFile = (file) => {
+    return file && file.type.startsWith('image/')
+}
+
+// A more permissive helper for B2B Permit (image or PDF)
+const isValidB2BPermitFile = (file) => {
+    return file && (file.type.startsWith('image/') || file.type === 'application/pdf')
+}
+
 const handlePaymentProofUpload = (event) => {
-    paymentProofFile.value = event.target.files[0]
+    const file = event.target.files[0]
+    if (!isImageFile(file)) {
+        alert('⚠️ Error: You must upload an image file (e.g., JPEG, PNG, GIF). Video files are not allowed.')
+        // Clear the file input immediately
+        event.target.value = null
+        paymentProofFile.value = null
+        return
+    }
+    paymentProofFile.value = file
 }
 
 const handleB2BPermitUpload = (event) => {
-    b2bPermitFile.value = event.target.files[0]
+    const file = event.target.files[0]
+    if (!isValidB2BPermitFile(file)) {
+        alert('⚠️ Error: B2B Business Proof must be an image or a PDF file. Video files are not allowed.')
+        // Clear the file input immediately
+        event.target.value = null
+        b2bPermitFile.value = null
+        return
+    }
+    b2bPermitFile.value = file
 }
 
 const goToAddressBook = () => {
