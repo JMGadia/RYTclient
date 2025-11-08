@@ -89,7 +89,7 @@
 <script setup>
 // --- IMPORTS & SETUP ---
 import { ref } from 'vue' // Import reactive state management from Vue
-import { useRouter } from 'vue-router' 
+import { useRouter } from 'vue-router'
 import { supabase } from '../server/supabase' // Import Supabase client for authentication operations
 
 // Initialize the router
@@ -119,14 +119,14 @@ const handlePasswordReset = async () => {
   isLoading.value = true;
   message.value = '';
   isSuccess.value = false;
-  
+
   // 🛑 CRITICAL FIX: Hardcode the absolute URL for the production link.
-  const redirectTo = 'https://ry-tclient.vercel.app/Update-Password'; 
+  const redirectTo = 'https://www.i-tyre.net/Update-Password';
 
   try {
     // OPTIONAL: Sign out any existing user session before requesting the reset.
     await supabase.auth.signOut();
-    
+
     // Call Supabase API to send the password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
       redirectTo: redirectTo,
@@ -135,28 +135,28 @@ const handlePasswordReset = async () => {
     if (error) throw error; // Handle API errors
 
     // 1. Success on sending email: Redirect to the success page.
-    isSuccess.value = true; 
-    router.push({ 
-        name: 'success', 
-        query: { 
+    isSuccess.value = true;
+    router.push({
+        name: 'success',
+        query: {
             message: 'A password reset link has been sent to your email address.',
-            email: email.value 
-        } 
+            email: email.value
+        }
     });
 
   } catch (error) {
     // 2. Error case: For security, still redirect to the success page to avoid email enumeration.
     isSuccess.value = false;
     console.error('Password reset error:', error.message);
-    
+
     // Redirect to success page with a generic message.
-    router.push({ 
-        name: 'success', 
-        query: { 
+    router.push({
+        name: 'success',
+        query: {
             message: 'If an account exists for this email, a password reset link has been sent to your inbox.'
-        } 
+        }
     });
-    
+
   } finally {
     // Always stop loading, regardless of outcome
     isLoading.value = false;
@@ -174,7 +174,7 @@ const handlePasswordReset = async () => {
 .background-overlay {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   /* NOTE: Assuming 'background.jpg' is available or adjusting the path if needed */
-  background: url('../assets/background.jpg') no-repeat center center; 
+  background: url('../assets/background.jpg') no-repeat center center;
   background-size: cover; opacity: 0.1; z-index: 1;
 }
 .bg-primary-gradient {
