@@ -121,7 +121,7 @@ const handlePasswordReset = async () => {
   isSuccess.value = false;
 
   // 🛑 CRITICAL FIX: Hardcode the absolute URL for the production link.
-  const redirectTo = 'https://www.i-tyre.net/Update-Password';
+  const redirectTo = 'https://i-tyre.net/Update-Password';
 
   try {
     // OPTIONAL: Sign out any existing user session before requesting the reset.
