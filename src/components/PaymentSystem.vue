@@ -18,31 +18,10 @@
                 <h2 class="card-title fw-bold text-dark mb-2">
                   <i class="fas fa-shield-alt me-2 text-primary"></i>Secure Payment
                 </h2>
-                <p class="text-muted">Complete your purchase</p>
+                <p class="text-muted">Complete your purchase as to confirm your order</p>
               </div>
 
-             <div class="mb-4">
-              <h5 class="fw-semibold">Select Customer Type</h5>
-              <div class="d-grid gap-2 d-sm-flex">
-                  <button
-                      @click="setCustomerType('Regular')"
-                      :class="['btn', 'flex-grow-1', customerType === 'Regular' ? 'btn-primary' : 'btn-outline-primary']"
-                      :disabled="isRegularBuyerDisabled" >
-                      <i class="fas fa-user me-2"></i>Regular Buyer
-                  </button>
-                  <button
-                      @click="setCustomerType('B2B')"
-                      :class="['btn', 'flex-grow-1', customerType === 'B2B' ? 'btn-primary' : 'btn-outline-primary']">
-                      <i class="fas fa-building me-2"></i>B2B Transaction
-                  </button>
-              </div>
-
-              <div v-if="isRegularBuyerDisabled" class="alert alert-danger p-2 small mt-2 text-center">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  **Regular Buyer** is limited to a maximum of 4 items. Please switch to **B2B Transaction** for bulk orders (Total items: {{ totalOrderQuantity }}).
-              </div>
-          </div>
-              <div v-if="customerType">
+              <div class="mb-4">
                 <hr class="my-4">
 
                 <div class="mb-4">
@@ -64,13 +43,13 @@
                     </li>
 
                     <li
-                      v-if="customerType === 'Regular' && selectedPaymentMethod !== 'cod'"
+                      v-if="selectedPaymentMethod !== 'cod'"
                       class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
                       <strong class="h6">Required Partial Payment</strong>
                       <strong class="h6">₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
                     </li>
                     <li
-                      v-if="customerType === 'Regular' && selectedPaymentMethod === 'cod'"
+                      v-if="selectedPaymentMethod === 'cod'"
                       class="list-group-item d-flex justify-content-between align-items-center px-0 text-success border-top pt-3">
                       <strong class="h6 text-success">Payment on Delivery</strong>
                       <strong class="h6 text-success">₱{{ grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
@@ -88,88 +67,29 @@
                 <h5 class="fw-semibold mb-3">Choose Payment Method</h5>
                 <div class="d-grid gap-3">
 
-                  <template v-if="customerType === 'Regular'">
-                    <label class="payment-option-label">
-                      <input type="radio" class="form-check-input" name="paymentMethod" value="cod" v-model="selectedPaymentMethod">
-                      <div class="d-flex align-items-center">
-                        <i class="fas fa-money-bill-wave fa-2x text-success me-3" style="width: 40px; text-align: center;"></i>
-                        <div>
-                          <span class="fw-bold d-block">Cash on Delivery (COD)</span>
-                          <small class="text-muted">Pay the full amount upon delivery.</small>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label class="payment-option-label">
-                      <input type="radio" class="form-check-input" name="paymentMethod" value="gcash" v-model="selectedPaymentMethod">
-                      <div class="d-flex align-items-center">
-                        <img src="/src/assets/gcash-logow.png" alt="GCash Logo" class="payment-logo me-3">
-                        <div>
-                          <span class="fw-bold d-block">Pay with GCash (Partial)</span>
-                          <small class="text-muted">Pay the partial payment via GCash transfer.</small>
-                        </div>
-                      </div>
-                    </label>
-                  </template>
-
-                  <template v-if="customerType === 'B2B'">
-                    <div class="text-center my-3">
-                      <h6 class="fw-bold">GCash Partial Payment (for B2B)</h6>
-                      <p class="small text-muted">
-                        Send the required partial payment of
-                        <strong>₱{{ partialPayment.toLocaleString('en-US', {minimumFractionDigits: 2}) }}</strong>
-                        to <strong>0912-345-6789 (RYT-Tyre Inc.)</strong>.
-                      </p>
-
-                      <div class="qr-wrapper text-center my-3">
-                        <img
-                          src="/src/assets/QR-GCash.jpg"
-                          alt="GCash QR Code"
-                          class="qr-image"
-                          @click="isQrModalOpen = true"
-                        />
-                        <p class="small text-muted mt-2">Tap to enlarge QR code</p>
-                      </div>
-
-                      <div v-if="isQrModalOpen" class="qr-modal" @click.self="isQrModalOpen = false">
-                        <div class="qr-modal-content">
-                          <img
-                            src="/src/assets/QR-GCash.jpg"
-                            alt="GCash QR Zoomed"
-                            class="qr-modal-image"
-                          />
-                          <button class="close-btn" @click="isQrModalOpen = false">&times;</button>
-                        </div>
+                  <label class="payment-option-label">
+                    <input type="radio" class="form-check-input" name="paymentMethod" value="cod" v-model="selectedPaymentMethod">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-money-bill-wave fa-2x text-success me-3" style="width: 40px; text-align: center;"></i>
+                      <div>
+                        <span class="fw-bold d-block">Cash on Delivery (COD)</span>
+                        <small class="text-muted">Pay the full amount upon delivery.</small>
                       </div>
                     </div>
+                  </label>
 
-                    <div class="mb-3">
-                      <label for="paymentProofB2B" class="form-label fw-semibold">
-                        Upload Proof of Payment (GCash Screenshot)
-                      </label>
-                      <input
-                        class="form-control"
-                        type="file"
-                        id="paymentProofB2B"
-                        @change="handlePaymentProofUpload"
-                        accept="image/*"
-                      />
+                  <label class="payment-option-label">
+                    <input type="radio" class="form-check-input" name="paymentMethod" value="gcash" v-model="selectedPaymentMethod">
+                    <div class="d-flex align-items-center">
+                      <img src="/src/assets/gcash-logow.png" alt="GCash Logo" class="payment-logo me-3">
+                      <div>
+                        <span class="fw-bold d-block">Pay with GCash (Partial)</span>
+                        <small class="text-muted">Pay the partial payment via GCash transfer.</small>
+                      </div>
                     </div>
+                  </label>
 
-                    <div class="mb-3">
-                      <label for="businessProof" class="form-label fw-semibold">
-                        Upload Business Proof (Business Permit Required)
-                      </label>
-                      <input
-                        class="form-control"
-                        type="file"
-                        id="businessProof"
-                        @change="handleB2BPermitUpload"
-                        accept="image/*, application/pdf"
-                      />
-                    </div>
-                  </template>
-                </div>
+                  </div>
 
                 <div v-if="selectedPaymentMethod === 'gcash'" class="mt-4 p-3 bg-light rounded-3">
                   <h6 class="fw-bold">GCash Partial Payment Required</h6>
@@ -215,26 +135,19 @@
                     :disabled="!isPreOrderEnabled || isProcessing"
                   >
                     <span v-if="isProcessing" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <i v-else-if="customerType === 'Regular'" class="fas fa-money-check-alt me-2"></i>
-                    <i v-else-if="customerType === 'B2B'" class="fas fa-file-invoice me-2"></i>
-                    <i v-else class="fas fa-shopping-cart me-2"></i>
+                    <i v-else class="fas fa-money-check-alt me-2"></i>
 
                     <template v-if="isProcessing">
-                        Processing...
-                    </template>
-                    <template v-else-if="customerType === 'Regular'">
-                        Confirm Payment
-                    </template>
-                    <template v-else-if="customerType === 'B2B'">
-                        Confirm Pre-Order
+                      Processing...
                     </template>
                     <template v-else>
-                        Place Order
+                      Confirm Payment
                     </template>
                   </button>
                 </div>
 
-              </div> </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -254,33 +167,25 @@ const { cart, cartTotal, clearCart, fetchCart } = useCart()
 // ----------------------------
 // STATE
 // ----------------------------
-const customerType = ref(null)
+const customerType = ref('Regular') // Default to Regular since B2B is removed
 const selectedPaymentMethod = ref(null)
-const gcashNumber = ref('')
 const paymentProofFile = ref(null)
-const b2bPermitFile = ref(null)
 const isProcessing = ref(false)
 const serviceFee = ref(0)
 const isQrModalOpen = ref(false)
 
 // ----------------------------
-// COMPUTED LOGIC (NEW: Quantity Check)
+// COMPUTED LOGIC (Quantity Check REMOVED)
 // ----------------------------
-
 /**
  * Calculates the sum of all item quantities in the cart.
+ * (Kept for cart calculation, but B2B validation logic removed)
  */
 const totalOrderQuantity = computed(() => {
     return cart.value.reduce((total, item) => total + item.quantity, 0)
 })
 
-/**
- * Determines if the Regular Buyer option should be disabled (quantity > 4).
- */
-const isRegularBuyerDisabled = computed(() => {
-    return totalOrderQuantity.value > 4
-})
-
+// isRegularBuyerDisabled and its logic is REMOVED.
 
 // ----------------------------
 // COMPUTED TOTALS
@@ -296,33 +201,25 @@ const partialPayment = computed(() => {
 })
 
 // ----------------------------
-// CUSTOMER TYPE SELECTION
+// CUSTOMER TYPE SELECTION (SIMPLIFIED/REMOVED)
 // ----------------------------
+// setCustomerType is no longer needed since the customer type is fixed, but a simplified version is kept for future proofing.
 const setCustomerType = (type) => {
-    // If attempting to select Regular Buyer and it's disabled, stop.
-    if (type === 'Regular' && isRegularBuyerDisabled.value) {
-        return
-    }
-
-    customerType.value = type
-    // Reset selected payment method when customer type changes
+    // This function is technically not called from the HTML anymore but can be kept if needed elsewhere
+    customerType.value = 'Regular'
     selectedPaymentMethod.value = null
     paymentProofFile.value = null
-    b2bPermitFile.value = null
 }
 
 // ----------------------------
-// FILE HANDLERS and NAVIGATION (unchanged)
+// FILE HANDLERS and NAVIGATION
 // ----------------------------
 // A helper function to validate if a file is an image
 const isImageFile = (file) => {
     return file && file.type.startsWith('image/')
 }
 
-// A more permissive helper for B2B Permit (image or PDF)
-const isValidB2BPermitFile = (file) => {
-    return file && (file.type.startsWith('image/') || file.type === 'application/pdf')
-}
+// handleB2BPermitUpload and isValidB2BPermitFile are REMOVED.
 
 const handlePaymentProofUpload = (event) => {
     const file = event.target.files[0]
@@ -336,41 +233,25 @@ const handlePaymentProofUpload = (event) => {
     paymentProofFile.value = file
 }
 
-const handleB2BPermitUpload = (event) => {
-    const file = event.target.files[0]
-    if (!isValidB2BPermitFile(file)) {
-        alert('⚠️ Error: B2B Business Proof must be an image or a PDF file. Video files are not allowed.')
-        // Clear the file input immediately
-        event.target.value = null
-        b2bPermitFile.value = null
-        return
-    }
-    b2bPermitFile.value = file
-}
-
 const goToAddressBook = () => {
     router.push({ name: 'BookOrderAddress' })
 }
 
 // ----------------------------
-// ENABLE BUTTON CONDITION (unchanged)
+// ENABLE BUTTON CONDITION
 // ----------------------------
 const isPreOrderEnabled = computed(() => {
-    if (customerType.value === 'Regular') {
-        if (selectedPaymentMethod.value === 'cod') {
-            return true
-        } else if (selectedPaymentMethod.value === 'gcash') {
-            return !!paymentProofFile.value
-        }
-        return false
-    } else if (customerType.value === 'B2B') {
-        return !!paymentProofFile.value && !!b2bPermitFile.value
+    // Logic is now streamlined for only 'Regular' customer
+    if (selectedPaymentMethod.value === 'cod') {
+        return true
+    } else if (selectedPaymentMethod.value === 'gcash') {
+        return !!paymentProofFile.value
     }
     return false
 })
 
 // ----------------------------
-// MAIN ORDER SUBMISSION (unchanged)
+// MAIN ORDER SUBMISSION
 // ----------------------------
 const handleSubmit = async () => {
     if (!cart.value.length) {
@@ -379,47 +260,34 @@ const handleSubmit = async () => {
     }
 
     // --- Validation Checks ---
-    if (customerType.value === 'Regular') {
-        if (totalOrderQuantity.value > 4) {
-             alert('Regular Buyer orders cannot exceed 4 items. Please switch to B2B or reduce quantity.')
-             return
-        }
-        // ... (rest of Regular checks remain) ...
-        if (!selectedPaymentMethod.value) {
-            alert('Please select a payment method (COD or GCash).')
-            return
-        }
-        if (selectedPaymentMethod.value === 'gcash' && !paymentProofFile.value) {
-            alert('Please upload your GCash payment proof.')
-            return
-        }
-    }
 
-    if (customerType.value === 'B2B') {
-        if (!paymentProofFile.value || !b2bPermitFile.value) {
-            alert('Please upload both proof of payment and business permit.')
-            return
-        }
+    // B2B validation logic is REMOVED.
+
+    if (!selectedPaymentMethod.value) {
+        alert('Please select a payment method (COD or GCash).')
+        return
+    }
+    if (selectedPaymentMethod.value === 'gcash' && !paymentProofFile.value) {
+        alert('Please upload your GCash payment proof.')
+        return
     }
     // --- End Validation Checks ---
 
     // **IMPORTANT: Disable the button immediately**
     isProcessing.value = true
     let paymentProofUrl = null
-    let b2bPermitUrl = null
     let totalSalesAmount = grandTotal.value;
     let orderStatus = 'Pending' // Default for new orders
 
-    // **Set status based on COD or GCash/B2B (Partial payment)**
+    // **Set status based on COD or GCash (Partial payment)**
     if (selectedPaymentMethod.value === 'cod') {
         orderStatus = 'Order Processed' // Ready for processing immediately
-    } else if (customerType.value === 'Regular' || customerType.value === 'B2B') {
+    } else if (selectedPaymentMethod.value === 'gcash') {
         orderStatus = 'Order Processed' // Needs staff to check proof
     }
 
-
     try {
-        // 🔹 Get current user and default address (address logic remains the same)
+        // 🔹 Get current user and default address
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         if (userError || !user) throw new Error('You must be logged in to place an order.')
 
@@ -432,20 +300,10 @@ const handleSubmit = async () => {
 
         if (addressError || !addressData) throw new Error('Please set a default address before ordering.')
 
-        // 🔹 Upload B2B Permit (if applicable)
-        if (customerType.value === 'B2B' && b2bPermitFile.value) {
-            const fileExt = b2bPermitFile.value.name.split('.').pop()
-            const filePath = `${user.id}/${Date.now()}_b2b.${fileExt}`
-            const { error: uploadError } = await supabase.storage
-                .from('B2B_Permit')
-                .upload(filePath, b2bPermitFile.value, { cacheControl: '3600', upsert: false })
-            if (uploadError) throw new Error(`B2B Permit upload failed: ${uploadError.message}`)
-            const { data } = supabase.storage.from('B2B_Permit').getPublicUrl(filePath)
-            b2bPermitUrl = data.publicUrl
-        }
+        // B2B Permit upload logic is REMOVED.
 
-        // 🔹 Upload Payment Proof (Only for GCash and B2B)
-        if (selectedPaymentMethod.value !== 'cod' && paymentProofFile.value) {
+        // 🔹 Upload Payment Proof (Only for GCash)
+        if (selectedPaymentMethod.value === 'gcash' && paymentProofFile.value) {
             const fileExt = paymentProofFile.value.name.split('.').pop()
             const filePath = `${user.id}/${Date.now()}_pay.${fileExt}`
             const { error: uploadError } = await supabase.storage
@@ -464,15 +322,13 @@ const handleSubmit = async () => {
             contact: addressData.phone,
             total_price: grandTotal.value,
             status: orderStatus, // Use determined status
-            payment_method: selectedPaymentMethod.value || 'GCash', // 'gcash', 'cod', or 'GCash' for B2B
+            payment_method: selectedPaymentMethod.value, // 'gcash' or 'cod'
             payment_proof_url: paymentProofUrl
         }
 
-        if (customerType.value === 'B2B' && b2bPermitUrl) {
-            orderData.b2b_permit_url = b2bPermitUrl
-        }
+        // Removal of B2B permit URL assignment from orderData.
 
-        // 🔹 Save order (order items, stock update, and sales report logic remains the same)
+        // 🔹 Save order
         const { data: newOrder, error: orderError } = await supabase
             .from('orders')
             .insert(orderData)
@@ -501,15 +357,15 @@ const handleSubmit = async () => {
             if (stockError) console.warn('Stock update failed for:', item.id, stockError.message)
         }
 
-        // 💰 SALES DATA UPDATE: Record sale *only if it's a paid order*
-        if (orderStatus !== 'Payment Verification') {
-             const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
-                 p_sales_amount: totalSalesAmount
-             })
+        // 💰 SALES DATA UPDATE: Record sale
+        if (orderStatus !== 'Pending') { // Only record sale if COD (Order Processed)
+              const { error: salesReportError } = await supabase.rpc('record_sale_amount', {
+                  p_sales_amount: totalSalesAmount
+              })
 
-             if (salesReportError) {
-                 console.warn('Failed to update sales data (COD/B2B):', salesReportError.message)
-             }
+              if (salesReportError) {
+                  console.warn('Failed to update sales data (COD):', salesReportError.message)
+              }
         }
 
 
@@ -527,7 +383,7 @@ const handleSubmit = async () => {
 }
 
 // ----------------------------
-// ON MOUNT (unchanged)
+// ON MOUNT
 // ----------------------------
 onMounted(fetchCart)
 </script>

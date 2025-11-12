@@ -265,24 +265,11 @@
                 </div>
               </div>
 
-              <div class="row g-4">
-                <div class="col-lg-12">
-                  <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white">
-                      <h5 class="mb-0 text-primary fw-bold">Sales Trend (Last 7 Days)</h5>
-                    </div>
-                    <div class="card-body">
-                      <canvas id="salesTrendChart"></canvas>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row g-4 mt-4">
+               <div class="row g-4 mt-4">
                   <div class="col-lg-6 offset-lg-3">
                     <div class="card shadow-sm h-100">
                       <div class="card-header bg-white">
-                        <h5 class="mb-0 text-primary fw-bold">Sales by Tire Type</h5>
+                        <h5 class="mb-0 text-primary fw-bold">Product Trend <span v-if="selectedYear"> ({{ selectedYear }})</span></h5>
                       </div>
                       <div class="card-body d-flex justify-content-center align-items-center">
                         <canvas id="salesByTireTypeChart"></canvas>
@@ -290,41 +277,87 @@
                     </div>
                   </div>
               </div>
-
-              <div class="row g-4 mt-4">
-                  <div class="col-lg-12">
-                    <div class="card shadow-sm h-100">
-                      <div class="card-header bg-white">
-                        <h5 class="mb-0 text-primary fw-bold">Sales Trend (Past Months)</h5>
+              <div class="mt-4"></div>
+              <div class="row g-4">
+                <div class="col-lg-12">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                      <h5 class="mb-0 text-primary fw-bold">
+                        Sales Trend ({{ selectedMonth || 'Last 7 Days' }})
+                    </h5>
+                    <button v-if="selectedMonth" class="btn btn-sm btn-outline-secondary" @click="resetMonthlyDrilldown">
+                        <i class="fas fa-angle-left me-1"></i> Back to {{ selectedYear }} Months
+                    </button>
                     </div>
                     <div class="card-body">
-                        <canvas id="salesTrendMonthlyChart" style="height: 300px;"></canvas>
-                      </div>
+                      <canvas id="salesTrendChart" @click="drillDownMonthlySales"></canvas>
                     </div>
+                  </div>
                 </div>
               </div>
+
+              <div class="row g-4 mt-4">
+                <div class="col-lg-12">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                      <h5 class="mb-0 text-primary fw-bold">
+                        Sales Trend ({{ selectedYear || 'Past Months' }})
+                    </h5>
+                    <button v-if="selectedYear" class="btn btn-sm btn-outline-secondary" @click="resetYearlyDrilldown">
+                        <i class="fas fa-angle-left me-1"></i> Back to Past Years
+                    </button>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="salesTrendMonthlyChart" style="height: 300px;" @click="drillDownMonthlySales"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-4 mt-4">
+                <div class="col-lg-12">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 text-primary fw-bold"><i class="fas me-2"></i>Sales Trend (Past Years)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div style="max-height: 400px;">
+                                <canvas id="yearlySalesChart" @click="drillDownYearlySales"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div> </div>
           <div v-else-if="activeFeature === 'stock-monitoring'">
-            <h2 class="h4">Tire Stock Monitoring</h2>
+            <h2 class="h4">Tire Stock Monitoring </h2>
             <p>
               View and manage current stock levels, low stock alerts, and details for different tire
               types.
             </p>
 
             <div class="row g-4 mb-4">
-              <div class="col-lg-4 col-md-6">
-                <div class="card bg-primary text-white h-100 shadow-sm border-0">
+              <div class="col-lg-3 col-md-6">
+                <div
+                    class="card bg-primary text-white h-100 shadow-sm border-0 cursor-pointer"
+                    :class="{ 'border-3 border-light': stockFilter === 'All' }"
+                    @click="setStockFilter('All')"
+                >
                   <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                      <h5 class="card-title fw-bold">Total Stock</h5>
+                      <h5 class="card-title fw-bold">Total Stock (All)</h5>
                       <h3 class="card-text display-6 fw-bolder">{{ totalStock }}</h3>
                     </div>
                     <i class="fas fa-boxes fa-3x opacity-50"></i>
-                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-lg-4 col-md-6">
-                <div class="card bg-warning text-dark h-100 shadow-sm border-0">
+              <div class="col-lg-3 col-md-6">
+                <div
+                    class="card bg-warning text-dark h-100 shadow-sm border-0 cursor-pointer"
+                    :class="{ 'border-3 border-danger': stockFilter === 'Low Stock' }"
+                    @click="setStockFilter('Low Stock')"
+                >
                   <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                       <h5 class="card-title fw-bold">Low Stock Alerts</h5>
@@ -334,7 +367,22 @@
                   </div>
                 </div>
               </div>
-              <div class="col-lg-4 col-md-12">
+              <div class="col-lg-3 col-md-6">
+                <div
+                    class="card bg-danger text-white h-100 shadow-sm border-0 cursor-pointer"
+                    :class="{ 'border-3 border-light': stockFilter === 'Out of Stock' }"
+                    @click="setStockFilter('Out of Stock')"
+                >
+                  <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                      <h5 class="card-title fw-bold">Out of Stock</h5>
+                      <h3 class="card-text display-6 fw-bolder">{{ outOfStockCount }}</h3>
+                    </div>
+                    <i class="fas fa-minus-circle fa-3x opacity-50"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6">
                 <div class="card bg-success text-white h-100 shadow-sm border-0">
                   <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
@@ -351,7 +399,7 @@
               <div
                 class="card-header bg-white d-flex justify-content-between align-items-center"
               >
-                <h5 class="mb-0 text-primary fw-bold">Current Tire Stock</h5>
+                <h5 class="mb-0 text-primary fw-bold">Current Tire Stock (Showing {{ stockFilter }})</h5>
                 <button class="btn btn-primary" @click="navigateToAddProduct">
                   <i class="fas fa-plus-circle me-2"></i>Add New Product
                 </button>
@@ -365,7 +413,7 @@
                         <th class="py-3 px-4">Brand</th>
                         <th class="py-3 px-4">Size</th>
                         <th class="py-3 px-4">Current Stock</th>
-                                                <th class="py-3 px-4">Last Updated</th>
+                        <th class="py-3 px-4">Last Updated</th>
                         <th class="py-3 px-4">Status</th>
                       </tr>
                     </thead>
@@ -373,15 +421,15 @@
                       <tr v-if="stockLoading">
                         <td colspan="6" class="text-center py-4">Loading stock...</td>
                       </tr>
-                      <tr v-else-if="stockItems.length === 0">
-                        <td colspan="6" class="text-center py-4">No products found. Add a new product to see it here.</td>
+                      <tr v-else-if="filteredAndSortedStockItems.length === 0">
+                        <td colspan="6" class="text-center py-4">No products found for the **{{ stockFilter }}** filter.</td>
                       </tr>
-                      <tr v-for="item in stockItems" :key="item.id">
+                      <tr v-for="item in filteredAndSortedStockItems" :key="item.id">
                         <td class="py-3 px-4">{{ item.product_type }}</td>
                         <td class="py-3 px-4">{{ item.brand }}</td>
                         <td class="py-3 px-4">{{ item.size }}</td>
                         <td class="py-3 px-4">{{ item.quantity }}</td>
-                                                <td class="py-3 px-4 small text-muted">{{ item.last_updated }}</td>
+                        <td class="py-3 px-4 small text-muted">{{ item.last_updated }}</td>
                         <td class="py-3 px-4">
                           <span :class="['badge',
                             item.status === 'In Stock' ? 'bg-success' :
@@ -502,7 +550,7 @@
                                         <i class="fas fa-eye"></i> View
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger" v-if="order.cardStatus === 'Pending'"
-                                      @click="cancelOrder(order)"  >
+                                        @click="cancelOrder(order)"  >
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
                                 </div>
@@ -642,7 +690,7 @@
                                 <li class="list-group-item d-flex justify-content-between">
                                     Total Price: <span class="text-success fw-bold">₱{{ selectedOrderDetails.total_price.toFixed(2) }}</span>
                                 </li>
-                                                                <li class="list-group-item">
+                                    <li class="list-group-item">
                                     Shipping Address: <span>{{ selectedOrderDetails.shipping_address }}</span>
                                 </li>
                             </ul>
@@ -657,29 +705,29 @@
                         </div>
 
                        <div class="col-md-6">
-                          <h6>Proof of Payment</h6>
-                          <div v-if="selectedOrderDetails.paymentProofUrl">
+                            <h6>Proof of Payment</h6>
+                            <div v-if="selectedOrderDetails.paymentProofUrl">
 
-                              <div class="d-block text-center">
-                                  <img
-                                      :src="selectedOrderDetails.paymentProofUrl"
-                                      alt="Proof of Payment"
-                                      class="img-fluid border rounded shadow-sm"
-                                      style="max-height: 300px; object-fit: contain;"
-                                  />
+                                <div class="d-block text-center">
+                                    <img
+                                        :src="selectedOrderDetails.paymentProofUrl"
+                                        alt="Proof of Payment"
+                                        class="img-fluid border rounded shadow-sm"
+                                        style="max-height: 300px; object-fit: contain;"
+                                    />
 
-                                  <p class="small mt-2 text-primary">
-                                      <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" style="text-decoration: underline;">
-                                          Click here for full resolution view
-                                      </a>
-                                  </p>
-                              </div>
+                                    <p class="small mt-2 text-primary">
+                                        <a :href="selectedOrderDetails.paymentProofUrl" target="_blank" style="text-decoration: underline;">
+                                            Click here for full resolution view
+                                        </a>
+                                    </p>
+                                </div>
 
-                              </div>
-                          <div v-else class="alert alert-warning">
-                              No payment proof screenshot found for this order.
-                          </div>
-                      </div>
+                                </div>
+                            <div v-else class="alert alert-warning">
+                                No payment proof screenshot found for this order.
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -735,6 +783,35 @@
 </template>
 
 <style scoped>
+
+/* Add a style for the click interaction and highlight */
+.cursor-pointer {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cursor-pointer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Optional: Highlight the active filter card */
+/* Add styles to highlight the active card */
+.card.border-3 {
+    border: 3px solid !important;
+}
+
+.card.border-3.border-light {
+    box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.5) !important;
+}
+.card.border-3.border-danger {
+    border-color: #dc3545 !important; /* Danger color for low stock */
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.5) !important;
+}
+.card-active { /* Used for order status filter */
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5) !important;
+}
+
 /* 🔔 NEW: Notification Styles (Add this to your CSS) */
 .notification-container {
     position: fixed;
@@ -1078,12 +1155,12 @@
 </style>
 
 <script setup>
-// 1. 💡 NEW IMPORTS: Add PDF export libraries
+// 1. 💡 NEW IMPORTS: Add ChartDataLabels for displaying values directly on bars
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import Chart from 'chart.js/auto';
+import ChartDataLabels from 'chartjs-plugin-datalabels'; // 👈 NEW: DataLabels Plugin
 import { supabase } from '../server/supabase';
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-// --- ❌ Removed html2canvas and jsPDF as they are not needed for CSV ---
 
 // --- 🛑 NEW CORE LOGIC: CANCEL ORDER FUNCTION ---
 const cancelOrder = async (order) => {
@@ -1128,7 +1205,7 @@ const cancelOrder = async (order) => {
 };
 
 const EMAIL_FUNCTION_URL = 'https://ivqefxeeiuyjcsrlqjxr.supabase.co/functions/v1/send-custom-email';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImV4cCI6MjA3MTkzNTI5OH0.GURdtsHejB6ROarVzuQctcSKNVRCaD5BWQ-uB-Vody0';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWVmeGVlaXV5amNzcmxxanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTkyOTgsImleHAiOjIwNzE5MzUyOTh9.GURdtsHejB6ROarVzuQctcSKNVRCaD5BWQ-uB-Vody0';
 // --- 👇 THIS IS THE EXIT GUARD ---
 onBeforeRouteLeave((to, from, next) => {
     const allowedExitRoutes = ['login', 'signup', 'ImportProduct'];
@@ -1164,9 +1241,10 @@ const superAdminPassword = ref('');
 const deleteError = ref('');
 
 // --- REFS FOR LIVE STOCK DATA ---
-const stockItems = ref([]);
+const unfilteredStockItems = ref([]); // RENAMED: Holds the raw data from the DB
 const stockLoading = ref(false); // Changed to false for better initial UX if data loads fast
 const stockError = ref(null);
+const stockFilter = ref('All'); // 💡 NEW: Filter states: 'All', 'Low Stock', 'Out of Stock'
 
 // --- NEW STATE FOR PURCHASE ORDERS ---
 const purchaseOrders = ref([]);
@@ -1187,6 +1265,12 @@ const recentActivities = ref([]);
 
 // 🔔 NEW: State for unread notifications
 const newNotificationCount = ref(0);
+
+// --- 🚀 NEW DRILL-DOWN STATE ---
+const selectedYear = ref(null);
+const selectedMonth = ref(null);
+const monthlySalesDrilldown = ref(null); // Stores { labels: [], data: [] } for a selected year's months
+const dailySalesDrilldown = ref(null); // Stores { labels: [], data: [] } for a selected month's days/weeks
 
 // --- NEW FUNCTION: Get icon class based on event type ---
 const getNotificationIcon = (eventType) => {
@@ -1222,7 +1306,7 @@ const toggleMobileNotifications = () => {
 
         // 3. Close the sidebar after attempting to open the dropdown on mobile
         if (isMobile.value) {
-             toggleSidebar();
+            toggleSidebar();
         }
     }
 };
@@ -1437,7 +1521,8 @@ const fetchStockItems = async () => {
 
         if (error) throw error;
 
-        stockItems.value = data.map(item => {
+        // Populate the unfiltered list and calculate status
+        unfilteredStockItems.value = data.map(item => { // RENAMED TO unfilteredStockItems
             let status;
             // 2. ⚡ NEW LOGIC: Based on user request (quantity < 12 -> Low, quantity > 12 -> In Stock, quantity == 0 -> Out of Stock)
             if (item.quantity === 0) {
@@ -1467,6 +1552,17 @@ const fetchStockItems = async () => {
         stockLoading.value = false;
     }
 };
+
+// ----------------------------------------------------------------------
+// 🚀 MODIFIED FUNCTION: Set Stock Filter
+// Only allows 'All', 'Low Stock', or 'Out of Stock'
+// ----------------------------------------------------------------------
+const setStockFilter = (filter) => {
+    if (['All', 'Low Stock', 'Out of Stock'].includes(filter)) {
+        stockFilter.value = filter;
+    }
+};
+// ----------------------------------------------------------------------
 
 const fetchSuperAdminProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1539,6 +1635,8 @@ const salesData = ref({
     salesTrend: { labels: [], datasets: [{ label: 'Daily Sales (₱)', data: [], backgroundColor: '#0d6efd', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 5, }], },
     salesTrendMonthly: { labels: [], datasets: [{ label: 'Monthly Sales (₱)', data: [], backgroundColor: '#198754', borderColor: '#198754', borderWidth: 1, borderRadius: 5, }], },
     salesByTireType: { labels: [], datasets: [{ label: 'Sales by Product Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
+    // 🚀 NEW: Yearly Sales Data Structure
+    yearlySales: { labels: [], datasets: [{ label: 'Yearly Sales (₱)', data: [], backgroundColor: 'orange', borderColor: '#dc3545', borderWidth: 1, borderRadius: 5, }], },
 });
 
 // --- CORE FUNCTION: UPDATED FETCH SALES REPORT DATA ---
@@ -1551,6 +1649,15 @@ const fetchSalesReport = async () => {
     const date30DaysAgo = new Date();
     date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
     const date30DaysAgoString = date30DaysAgo.toISOString().split('T')[0];
+
+    // Helper value for calculating dummy yearly sales (current month index)
+    const currentMonthIndex = new Date().getMonth();
+
+    // 🚀 Reset selected states and drilldown data
+    selectedYear.value = null;
+    selectedMonth.value = null;
+    monthlySalesDrilldown.value = null;
+    dailySalesDrilldown.value = null;
 
     try {
         // 1. Fetch sales_data (Cumulative Totals)
@@ -1670,7 +1777,6 @@ const fetchSalesReport = async () => {
         // 5. ADD DUMMY DATA for Monthly Trend Chart (Full Year: Jan to Dec)
         // -----------------------------------------------------------
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const currentMonthIndex = new Date().getMonth(); // 0 to 11
 
         // Generate more realistic dummy data for a full year (adjusting for the current month)
         const monthlyDataFullYear = [
@@ -1702,6 +1808,152 @@ const fetchSalesReport = async () => {
         }
     }
 };
+
+// 🚀 MODIFIED FUNCTION: Fetch and populate Yearly Sales Chart Data (Dummy)
+const fetchYearlySales = () => {
+    // Generate dummy data for the last 5 years
+    const currentYear = new Date().getFullYear();
+    const currentMonthIndex = new Date().getMonth();
+    const yearlyLabels = [];
+    const yearlyData = [];
+
+    // Simulate sales, making the current year's sales a projected portion
+    const baseSales = 2000000;
+
+    for (let i = 4; i >= 0; i--) {
+        const year = currentYear - i;
+        yearlyLabels.push(year.toString());
+
+        let salesAmount;
+        if (i === 0) {
+            // Current year is a projection based on the live monthly sales data
+            // Simple projection: Monthly Sales * (Months passed + 1)
+            salesAmount = salesData.value.totalMonthlySales * (currentMonthIndex + 1) + 50000;
+        } else {
+            // Past years have higher, simulated annual sales
+            salesAmount = baseSales + (4 - i) * 500000 + (Math.random() * 200000);
+        }
+        yearlyData.push(Math.floor(salesAmount));
+    }
+
+    salesData.value.yearlySales.labels = yearlyLabels;
+    salesData.value.yearlySales.datasets[0].data = yearlyData;
+};
+
+// ----------------------------------------------------------------------
+// 🚀 NEW LOGIC: Drill-Down Functions
+// ----------------------------------------------------------------------
+
+// Helper function to generate dummy monthly data for any given year
+const generateMonthlyDataForYear = (year, totalYearlySales) => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currentYear = new Date().getFullYear();
+    const currentMonthIndex = new Date().getMonth();
+
+    const baseMonthlySale = totalYearlySales / 12;
+
+    const monthlyData = monthNames.map((month, index) => {
+        if (year > currentYear || (year === currentYear && index > currentMonthIndex)) {
+            return 0; // Future months/years are 0
+        }
+        // Use a random variance for the dummy data
+        return Math.floor(baseMonthlySale * (0.8 + Math.random() * 0.4)); // +/- 20% variance
+    });
+
+    return { labels: monthNames, datasets: [{ label: `Monthly Sales ${year} (₱)`, data: monthlyData, backgroundColor: '#198754' }] };
+};
+
+// Helper function to generate dummy daily data for any given month/year
+const generateDailyDataForMonth = (monthIndex, year, totalMonthlySales) => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const dailyLabels = [];
+    const dailyData = [];
+
+    // For simplicity, we'll generate daily data for the whole month
+    for (let i = 1; i <= daysInMonth; i++) {
+        dailyLabels.push(`${monthIndex + 1}/${i}`);
+        // Average daily sale is roughly totalMonthlySales / daysInMonth
+        const avgDailySale = totalMonthlySales / daysInMonth;
+        dailyData.push(Math.floor(avgDailySale * (0.5 + Math.random() * 1.0))); // +/- 50% variance
+    }
+    return { labels: dailyLabels, datasets: [{ label: `${monthNames[monthIndex]} Daily Sales (₱)`, data: dailyData, backgroundColor: '#0d6efd' }] };
+};
+
+// 1. Click on Yearly Sales Chart
+const drillDownYearlySales = (event) => {
+    if (!yearlySalesChart) return;
+
+    const points = yearlySalesChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+    if (points.length) {
+        const firstPoint = points[0];
+        const labelIndex = firstPoint.index;
+        const year = yearlySalesChart.data.labels[labelIndex];
+        const yearlyTotal = yearlySalesChart.data.datasets[0].data[labelIndex];
+
+        selectedYear.value = year;
+        selectedMonth.value = null; // Reset month selection
+        dailySalesDrilldown.value = null; // Reset daily drilldown
+
+        // Generate monthly data for the selected year
+        monthlySalesDrilldown.value = generateMonthlyDataForYear(parseInt(year), yearlyTotal);
+
+        // Re-render charts to show the new monthly drilldown
+        nextTick(createCharts);
+    }
+};
+
+// 2. Click on Monthly Sales Chart
+const drillDownMonthlySales = (event) => {
+    // Only allow drill-down if a year is already selected
+    if (!selectedYear.value) {
+        alert("Please click on a year in the 'Sales Trend (Past Years)' chart first.");
+        return;
+    }
+    if (!salesTrendMonthlyChart) return;
+
+    const points = salesTrendMonthlyChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+    if (points.length) {
+        const firstPoint = points[0];
+        const labelIndex = firstPoint.index;
+        const monthName = salesTrendMonthlyChart.data.labels[labelIndex];
+        const monthlyTotal = salesTrendMonthlyChart.data.datasets[0].data[labelIndex];
+
+        if (monthlyTotal === 0) {
+            alert(`No sales data for ${monthName} ${selectedYear.value}.`);
+            return;
+        }
+
+        selectedMonth.value = `${monthName} ${selectedYear.value}`;
+
+        // Generate daily data for the selected month/year
+        dailySalesDrilldown.value = generateDailyDataForMonth(labelIndex, parseInt(selectedYear.value), monthlyTotal);
+
+        // Re-render charts to show the new daily drilldown
+        nextTick(createCharts);
+    }
+};
+
+// 3. Reset Monthly Drilldown to show the full monthly data for the selected year
+const resetMonthlyDrilldown = () => {
+    selectedMonth.value = null;
+    dailySalesDrilldown.value = null;
+    nextTick(createCharts);
+}
+
+// 4. Reset Yearly Drilldown to show the initial state (monthly trend for current year)
+const resetYearlyDrilldown = () => {
+    selectedYear.value = null;
+    selectedMonth.value = null;
+    monthlySalesDrilldown.value = null;
+    dailySalesDrilldown.value = null;
+    // Re-fetch or use existing data for the initial state
+    fetchSalesReport();
+};
+
+// --- END OF NEW DRILL-DOWN LOGIC ---
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 // 🚀 MODIFIED FUNCTION: Export Sales Report to CSV (Excel-Friendly)
@@ -1789,6 +2041,7 @@ const fetchInitialData = () => {
     fetchPurchaseOrders();
     fetchSalesReport();
     fetchRawDeliveredOrders(); // 👈 NEW: Fetch detailed data on load
+    fetchYearlySales(); // 👈 NEW: Fetch yearly sales data
     fetchSuperAdminProfile();
     fetchUsers();
 }
@@ -1796,7 +2049,7 @@ const fetchInitialData = () => {
 const searchQuery = ref('');
 const selectedStatus = ref('All');
 
-// --- COMPUTED PROPERTIES ---
+// --- COMPUTED PROPERTIES (UNCHANGED) ---
 
 // These now read directly from the fetched sales_data
 const totalSalesToday = computed(() => salesData.value.totalSalesToday);
@@ -1805,12 +2058,47 @@ const totalSalesLast7Days = computed(() => salesData.value.totalWeeklySales);
 const totalSalesLast30Days = computed(() => salesData.value.totalMonthlySales);
 
 const newUsersCount = computed(() => users.value.length);
-const totalStock = computed(() => stockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0));
-const lowStockCount = computed(() => stockItems.value.filter(item => item.status === 'Low Stock').length);
-const productTypes = computed(() => stockItems.value.length);
+// 🚀 MODIFIED: totalStock now uses the unfiltered data
+const totalStock = computed(() => unfilteredStockItems.value.reduce((sum, item) => sum + (item.quantity || 0), 0));
+// 🚀 MODIFIED: lowStockCount now uses the unfiltered data
+const lowStockCount = computed(() => unfilteredStockItems.value.filter(item => item.status === 'Low Stock').length);
+// 🚀 REVERTED: productTypes counts all unique products
+const productTypes = computed(() => unfilteredStockItems.value.length);
+// 💡 NEW: Out of Stock Count
+const outOfStockCount = computed(() => unfilteredStockItems.value.filter(item => item.status === 'Out of Stock').length);
+
+// ----------------------------------------------------------------------
+// 🚀 NEW COMPUTED PROPERTY: filteredAndSortedStockItems
+// This handles both the filter and the custom sort order.
+// ----------------------------------------------------------------------
+const filteredAndSortedStockItems = computed(() => {
+    let filtered = unfilteredStockItems.value;
+
+    // 1. Apply Filtering based on stockFilter.value (Exclude 'In Stock' if filter is active)
+    if (stockFilter.value !== 'All') {
+        filtered = filtered.filter(item => item.status === stockFilter.value);
+    }
+
+    // 2. Apply Custom Sorting
+    // Priority: Out of Stock (1) > Low Stock (2) > In Stock (3)
+    const sortOrder = { 'Out of Stock': 1, 'Low Stock': 2, 'In Stock': 3 };
+
+    return filtered.sort((a, b) => {
+        const orderA = sortOrder[a.status] || 99; // Get priority or a high number
+        const orderB = sortOrder[b.status] || 99;
+
+        if (orderA !== orderB) {
+            return orderA - orderB; // Sort by Status (1, 2, 3...)
+        }
+
+        // Secondary sort: alphabetical by brand
+        return (a.brand || '').localeCompare(b.brand || '');
+    });
+});
+// ----------------------------------------------------------------------
 
 
-// --- UPDATED ORDER COUNTS ---
+// --- UPDATED ORDER COUNTS (UNCHANGED) ---
 const totalOrders = computed(() => purchaseOrders.value.length);
 // Pending: Includes 'Pre-Ordered' and 'Order Processed'
 const pendingOrdersCount = computed(() => purchaseOrders.value.filter(o => o.cardStatus === 'Pending' || o.cardStatus === 'Shipped').length);
@@ -1847,42 +2135,167 @@ const sortedUsers = computed(() => {
 let salesTrendChart = null;
 let salesByTireTypeChart = null;
 let salesTrendMonthlyChart = null;
+let yearlySalesChart = null; // 🚀 NEW Chart Ref
 
+// 🚀 MODIFIED FUNCTION: createCharts - Incorporates drill-down logic
 const createCharts = () => {
     // Destroy existing charts to prevent memory leaks and chart stacking
     if (salesTrendChart) salesTrendChart.destroy();
     if (salesByTireTypeChart) salesByTireTypeChart.destroy();
     if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    if (yearlySalesChart) yearlySalesChart.destroy(); // 🚀 NEW: Destroy yearly chart
 
-    const salesTrendCtx = document.getElementById('salesTrendChart');
-    if (salesTrendCtx) {
-        salesTrendChart = new Chart(salesTrendCtx, {
-            type: 'bar',
-            data: salesData.value.salesTrend,
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } },
+    // ----------------------------------------------------------------------
+    // 💡 CHART CONFIGURATION: Common Options for Data Labels and Tooltips
+    // ----------------------------------------------------------------------
+    const datalabelsPluginOptions = {
+        // 🚨 FIX: Increase top padding in the layout options to allow space for the data labels
+        layout: {
+            padding: {
+                top: 25 // Add 20px padding above the chart data area
+            }
+        },
+        // 1. Tooltips (Hover effect) are disabled globally for all these charts
+        tooltip: {
+            enabled: false // 🛑 CRITICAL CHANGE: Disables hover tooltips
+        },
+        plugins: {
+            // 2. Data labels are configured
+            datalabels: {
+                align: 'end',
+                anchor: 'end',
+                offset: 5, // A slight offset above the bar/pie slice
+                color: '#333', // Dark text color
+                font: {
+                    weight: 'bold',
+                    size: 10,
+                },
+                formatter: (value) => {
+                    // Format as a simplified currency for display (e.g., ₱1.2M, ₱50K)
+                    if (value >= 1000000) {
+                        return '₱' + (value / 1000000).toFixed(1) + 'M';
+                    } else if (value >= 1000) {
+                        return '₱' + (value / 1000).toFixed(0) + 'K';
+                    }
+                    return '₱' + value.toLocaleString();
+                }
+            },
+            legend: { display: false }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+        }
+    };
+
+    // --- 3. Product Trend Chart (Pie) ---
+    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
+    if (salesByTireTypeCtx && salesData.value.salesByTireType.labels.length > 0) {
+        // Pie chart needs a separate datalabels configuration
+        salesByTireTypeChart = new Chart(salesByTireTypeCtx, {
+            type: 'pie',
+            data: salesData.value.salesByTireType,
+            options: {
+                layout: {
+                    padding: {
+                        top: 0
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+                tooltip: { enabled: false }, // 🛑 DISABLE HOVER
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            // Display label for pie chart
+                            const label = context.chart.data.labels[context.dataIndex];
+                            return label;
+                        },
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        textShadowBlur: 4,
+                        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                    },
+                    legend: { position: 'right' }
+                }
+            },
+            plugins: [ChartDataLabels], // 👈 ADDED PLUGIN
         });
     }
 
-    const salesByTireTypeCtx = document.getElementById('salesByTireTypeChart');
-    // Only create the pie chart if there is data (i.e., sales have occurred)
-    if (salesByTireTypeCtx && salesData.value.salesByTireType.labels.length > 0) {
-        salesByTireTypeChart = new Chart(salesByTireTypeCtx, { type: 'pie', data: salesData.value.salesByTireType, options: { responsive: true, maintainAspectRatio: false } });
+    // --- 1. Yearly Sales Chart (Bar) ---
+    // Change color of selected year bar
+    const yearlyChartData = {
+        ...salesData.value.yearlySales,
+        datasets: [{
+            ...salesData.value.yearlySales.datasets[0],
+            backgroundColor: salesData.value.yearlySales.datasets[0].data.map((_, index) => {
+                const year = salesData.value.yearlySales.labels[index];
+                return year === selectedYear.value ? '#dc3545' : 'orange';
+            })
+        }]
+    };
+    const yearlySalesCtx = document.getElementById('yearlySalesChart');
+    if (yearlySalesCtx) {
+        yearlySalesChart = new Chart(yearlySalesCtx, {
+            type: 'bar',
+            data: yearlyChartData,
+            options: datalabelsPluginOptions, // 👈 APPLIED CONFIG
+            plugins: [ChartDataLabels], // 👈 ADDED PLUGIN
+        });
+    }
+
+    // --- 2. Monthly Sales Trend Chart (Bar) ---
+    const monthlyData = monthlySalesDrilldown.value || salesData.value.salesTrendMonthly;
+    let monthlyChartData = { ...monthlyData };
+
+    if (monthlyData.datasets && monthlyData.datasets.length > 0) {
+        monthlyChartData.datasets = [{
+            ...monthlyData.datasets[0],
+            backgroundColor: monthlyData.labels.map((monthName) => {
+                const currentMonth = selectedMonth.value ? selectedMonth.value.split(' ')[0] : null;
+                // Highlight the selected month if we are in drill-down mode, otherwise use default green.
+                return monthName === currentMonth ? '#0d6efd' : '#198754';
+            })
+        }];
+    } else {
+         // Fallback data structure if datasets is empty/missing
+         monthlyChartData.datasets = [{ data: [], backgroundColor: [] }];
     }
 
     const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
     if (salesTrendMonthlyCtx) {
         salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
             type: 'bar',
-            data: salesData.value.salesTrendMonthly,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            },
+            data: monthlyChartData,
+            options: datalabelsPluginOptions, // 👈 APPLIED CONFIG
+            plugins: [ChartDataLabels], // 👈 ADDED PLUGIN
+        });
+    }
+
+    // --- 4. Daily Sales Trend Chart (Bar) ---
+    const dailyData = dailySalesDrilldown.value || salesData.value.salesTrend;
+    let dailyChartData = { ...dailyData };
+
+    if (dailyData.datasets && dailyData.datasets.length > 0) {
+        dailyChartData.datasets = [{
+            ...dailyData.datasets[0],
+            backgroundColor: dailyData.datasets[0].backgroundColor, // Use existing colors
+        }];
+    } else {
+         // Fallback data structure if datasets is empty/missing
+         dailyChartData.datasets = [{ data: [], backgroundColor: [] }];
+    }
+
+    const salesTrendCtx = document.getElementById('salesTrendChart');
+    if (salesTrendCtx) {
+        salesTrendChart = new Chart(salesTrendCtx, {
+            type: 'bar',
+            data: dailyChartData,
+            options: datalabelsPluginOptions, // 👈 APPLIED CONFIG
+            plugins: [ChartDataLabels], // 👈 ADDED PLUGIN
         });
     }
 };
@@ -2028,7 +2441,6 @@ const confirmDeleteUser = async () => {
                 console.log(`Attempting to send deletion email to ${userEmail}...`);
                 await sendAccountDeletionEmail(userEmail, username);
             }
-            // ----------------------------------------------------
         }
 
         // 💡 Step 4: Close modal and reset state
@@ -2236,6 +2648,7 @@ onUnmounted(() => {
     if (salesTrendChart) salesTrendChart.destroy();
     if (salesByTireTypeChart) salesByTireTypeChart.destroy();
     if (salesTrendMonthlyChart) salesTrendMonthlyChart.destroy();
+    if (yearlySalesChart) yearlySalesChart.destroy(); // 🚀 NEW: Cleanup yearly chart
 
     // 🌟 CLEANUP: Remove all channels
     if (userManagementChannel) { supabase.removeChannel(userManagementChannel); }

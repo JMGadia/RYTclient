@@ -169,7 +169,7 @@
           <div class="card shadow-sm border-0 rounded-lg mb-4">
             <div class="card-header bg-white text-dark fw-bold">Record New Stock In</div>
             <div class="card-body">
-              <form @submit.prevent="addStockIn">
+              <form @submit.prevent="prepareStockIn">
                 <div class="mb-3">
                   <label for="productNameIn" class="form-label">Product (Brand)</label>
                   <select class="form-select" id="productNameIn" v-model="stockIn.productName" required>
@@ -188,8 +188,8 @@
                   <input type="number" class="form-control" id="quantityIn" v-model="stockIn.quantity" min="1" required>
                 </div>
                 <div class="mb-3">
-                  <label for="supplierIn" class="form-label">Supplier</label>
-                  <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier">
+                    <label for="supplierIn" class="form-label">Supplier</label>
+                    <input type="text" class="form-control" id="supplierIn" v-model="stockIn.supplier" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed">
                 </div>
                 <div class="mb-3">
                   <label for="dateTimeIn" class="form-label">Date and Time</label>
@@ -357,22 +357,36 @@
         </div>
       </div>
     </div>
+
     <div v-if="showBarcodeModal" class="custom-modal-overlay">
       <div class="custom-modal-card card shadow-lg" style="max-width: 400px;">
         <div class="card-header bg-primary text-white text-center">
-          <h5 class="mb-0"><i class="fas fa-barcode me-2"></i> Print Labels</h5>
+          <h5 class="mb-0"><i class="fas fa-barcode me-2"></i> Confirm Stock In & Print Labels</h5>
+          <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" @click="closeBarcodePrintModal" aria-label="Close"></button>
         </div>
-        <div class="card-body text-center">
-          <p>Ready to print <strong>{{ stockIn.quantity }}</strong> labels for <strong>{{ stockIn.productName }}</strong>.</p>
+        <div class="card-body text-center" v-if="itemToPrint">
+          <p class="lead">You are about to validate and commit this entry:</p>
+
+          <ul class="list-group list-group-flush text-start mb-3">
+              <li class="list-group-item"><strong>Product:</strong> {{ itemToPrint.productName }} ({{ itemToPrint.size }})</li>
+              <li class="list-group-item"><strong>Quantity:</strong> {{ itemToPrint.quantity }} units</li>
+              <li class="list-group-item"><strong>Batch ID:</strong> {{ itemToPrint.barcodeBase.slice(0, 15) }}...</li>
+          </ul>
+
           <div class="d-flex justify-content-center gap-3 mt-4">
-            <button class="btn btn-secondary" @click="closeBarcodePrintModal">Cancel</button>
-            <button class="btn btn-primary" @click="printLabel">
+            <button class="btn btn-secondary" @click="closeBarcodePrintModal">Cancel Stock In</button>
+
+            <button class="btn btn-primary" @click="validateAndLogStockIn">
               <i class="fas fa-print me-2"></i> Print All Labels
             </button>
           </div>
         </div>
+        <div class="card-body text-center text-danger" v-else>
+            <p>Error: Stock data not found. Please try recording the stock in again.</p>
+        </div>
       </div>
     </div>
+
     <div v-if="showScanModal" class="custom-modal-overlay">
       <div class="custom-modal-card card shadow-lg" style="max-width: 600px;">
         <div class="card-header bg-primary text-white text-center">
@@ -477,7 +491,7 @@
             </div>
         </div>
     </div>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -523,7 +537,7 @@ export default {
     },
 
     /* ============================================================
-      DATA PROPERTIES
+      DATA PROPERTIES (UPDATED)
     ============================================================ */
     data() {
         return {
@@ -546,7 +560,7 @@ export default {
             autoDetect: true,
             showLogoutModal: false,
             showProfileModal: false,
-            showBarcodeModal: false,
+            showBarcodeModal: false, // Print Modal
             showScanModal: false,
             showDeliveryConfirmationModal: false,
             isDelivering: null,
@@ -557,6 +571,10 @@ export default {
             scanStatusMessage: 'Awaiting camera initialization...',
             isProcessingScan: false,
             orderItemsScanned: {},
+
+            // ** NEW: Draft state for Stock In before validation **
+            stockInDraft: null,
+            itemToPrint: null, // Used for print modal, populated from stockInDraft
 
             // --- Dashboard / Views ---
             currentView: 'Dashboard',
@@ -686,7 +704,7 @@ export default {
         },
 
         /* ============================
-          🔔 NOTIFICATION METHODS (NEW)
+          🔔 NOTIFICATION METHODS (UNCHANGED)
           ============================ */
         timeSince(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
@@ -791,7 +809,7 @@ export default {
         },
 
         /* ============================
-          --- QUAGGA BARCODE SCANNER ---
+          --- QUAGGA BARCODE SCANNER --- (UNCHANGED)
           ============================ */
         initQuagga() {
             if (typeof Quagga === 'undefined' || !Quagga.init) {
@@ -901,7 +919,7 @@ export default {
         },
 
         /* ============================
-          --- USER PROFILE METHODS ---
+          --- USER PROFILE METHODS --- (UNCHANGED)
           ============================ */
         async fetchCurrentUserProfile() {
             try {
@@ -954,7 +972,7 @@ export default {
         },
 
         /* ============================
-          --- DASHBOARD & DATA FETCHING ---
+          --- DASHBOARD & DATA FETCHING --- (UNCHANGED)
           ============================ */
         async fetchInitialData() {
             this.fetchCurrentUserProfile();
@@ -1025,7 +1043,7 @@ export default {
         },
 
         /* ============================
-          --- STOCK OUT METHODS (SHIPPING) ---
+          --- STOCK OUT METHODS (SHIPPING) --- (UNCHANGED)
           ============================ */
         async updateStockOut() {
             if (!this.orderToFulfill) return;
@@ -1097,7 +1115,7 @@ export default {
         },
 
         /* ============================
-          --- ADMIN DELIVERY CONFIRMATION ---
+          --- ADMIN DELIVERY CONFIRMATION --- (UNCHANGED)
           ============================ */
         openConfirmDeliveryModal(order) {
             // Can confirm delivery only if status is Shipped
@@ -1138,9 +1156,10 @@ export default {
 
 
         /* ============================
-          --- STOCK IN METHODS ---
+          --- STOCK IN METHODS (REFACTORED) ---
           ============================ */
-        async addStockIn() {
+        // NEW: This method prepares the stock-in data but DOES NOT save it.
+        async prepareStockIn() {
             if (!this.stockIn.productName) {
                 alert('Please select a product from the dropdown.');
                 return;
@@ -1149,42 +1168,87 @@ export default {
             const product = this.availableProducts.find(p => p.brand === this.stockIn.productName);
             if (!product) { alert('Could not find selected product.'); return; }
 
+            // Temporary variables to hold the current data and new calculations
+            const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
+
+            // Store all the necessary data in a draft object
+            this.stockInDraft = {
+                product: product, // Full product object
+                stockInForm: { ...this.stockIn }, // Copy of the form data
+                barcodeBase: barcodeBase
+            };
+
+            // Set up the print modal data
+            this.itemToPrint = {
+                barcodeBase,
+                productName: this.stockIn.productName,
+                size: this.stockIn.size,
+                quantity: this.stockIn.quantity
+            };
+
+            // Open the print modal for confirmation
+            this.openBarcodePrintModal();
+        },
+
+        // NEW: This method is called ONLY when the user clicks 'Print All Labels'
+        async validateAndLogStockIn() {
+            if (!this.stockInDraft || !this.itemToPrint) {
+                alert('Stock In data is missing. Please re-enter the stock.');
+                this.closeBarcodePrintModal();
+                return;
+            }
+
+            const { product, stockInForm, barcodeBase } = this.stockInDraft;
+
+            // 1. Get current stock quantity
             const { data: currentProduct, error: findError } = await supabase.from('products')
                 .select('quantity').eq('id', product.id).single();
-            if (findError) { alert('Could not retrieve current stock.'); return; }
+            if (findError) {
+                alert('Could not retrieve current stock. Transaction aborted.');
+                this.closeBarcodePrintModal();
+                return;
+            }
 
-            const newQuantity = currentProduct.quantity + this.stockIn.quantity;
+            // 2. Calculate new quantity and status
+            const newQuantity = currentProduct.quantity + stockInForm.quantity;
             let newStatus = '';
             if (newQuantity >= 12) newStatus = 'In Stock';
             else if (newQuantity >= 1) newStatus = 'Low Stock';
             else newStatus = 'Out of Stock';
 
+            // 3. Update the main products table (VALIDATE)
             const { error: updateError } = await supabase.from('products')
-                .update({ size: this.stockIn.size, quantity: newQuantity, status: newStatus })
+                .update({ size: stockInForm.size, quantity: newQuantity, status: newStatus })
                 .eq('id', product.id);
-            if (updateError) { alert('Error updating product: ' + updateError.message); return; }
+            if (updateError) {
+                alert('Error updating product stock. Transaction aborted: ' + updateError.message);
+                this.closeBarcodePrintModal();
+                return;
+            }
 
-            const barcodeBase = `${this.stockIn.productName.slice(0, 4).toUpperCase()}-${Date.now()}`;
+            // 4. Log the stock-in transaction
             const { data: insertedStock, error: logError } = await supabase.from('stock_in').insert({
                 barcode_id: barcodeBase,
-                product_name: this.stockIn.productName,
-                size: this.stockIn.size,
-                quantity: this.stockIn.quantity,
-                supplier: this.stockIn.supplier,
-                date_and_time: this.stockIn.dateTime
+                product_name: stockInForm.productName,
+                size: stockInForm.size,
+                quantity: stockInForm.quantity,
+                supplier: stockInForm.supplier,
+                date_and_time: stockInForm.dateTime
             }).select().single();
 
             if (logError) {
-                alert('Warning: Failed to log transaction. ' + logError.message);
+                alert('Warning: Stock updated, but failed to log transaction. ' + logError.message);
             } else {
-                console.log('✅ Stock-In Logged:', insertedStock);
-                this.scanStatusMessage = `Stock In added for ${this.stockIn.productName}`;
+                console.log('✅ Stock-In Logged and validated:', insertedStock);
+                this.scanStatusMessage = `Stock In added and validated for ${stockInForm.productName}`;
             }
 
-            this.itemToPrint = { barcodeBase, productName: this.stockIn.productName, size: this.stockIn.size, quantity: this.stockIn.quantity };
-            this.openBarcodePrintModal();
+            // 5. Execute printing (this is the actual print action)
+            this.printLabel();
 
-            // Reset stockIn form
+            // 6. Final cleanup (only after successful logging)
+            this.stockInDraft = null;
+            this.itemToPrint = null;
             this.stockIn = {
                 productName: '', size: '', quantity: 1, supplier: '',
                 dateTime: new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
@@ -1193,6 +1257,7 @@ export default {
             // Realtime subscriptions will handle the UI updates.
         },
 
+        // This method executes the actual print job and closes the modal afterwards
         printLabel() {
             const { productName, size, quantity, barcodeBase } = this.itemToPrint;
             if (!quantity || quantity < 1) return;
@@ -1234,14 +1299,23 @@ export default {
                 printWindow.print();
             };
 
+            // Don't close the modal here, let closeBarcodePrintModal handle it
+            // after the print window opens.
             this.closeBarcodePrintModal();
         },
 
         openBarcodePrintModal() { this.showBarcodeModal = true; },
-        closeBarcodePrintModal() { this.showBarcodeModal = false; this.itemToPrint = null; },
+
+        // UPDATED: Close now resets the draft state if the user cancels
+        closeBarcodePrintModal() {
+            this.showBarcodeModal = false;
+            // If the modal is closed without validation, clear the draft state
+            this.stockInDraft = null;
+            this.itemToPrint = null;
+        },
 
         /* ============================
-          --- UI & NAVIGATION METHODS ---
+          --- UI & NAVIGATION METHODS --- (UNCHANGED)
           ============================ */
         selectView(label) {
             this.currentView = label;
@@ -1277,7 +1351,7 @@ export default {
     },
 
     /* ============================================================
-      LIFECYCLE HOOKS
+      LIFECYCLE HOOKS (UNCHANGED)
     ============================================================ */
     mounted() {
         this.checkMobile();
