@@ -1651,7 +1651,7 @@ const fetchSalesReport = async () => {
     const date30DaysAgoString = date30DaysAgo.toISOString().split('T')[0];
 
     // Helper value for calculating dummy yearly sales (current month index)
-    const currentMonthIndex = new Date().getMonth();
+    const currentMonthIndex = new Date().getMonth(); // 10 for November (0-indexed)
 
     // 🚀 Reset selected states and drilldown data
     selectedYear.value = null;
@@ -1774,24 +1774,30 @@ const fetchSalesReport = async () => {
         salesData.value.salesTrend.datasets[0].data = dailyData;
 
         // -----------------------------------------------------------
-        // 5. ADD DUMMY DATA for Monthly Trend Chart (Full Year: Jan to Dec)
+        // 5. MODIFIED LOGIC: Monthly Trend Chart (Full Year: Jan to Dec)
         // -----------------------------------------------------------
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        // Generate more realistic dummy data for a full year (adjusting for the current month)
-        const monthlyDataFullYear = [
+        // Dummy data for Jan - Dec (Totaling roughly 6.6M before November's live data)
+        const monthlyDataFullYearBase = [
             250000, 300000, 450000, 400000, 550000, 600000,
-            750000, 700000, 850000, 900000, 1000000, 1100000
+            750000, 700000, 850000, 900000, // Jan to Oct dummy data
+            1000000, // Dummy for Nov, will be replaced by liveMonthlySales
+            1100000 // Dummy for Dec, will be replaced by 0
         ];
 
         // Create an array that uses liveMonthlySales for the current month and future months are 0
-        const finalMonthlyData = monthlyDataFullYear.map((dummyValue, index) => {
-            if (index === currentMonthIndex) {
+        const finalMonthlyData = monthlyDataFullYearBase.map((dummyValue, index) => {
+            if (index < currentMonthIndex) {
+                // Past months use the provided dummy data
+                return dummyValue;
+            } else if (index === currentMonthIndex) {
+                // Current month (November) uses the live data
                 return liveMonthlySales;
-            } else if (index > currentMonthIndex) {
-                return 0; // Future months show 0
+            } else {
+                // Future months (December) show 0
+                return 0;
             }
-            return dummyValue; // Past months show dummy data
         });
 
         salesData.value.salesTrendMonthly.labels = monthNames;
@@ -1809,15 +1815,23 @@ const fetchSalesReport = async () => {
     }
 };
 
-// 🚀 MODIFIED FUNCTION: Fetch and populate Yearly Sales Chart Data (Dummy)
+// 🚀 MODIFIED FUNCTION: Fetch and populate Yearly Sales Chart Data (Dummy + Real-time Current Year)
 const fetchYearlySales = () => {
     // Generate dummy data for the last 5 years
-    const currentYear = new Date().getFullYear();
-    const currentMonthIndex = new Date().getMonth();
+    const currentYear = new Date().getFullYear(); // 2025
+    const currentMonthIndex = new Date().getMonth(); // 10 for November (0-indexed)
     const yearlyLabels = [];
     const yearlyData = [];
 
-    // Simulate sales, making the current year's sales a projected portion
+    // Simulate average past monthly sales from the existing dummy data
+    const pastMonthlySalesDummy = [
+        250000, 300000, 450000, 400000, 550000, 600000,
+        750000, 700000, 850000, 900000, // Jan (0) to Oct (9)
+    ];
+    // Sum of Jan to Oct dummy sales: 5.75M
+    const pastMonthsTotal = pastMonthlySalesDummy.reduce((sum, val) => sum + val, 0);
+
+    // Past years' base sales
     const baseSales = 2000000;
 
     for (let i = 4; i >= 0; i--) {
@@ -1826,11 +1840,11 @@ const fetchYearlySales = () => {
 
         let salesAmount;
         if (i === 0) {
-            // Current year is a projection based on the live monthly sales data
-            // Simple projection: Monthly Sales * (Months passed + 1)
-            salesAmount = salesData.value.totalMonthlySales * (currentMonthIndex + 1) + 50000;
+            // Current year (2025) is the sum of past dummy months + the live data for November
+            // totalMonthlySales holds the real-time November sales figure (liveMonthlySales from fetchSalesReport)
+            salesAmount = pastMonthsTotal + salesData.value.totalMonthlySales;
         } else {
-            // Past years have higher, simulated annual sales
+            // Past years have higher, simulated annual sales (for the "growth" look)
             salesAmount = baseSales + (4 - i) * 500000 + (Math.random() * 200000);
         }
         yearlyData.push(Math.floor(salesAmount));
@@ -1841,7 +1855,7 @@ const fetchYearlySales = () => {
 };
 
 // ----------------------------------------------------------------------
-// 🚀 NEW LOGIC: Drill-Down Functions
+// 🚀 NEW LOGIC: Drill-Down Functions (UNCHANGED)
 // ----------------------------------------------------------------------
 
 // Helper function to generate dummy monthly data for any given year
@@ -1850,13 +1864,26 @@ const generateMonthlyDataForYear = (year, totalYearlySales) => {
     const currentYear = new Date().getFullYear();
     const currentMonthIndex = new Date().getMonth();
 
-    const baseMonthlySale = totalYearlySales / 12;
+    // Use the actual current monthly sales for the current month if the year is 2025
+    const liveMonthlySales = salesData.value.totalMonthlySales;
+
+    // Base monthly sales calculation for historical dummy months
+    // We estimate the sum of *dummy* past months + the live current month, and divide that by the number of active months in that year
+    const activeMonths = year === currentYear ? currentMonthIndex + 1 : 12;
+    const baseMonthlySale = totalYearlySales / activeMonths;
+
 
     const monthlyData = monthNames.map((month, index) => {
         if (year > currentYear || (year === currentYear && index > currentMonthIndex)) {
             return 0; // Future months/years are 0
         }
-        // Use a random variance for the dummy data
+
+        if (year === currentYear && index === currentMonthIndex) {
+            // If the year is the current year and the month is the current month, use the live sales data.
+            return liveMonthlySales;
+        }
+
+        // For all other months (past and past years), use a random variance on the calculated base.
         return Math.floor(baseMonthlySale * (0.8 + Math.random() * 0.4)); // +/- 20% variance
     });
 
@@ -2254,15 +2281,28 @@ const createCharts = () => {
     if (monthlyData.datasets && monthlyData.datasets.length > 0) {
         monthlyChartData.datasets = [{
             ...monthlyData.datasets[0],
-            backgroundColor: monthlyData.labels.map((monthName) => {
-                const currentMonth = selectedMonth.value ? selectedMonth.value.split(' ')[0] : null;
-                // Highlight the selected month if we are in drill-down mode, otherwise use default green.
-                return monthName === currentMonth ? '#0d6efd' : '#198754';
+            backgroundColor: monthlyData.labels.map((monthName, index) => {
+                const currentMonthIndex = new Date().getMonth();
+                const currentMonthName = monthlyData.labels[currentMonthIndex];
+
+                // Highlight the selected month in drill-down mode, or highlight the current month in default view.
+                if (selectedMonth.value) {
+                    const selectedMonthName = selectedMonth.value.split(' ')[0];
+                    return monthName === selectedMonthName ? '#0d6efd' : '#198754';
+                }
+
+                // If it's the current year and the default view, highlight the current month (November)
+                const isCurrentYear = !selectedYear.value || parseInt(selectedYear.value) === new Date().getFullYear();
+                if (isCurrentYear && monthName === currentMonthName && monthlyData.datasets[0].data[index] > 0) {
+                    return '#0d6efd'; // Highlight current month (November) blue
+                }
+
+                return '#198754'; // Default green for other months
             })
         }];
     } else {
-         // Fallback data structure if datasets is empty/missing
-         monthlyChartData.datasets = [{ data: [], backgroundColor: [] }];
+        // Fallback data structure if datasets is empty/missing
+        monthlyChartData.datasets = [{ data: [], backgroundColor: [] }];
     }
 
     const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
@@ -2285,8 +2325,8 @@ const createCharts = () => {
             backgroundColor: dailyData.datasets[0].backgroundColor, // Use existing colors
         }];
     } else {
-         // Fallback data structure if datasets is empty/missing
-         dailyChartData.datasets = [{ data: [], backgroundColor: [] }];
+        // Fallback data structure if datasets is empty/missing
+        dailyChartData.datasets = [{ data: [], backgroundColor: [] }];
     }
 
     const salesTrendCtx = document.getElementById('salesTrendChart');
