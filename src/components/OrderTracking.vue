@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'; // Added 'onUnmounted'
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { supabase } from '../server/supabase';
 import { useRouter } from 'vue-router';
 
@@ -124,6 +124,64 @@ const inProcessOrders = computed(() => {
 });
 // --------------------------------------------------------
 
+// --- NEW FUNCTION: AUTOMATIC ORDER DELIVERY CHECK ---
+/**
+ * Checks for Shipped orders older than 3 days and automatically marks them as Delivered.
+ * This runs when the component mounts.
+ */
+const checkAndAutoDeliverOrders = async (userId) => {
+    console.log("Running auto-delivery check...");
+
+    // Calculate the cutoff date (3 days ago)
+    const threeDaysAgo = new Date();
+    // 3 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
+    const threeDaysInMilliseconds = 3 * 24 * 60 * 60 * 1000;
+    threeDaysAgo.setTime(threeDaysAgo.getTime() - threeDaysInMilliseconds);
+    // Crucial: We need a column to track when the order was shipped. Assuming 'shipped_at' exists.
+    const cutoffDateISO = threeDaysAgo.toISOString();
+
+    // 1. Query for eligible orders: status = 'Shipped' AND shipped_at is before 3 days ago
+    const { data: eligibleOrders, error: fetchError } = await supabase
+        .from('orders')
+        .select('order_id')
+        .eq('user_id', userId)
+        .eq('status', 'Shipped')
+        // Assuming your 'orders' table has a 'shipped_at' timestamp column
+        .lt('date_shipped', cutoffDateISO);
+
+    if (fetchError) {
+        console.error("Error fetching eligible orders for auto-delivery:", fetchError);
+        return;
+    }
+
+    if (eligibleOrders.length === 0) {
+        console.log("No orders eligible for auto-delivery.");
+        return;
+    }
+
+    console.log(`${eligibleOrders.length} orders found for auto-delivery.`);
+
+    // 2. Update the status of all eligible orders to 'Delivered'
+    const orderIdsToUpdate = eligibleOrders.map(order => order.order_id);
+
+    const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'Delivered' })
+        .in('order_id', orderIdsToUpdate);
+
+    if (updateError) {
+        console.error("Error updating orders to Delivered:", updateError);
+    } else {
+        console.log(`Successfully auto-delivered ${orderIdsToUpdate.length} orders.`);
+        // 3. Immediately update the local state to reflect the change without full refetch
+        orderIdsToUpdate.forEach(id => {
+            handleRealtimeUpdate({ new: { order_id: id, status: 'Delivered' } });
+        });
+    }
+};
+// -------------------------------------------------------------------------
+
+
 // --- REAL-TIME UPDATE HANDLER ---
 const handleRealtimeUpdate = (payload) => {
     console.log('Realtime update received:', payload);
@@ -143,16 +201,13 @@ const handleRealtimeUpdate = (payload) => {
             // You can update other top-level fields here if they might change
         };
     } else if (newStatus !== 'Delivered') {
-        // OPTIONAL: If the update is for a new order that hasn't been fetched yet
-        // You would typically re-fetch or construct the full order object here.
-        // For simplicity, we assume 'fetchOrders' will capture new orders on page load.
-        // If a new order is placed *while* this page is open, you might need a more complex merge/refetch logic.
-        // Given this page is Order History, a simple update to existing orders is usually sufficient.
+        // ... (existing logic for new orders)
     }
 };
 
 // --- SETUP REAL-TIME SUBSCRIPTION ---
 const setupRealtimeSubscription = async (userId) => {
+// ... (No change)
     // 1. Remove previous subscription if it exists
     if (orderSubscription) {
         await supabase.removeChannel(orderSubscription);
@@ -188,6 +243,11 @@ const fetchOrders = async () => {
       return;
     }
 
+    // 🔥 NEW: Run the auto-delivery check BEFORE fetching/displaying the list
+    // This ensures the list is up-to-date with any auto-delivered orders.
+    await checkAndAutoDeliverOrders(user.id);
+
+
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -220,8 +280,9 @@ const fetchOrders = async () => {
   }
 };
 
-// --- CONFIRM ORDER RECEIVED (The status update here will also trigger the Realtime listener for other users/devices) ---
+// --- CONFIRM ORDER RECEIVED (User Click) ---
 const handleOrderReceived = async (orderId) => {
+// ... (No change)
   if (!window.confirm('Confirming receipt will mark the order as DELIVERED. Proceed?')) return;
 
   isUpdatingStatus.value = orderId;
@@ -235,11 +296,7 @@ const handleOrderReceived = async (orderId) => {
 
     alert(`Order #${orderId.slice(0, 8)} successfully marked as delivered!`);
 
-    // Note: Instead of explicit 'fetchOrders()' now,
-    // the change will be reflected automatically via the Realtime subscription
-    // which calls 'handleRealtimeUpdate' when this update completes in the database.
-
-    // However, if you want *immediate* local feedback without waiting for the RT event:
+    // The change will be reflected automatically via the Realtime subscription
     handleRealtimeUpdate({ new: { order_id: orderId, status: 'Delivered' } });
 
 
@@ -253,6 +310,7 @@ const handleOrderReceived = async (orderId) => {
 
 // --- STATUS TRACKER HELPERS (Unchanged) ---
 const getStatusColorClass = (status) => {
+// ... (No change)
   switch (status) {
     case 'Delivered':
       return 'text-success';
@@ -268,6 +326,7 @@ const getStatusColorClass = (status) => {
 };
 
 const getStepClass = (orderStatus, stepName) => {
+// ... (No change)
   const orderIndex = statusHierarchy.indexOf(orderStatus);
   const stepIndex = statusHierarchy.indexOf(stepName);
   if (stepIndex < orderIndex) return 'step completed';
@@ -276,6 +335,7 @@ const getStepClass = (orderStatus, stepName) => {
 };
 
 const getConnectorClass = (orderStatus, stepName) => {
+// ... (No change)
   const orderIndex = statusHierarchy.indexOf(orderStatus);
   const stepIndex = statusHierarchy.indexOf(stepName);
   return stepIndex < orderIndex ? 'connector completed' : 'connector';
