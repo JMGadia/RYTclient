@@ -1632,10 +1632,32 @@ const salesData = ref({
     totalWeeklySales: 0,
     totalMonthlySales: 0,
     // Chart data is initialized empty
-    salesTrend: { labels: [], datasets: [{ label: 'Daily Sales (₱)', data: [], backgroundColor: '#0d6efd', borderColor: '#0d6efd', borderWidth: 1, borderRadius: 5, }], },
-    salesTrendMonthly: { labels: [], datasets: [{ label: 'Monthly Sales (₱)', data: [], backgroundColor: '#198754', borderColor: '#198754', borderWidth: 1, borderRadius: 5, }], },
+    salesTrend: {
+        labels: [],
+        datasets: [{
+            label: 'Daily Sales (₱)',
+            data: [],
+            backgroundColor: 'rgba(13, 110, 253, 0.2)', // Light Blue Fill
+            borderColor: '#0d6efd', // Primary Blue Line
+            borderWidth: 3,
+            tension: 0.3, // Curve the line
+            fill: true, // Fill under the line
+        }],
+    },
+    salesTrendMonthly: {
+        labels: [],
+        datasets: [{
+            label: 'Monthly Sales (₱)',
+            data: [],
+            backgroundColor: 'rgba(25, 135, 84, 0.2)', // Light Green Fill
+            borderColor: '#198754', // Success Green Line
+            borderWidth: 3,
+            tension: 0.3, // Curve the line
+            fill: true, // Fill under the line
+        }],
+    },
     salesByTireType: { labels: [], datasets: [{ label: 'Sales by Product Type', data: [], backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#dc3545', '#fd7e14', '#ffc107',], hoverOffset: 4, }], },
-    // 🚀 NEW: Yearly Sales Data Structure
+    // 🚀 Yearly Sales Data Structure (Kept as bar default)
     yearlySales: { labels: [], datasets: [{ label: 'Yearly Sales (₱)', data: [], backgroundColor: 'orange', borderColor: '#dc3545', borderWidth: 1, borderRadius: 5, }], },
 });
 
@@ -1887,7 +1909,16 @@ const generateMonthlyDataForYear = (year, totalYearlySales) => {
         return Math.floor(baseMonthlySale * (0.8 + Math.random() * 0.4)); // +/- 20% variance
     });
 
-    return { labels: monthNames, datasets: [{ label: `Monthly Sales ${year} (₱)`, data: monthlyData, backgroundColor: '#198754' }] };
+    // 🛑 NOTE: Updated dataset structure for line chart compatibility
+    return { labels: monthNames, datasets: [{
+        label: `Monthly Sales ${year} (₱)`,
+        data: monthlyData,
+        backgroundColor: 'rgba(25, 135, 84, 0.2)', // Light green fill
+        borderColor: '#198754', // Darker green line
+        borderWidth: 3,
+        tension: 0.3,
+        fill: true
+    }] };
 };
 
 // Helper function to generate dummy daily data for any given month/year
@@ -1899,12 +1930,22 @@ const generateDailyDataForMonth = (monthIndex, year, totalMonthlySales) => {
 
     // For simplicity, we'll generate daily data for the whole month
     for (let i = 1; i <= daysInMonth; i++) {
-        dailyLabels.push(`${monthIndex + 1}/${i}`);
+        dailyLabels.push(`${monthNames[monthIndex].toLowerCase()}-${i}`);
         // Average daily sale is roughly totalMonthlySales / daysInMonth
         const avgDailySale = totalMonthlySales / daysInMonth;
         dailyData.push(Math.floor(avgDailySale * (0.5 + Math.random() * 1.0))); // +/- 50% variance
     }
-    return { labels: dailyLabels, datasets: [{ label: `${monthNames[monthIndex]} Daily Sales (₱)`, data: dailyData, backgroundColor: '#0d6efd' }] };
+
+    // 🛑 NOTE: Updated dataset structure for line chart compatibility
+    return { labels: dailyLabels, datasets: [{
+        label: `${monthNames[monthIndex]} Daily Sales (₱)`,
+        data: dailyData,
+        backgroundColor: 'rgba(13, 110, 253, 0.2)', // Light blue fill
+        borderColor: '#0d6efd', // Primary blue line
+        borderWidth: 3,
+        tension: 0.3,
+        fill: true
+    }] };
 };
 
 // 1. Click on Yearly Sales Chart
@@ -2164,7 +2205,7 @@ let salesByTireTypeChart = null;
 let salesTrendMonthlyChart = null;
 let yearlySalesChart = null; // 🚀 NEW Chart Ref
 
-// 🚀 MODIFIED FUNCTION: createCharts - Incorporates drill-down logic
+// 🚀 MODIFIED FUNCTION: createCharts - Changed time-series charts to 'line'
 const createCharts = () => {
     // Destroy existing charts to prevent memory leaks and chart stacking
     if (salesTrendChart) salesTrendChart.destroy();
@@ -2260,7 +2301,7 @@ const createCharts = () => {
             ...salesData.value.yearlySales.datasets[0],
             backgroundColor: salesData.value.yearlySales.datasets[0].data.map((_, index) => {
                 const year = salesData.value.yearlySales.labels[index];
-                return year === selectedYear.value ? '#dc3545' : 'orange';
+                return year === selectedYear.value ? 'green' : 'orange';
             })
         }]
     };
@@ -2274,31 +2315,24 @@ const createCharts = () => {
         });
     }
 
-    // --- 2. Monthly Sales Trend Chart (Bar) ---
+    // --- 2. Monthly Sales Trend Chart (Line) ---
     const monthlyData = monthlySalesDrilldown.value || salesData.value.salesTrendMonthly;
     let monthlyChartData = { ...monthlyData };
 
     if (monthlyData.datasets && monthlyData.datasets.length > 0) {
         monthlyChartData.datasets = [{
             ...monthlyData.datasets[0],
-            backgroundColor: monthlyData.labels.map((monthName, index) => {
-                const currentMonthIndex = new Date().getMonth();
-                const currentMonthName = monthlyData.labels[currentMonthIndex];
-
-                // Highlight the selected month in drill-down mode, or highlight the current month in default view.
-                if (selectedMonth.value) {
-                    const selectedMonthName = selectedMonth.value.split(' ')[0];
-                    return monthName === selectedMonthName ? '#0d6efd' : '#198754';
-                }
-
-                // If it's the current year and the default view, highlight the current month (November)
-                const isCurrentYear = !selectedYear.value || parseInt(selectedYear.value) === new Date().getFullYear();
-                if (isCurrentYear && monthName === currentMonthName && monthlyData.datasets[0].data[index] > 0) {
-                    return '#0d6efd'; // Highlight current month (November) blue
-                }
-
-                return '#198754'; // Default green for other months
-            })
+            // 🛑 OVERRIDE DEFAULT BAR STYLES WITH LINE STYLES
+            type: 'line',
+            tension: 0.3,
+            fill: true,
+            backgroundColor: 'rgba(25, 135, 84, 0.2)', // Light green fill
+            borderColor: '#198754', // Darker green line
+            pointBackgroundColor: '#198754',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            // 🚨 Removed the individual bar color mapping which is irrelevant for line fills
         }];
     } else {
         // Fallback data structure if datasets is empty/missing
@@ -2308,21 +2342,30 @@ const createCharts = () => {
     const salesTrendMonthlyCtx = document.getElementById('salesTrendMonthlyChart');
     if (salesTrendMonthlyCtx) {
         salesTrendMonthlyChart = new Chart(salesTrendMonthlyCtx, {
-            type: 'bar',
+            type: 'line', // 🛑 CHANGED FROM 'bar' to 'line'
             data: monthlyChartData,
             options: datalabelsPluginOptions, // 👈 APPLIED CONFIG
             plugins: [ChartDataLabels], // 👈 ADDED PLUGIN
         });
     }
 
-    // --- 4. Daily Sales Trend Chart (Bar) ---
+    // --- 4. Daily Sales Trend Chart (Line) ---
     const dailyData = dailySalesDrilldown.value || salesData.value.salesTrend;
     let dailyChartData = { ...dailyData };
 
     if (dailyData.datasets && dailyData.datasets.length > 0) {
         dailyChartData.datasets = [{
             ...dailyData.datasets[0],
-            backgroundColor: dailyData.datasets[0].backgroundColor, // Use existing colors
+            // 🛑 OVERRIDE DEFAULT BAR STYLES WITH LINE STYLES
+            type: 'line',
+            tension: 0.3,
+            fill: true,
+            backgroundColor: 'rgba(13, 110, 253, 0.2)', // Light blue fill
+            borderColor: '#0d6efd', // Primary blue line
+            pointBackgroundColor: '#0d6efd',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
         }];
     } else {
         // Fallback data structure if datasets is empty/missing
@@ -2332,7 +2375,7 @@ const createCharts = () => {
     const salesTrendCtx = document.getElementById('salesTrendChart');
     if (salesTrendCtx) {
         salesTrendChart = new Chart(salesTrendCtx, {
-            type: 'bar',
+            type: 'line', // 🛑 CHANGED FROM 'bar' to 'line'
             data: dailyChartData,
             options: datalabelsPluginOptions, // 👈 APPLIED CONFIG
             plugins: [ChartDataLabels], // 👈 ADDED PLUGIN

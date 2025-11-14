@@ -137,16 +137,13 @@ const checkAndAutoDeliverOrders = async (userId) => {
     // 3 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
     const threeDaysInMilliseconds = 3 * 24 * 60 * 60 * 1000;
     threeDaysAgo.setTime(threeDaysAgo.getTime() - threeDaysInMilliseconds);
-    // Crucial: We need a column to track when the order was shipped. Assuming 'shipped_at' exists.
     const cutoffDateISO = threeDaysAgo.toISOString();
 
-    // 1. Query for eligible orders: status = 'Shipped' AND shipped_at is before 3 days ago
     const { data: eligibleOrders, error: fetchError } = await supabase
         .from('orders')
         .select('order_id')
         .eq('user_id', userId)
         .eq('status', 'Shipped')
-        // Assuming your 'orders' table has a 'shipped_at' timestamp column
         .lt('date_shipped', cutoffDateISO);
 
     if (fetchError) {
